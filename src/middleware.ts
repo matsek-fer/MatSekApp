@@ -9,7 +9,7 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public routes
+  // Allow public routes and static assets
   if (
     pathname.startsWith("/api") ||
     pathname === "/" ||
@@ -19,7 +19,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/register") ||
     pathname.startsWith("/verify") ||
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/favicon")
+    pathname.startsWith("/favicon") ||
+    /\.(png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|eot)$/.test(pathname)
   ) {
     return NextResponse.next();
   }

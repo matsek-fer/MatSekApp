@@ -3,6 +3,7 @@ import Image from "next/image";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import VoronoiNavbarLink from "@/components/layout/VoronoiNavbarLink";
+import LogoutButton from "@/components/auth/LogoutButton";
 
 export default async function DashboardLayout({
   children,
@@ -35,7 +36,7 @@ export default async function DashboardLayout({
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-8">
               <Link
-                href="/calendar"
+                href="/"
                 className="flex-shrink-0"
               >
                 <Image
@@ -74,6 +75,7 @@ export default async function DashboardLayout({
                   <VoronoiNavbarLink href="/profile">
                     {profile?.full_name || session.user.email}
                   </VoronoiNavbarLink>
+                  <LogoutButton />
                 </>
               ) : (
                 <>
