@@ -3,25 +3,20 @@ import Image from "next/image";
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-brand-50 to-white p-8">
-      <div className="max-w-2xl text-center space-y-8">
-        {/* Logo */}
-        <div className="flex justify-center">
-          <Image
-            src="/logo.png"
-            alt="MATSEK — Matematička sekcija"
-            width={420}
-            height={160}
-            className="h-auto w-full max-w-[420px]"
-            priority
-            unoptimized
-          />
-        </div>
-        <p className="text-xl text-gray-600 leading-relaxed">
-          Dobrodošli u službenu aplikaciju za upravljanje aktivnostima
-          studentskog Math Cluba na Fakultetu elektrotehnike i računarstva.
-        </p>
-        <div className="flex gap-4 justify-center">
+    <main className="min-h-screen flex flex-col items-center bg-gradient-to-br from-brand-50 to-white">
+      {/* ── TOP: Logo + links ── */}
+      <div className="flex flex-col items-center pt-4 sm:pt-8 pb-4 px-4">
+        <Image
+          src="/logo.png"
+          alt="MATSEK — Matematička sekcija"
+          width={520}
+          height={200}
+          className="h-auto w-full max-w-[500px] sm:max-w-[560px]"
+          priority
+          unoptimized
+        />
+
+        <div className="flex gap-4 justify-center mt-5">
           <Link
             href="/register"
             className="px-6 py-3 bg-brand-600 text-white rounded-lg
@@ -37,15 +32,18 @@ export default function HomePage() {
             Prijavi se
           </Link>
         </div>
-        <div className="pt-4">
-          <Link
-            href="/calendar"
-            className="text-brand-600 hover:underline"
-          >
-            Pogledaj kalendar aktivnosti →
-          </Link>
-        </div>
       </div>
+
+      {/* ── MIDDLE: Big box ── */}
+      <div className="flex-1 w-[70%] max-w-4xl mx-4 mb-6 border border-black rounded-2xl bg-white" />
+
+      {/* ── BOTTOM: Calendar link ── */}
+      <Link
+        href="/calendar"
+        className="text-brand-600 hover:underline pb-6 sm:pb-10"
+      >
+        Pogledaj kalendar aktivnosti →
+      </Link>
     </main>
   );
 }
