@@ -1,6 +1,15 @@
-import { createClient as createServerClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { format, parseISO } from "date-fns";
+import { hr } from "date-fns/locale";
+import { createClient as createServerClient } from "@/lib/supabase/server";
+import { ACTIVITY_TYPE_LABELS } from "@/types";
+import type { Activity, Profile } from "@/types";
+import Card, { CardHeader, CardTitle } from "@/components/ui/Card";
+import { StatusBadge } from "@/components/ui/Badge";
+import { ButtonLink } from "@/components/ui/Button";
+
+export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {
   const supabase = createServerClient();
@@ -11,75 +20,83 @@ export default async function ProfilePage() {
 
   if (!session) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", session.user.id)
-    .single();
+  const [{ data: profile }, { data: activities }] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", session.user.id).single(),
+    supabase
+      .from("activities")
+      .select("id, title, status, start_time, activity_type")
+      .eq("created_by", session.user.id)
+      .order("created_at", { ascending: false })
+      .limit(20),
+  ]);
 
-  const { data: myActivities } = await supabase
-    .from("activities")
-    .select("id, title, status, start_time, activity_type")
-    .eq("created_by", session.user.id)
-    .order("created_at", { ascending: false })
-    .limit(20);
+  const me = profile as Profile | null;
+  const myActivities = (activities ?? []) as Activity[];
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
-      <div className="bg-white rounded-lg border p-6 space-y-4">
-        <h1 className="text-xl font-bold text-gray-900">Moj profil</h1>
-        <div className="grid grid-cols-2 gap-4 text-sm">
+    <div className="mx-auto max-w-2xl space-y-8">
+      <Card className="space-y-4 p-6">
+        <h1 className="text-xl font-bold text-fg">Moj profil</h1>
+        <dl className="grid gap-4 text-sm sm:grid-cols-3">
           <div>
-            <span className="text-gray-500">Ime:</span>{" "}
-            {profile?.full_name || "—"}
+            <dt className="text-fg-subtle">Ime</dt>
+            <dd className="text-fg">{me?.full_name || "—"}</dd>
+          </div>
+          <div className="min-w-0">
+            <dt className="text-fg-subtle">Email</dt>
+            <dd className="truncate text-fg">
+              {me?.email || session.user.email}
+            </dd>
           </div>
           <div>
-            <span className="text-gray-500">Email:</span>{" "}
-            {profile?.email || session.user.email}
+            <dt className="text-fg-subtle">Uloga</dt>
+            <dd className="text-fg">
+              {me?.role === "admin" ? "Admin" : "Korisnik"}
+            </dd>
           </div>
-          <div>
-            <span className="text-gray-500">Uloga:</span>{" "}
-            {profile?.role === "admin" ? "Admin" : "Korisnik"}
-          </div>
-        </div>
-      </div>
+        </dl>
+      </Card>
 
-      <div className="bg-white rounded-lg border">
-        <div className="p-4 border-b">
-          <h2 className="font-semibold text-gray-900">Moje aktivnosti</h2>
-        </div>
-        {!myActivities || myActivities.length === 0 ? (
-          <p className="p-4 text-gray-500">Još nisi predložio/la aktivnosti.</p>
+      <Card>
+        <CardHeader className="flex items-center justify-between gap-3">
+          <CardTitle>Moje aktivnosti</CardTitle>
+          <ButtonLink href="/activities/new" variant="secondary" size="sm">
+            + Nova
+          </ButtonLink>
+        </CardHeader>
+
+        {myActivities.length === 0 ? (
+          <p className="p-6 text-center text-fg-muted">
+            Još nisi predložio/la aktivnosti.
+          </p>
         ) : (
-          <div className="divide-y">
+          <ul>
             {myActivities.map((a) => (
-              <div key={a.id} className="p-4 flex justify-between items-center">
-                <Link
-                  href={`/activities/${a.id}`}
-                  className="text-gray-900 hover:text-brand-600"
-                >
-                  {a.title}
-                </Link>
-                <span
-                  className={`text-xs px-2 py-1 rounded-full ${
-                    a.status === "approved"
-                      ? "bg-green-100 text-green-800"
-                      : a.status === "rejected"
-                      ? "bg-red-100 text-red-800"
-                      : "bg-yellow-100 text-yellow-800"
-                  }`}
-                >
-                  {a.status === "approved"
-                    ? "Odobreno"
-                    : a.status === "rejected"
-                    ? "Odbijeno"
-                    : "Na čekanju"}
-                </span>
-              </div>
+              <li
+                key={a.id}
+                className="flex items-center justify-between gap-4 border-b
+                           border-border px-4 py-3 last:border-b-0"
+              >
+                <div className="min-w-0">
+                  <Link
+                    href={`/activities/${a.id}`}
+                    className="block truncate font-medium text-fg hover:text-brand"
+                  >
+                    {a.title}
+                  </Link>
+                  <p className="text-xs text-fg-subtle">
+                    {ACTIVITY_TYPE_LABELS[a.activity_type]} ·{" "}
+                    {format(parseISO(a.start_time), "dd.MM.yyyy. HH:mm", {
+                      locale: hr,
+                    })}
+                  </p>
+                </div>
+                <StatusBadge status={a.status} />
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

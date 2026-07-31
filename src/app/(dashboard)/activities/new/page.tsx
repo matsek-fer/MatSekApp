@@ -2,192 +2,160 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient as createBrowserClient } from "@/lib/supabase/client";
-import type { CreateActivityPayload, ActivityType } from "@/types";
 import { ACTIVITY_TYPE_LABELS } from "@/types";
+import type { ActivityType, CreateActivityPayload } from "@/types";
+import Card from "@/components/ui/Card";
+import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
+import { Input, Select, Textarea } from "@/components/ui/Field";
+
+const EMPTY_FORM: CreateActivityPayload = {
+  title: "",
+  activity_type: "lecture",
+  start_time: "",
+  end_time: "",
+  location: "",
+  description: "",
+  prerequisites: "",
+  target_audience: "",
+};
 
 export default function NewActivityPage() {
   const router = useRouter();
-  const supabase = createBrowserClient();
+  const [form, setForm] = useState<CreateActivityPayload>(EMPTY_FORM);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [form, setForm] = useState<CreateActivityPayload>({
-    title: "",
-    activity_type: "lecture",
-    start_time: "",
-    end_time: "",
-    location: "",
-    description: "",
-    prerequisites: "",
-    target_audience: "",
-  });
+  function update<K extends keyof CreateActivityPayload>(
+    key: K,
+    value: CreateActivityPayload[K]
+  ) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError("");
 
-    const res = await fetch("/api/activities", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-
-    const json = await res.json();
-    if (!json.success) {
-      setError(json.error || "Greška pri slanju.");
-      setLoading(false);
+    if (form.end_time <= form.start_time) {
+      setError("Kraj aktivnosti mora biti nakon početka.");
       return;
     }
 
-    router.push("/calendar");
-    router.refresh();
+    setLoading(true);
+    try {
+      const res = await fetch("/api/activities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const json = await res.json();
+
+      if (!json.success) {
+        setError(json.error || "Greška pri slanju.");
+        setLoading(false);
+        return;
+      }
+
+      router.push("/profile");
+      router.refresh();
+    } catch {
+      setError("Greška u vezi. Pokušaj ponovno.");
+      setLoading(false);
+    }
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">
-        Predloži novu aktivnost
-      </h1>
+    <div className="mx-auto max-w-2xl space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-fg">Predloži novu aktivnost</h1>
+        <p className="mt-1 text-sm text-fg-muted">
+          Prijedlog ide administratoru na pregled prije objave u kalendaru.
+        </p>
+      </div>
 
-      {error && (
-        <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">
-          {error}
-        </div>
-      )}
+      <Alert tone="error">{error}</Alert>
 
-      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg border">
-        {/* Title */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Naslov
-          </label>
-          <input
+      <Card>
+        <form onSubmit={handleSubmit} className="space-y-4 p-6">
+          <Input
+            label="Naslov"
             type="text"
             required
             value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2
-                       focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+            onChange={(e) => update("title", e.target.value)}
           />
-        </div>
 
-        {/* Activity Type */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Tip aktivnosti
-          </label>
-          <select
+          <Select
+            label="Tip aktivnosti"
             value={form.activity_type}
-            onChange={(e) =>
-              setForm({ ...form, activity_type: e.target.value as ActivityType })
-            }
-            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+            onChange={(e) => update("activity_type", e.target.value as ActivityType)}
           >
             {Object.entries(ACTIVITY_TYPE_LABELS).map(([key, label]) => (
               <option key={key} value={key}>
                 {label}
               </option>
             ))}
-          </select>
-        </div>
+          </Select>
 
-        {/* Start / End time */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Početak
-            </label>
-            <input
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="Početak"
               type="datetime-local"
               required
               value={form.start_time}
-              onChange={(e) => setForm({ ...form, start_time: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              onChange={(e) => update("start_time", e.target.value)}
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Kraj
-            </label>
-            <input
+            <Input
+              label="Kraj"
               type="datetime-local"
               required
+              min={form.start_time || undefined}
               value={form.end_time}
-              onChange={(e) => setForm({ ...form, end_time: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              onChange={(e) => update("end_time", e.target.value)}
             />
           </div>
-        </div>
 
-        {/* Location */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Lokacija / Prostorija
-          </label>
-          <input
+          <Input
+            label="Lokacija / prostorija"
             type="text"
             required
+            placeholder="npr. D1, Zavod za primijenjenu matematiku"
             value={form.location}
-            onChange={(e) => setForm({ ...form, location: e.target.value })}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+            onChange={(e) => update("location", e.target.value)}
           />
-        </div>
 
-        {/* Description */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Opis
-          </label>
-          <textarea
+          <Textarea
+            label="Opis"
             required
             rows={4}
             value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+            onChange={(e) => update("description", e.target.value)}
           />
-        </div>
 
-        {/* Prerequisites */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Preduvjeti
-          </label>
-          <input
+          <Input
+            label="Preduvjeti"
             type="text"
+            hint="Neobavezno."
+            placeholder="npr. Matematička analiza 1"
             value={form.prerequisites}
-            onChange={(e) =>
-              setForm({ ...form, prerequisites: e.target.value })
-            }
-            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+            onChange={(e) => update("prerequisites", e.target.value)}
           />
-        </div>
 
-        {/* Target audience */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Ciljana publika
-          </label>
-          <input
+          <Input
+            label="Ciljana publika"
             type="text"
+            hint="Neobavezno."
+            placeholder="npr. studenti 1. i 2. godine"
             value={form.target_audience}
-            onChange={(e) =>
-              setForm({ ...form, target_audience: e.target.value })
-            }
-            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+            onChange={(e) => update("target_audience", e.target.value)}
           />
-        </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-2 bg-brand-600 text-white rounded-lg
-                     hover:bg-brand-700 transition-colors disabled:opacity-50"
-        >
-          {loading ? "Šaljem..." : "Predloži aktivnost"}
-        </button>
-      </form>
+          <Button type="submit" fullWidth disabled={loading}>
+            {loading ? "Šaljem…" : "Predloži aktivnost"}
+          </Button>
+        </form>
+      </Card>
     </div>
   );
 }

@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
+import AuthShell from "@/components/auth/AuthShell";
+import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
+import { Input } from "@/components/ui/Field";
+import { ALLOWED_EMAIL_DOMAINS, isAllowedEmail } from "@/lib/validation";
 
 export default function RegisterPage() {
-  const router = useRouter();
   const supabase = createBrowserClient();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -21,8 +24,10 @@ export default function RegisterPage() {
     setError("");
     setSuccess("");
 
-    if (!email.endsWith("@fer.hr") && !email.endsWith("@student.fer.hr")) {
-      setError("Dozvoljene su samo @fer.hr i @student.fer.hr email adrese.");
+    if (!isAllowedEmail(email)) {
+      setError(
+        `Dozvoljene su samo ${ALLOWED_EMAIL_DOMAINS.join(" i ")} email adrese.`
+      );
       setLoading(false);
       return;
     }
@@ -30,106 +35,76 @@ export default function RegisterPage() {
     const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: { full_name: fullName },
-      },
+      options: { data: { full_name: fullName } },
     });
+
+    setLoading(false);
 
     if (signUpError) {
       setError(signUpError.message);
-      setLoading(false);
       return;
     }
 
     setSuccess(
-      "Registracija uspješna! Provjeri svoj inbox za verifikacijski mail."
+      "Registracija uspješna! Provjeri svoj inbox za verifikacijski kod."
     );
-    setLoading(false);
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="max-w-md w-full bg-white rounded-lg border p-8 space-y-6">
-        <div className="text-center">
-          <Image
-            src="/logo.png"
-            alt="MATSEK — Matematička sekcija"
-            width={240}
-            height={90}
-            className="h-auto w-60 mx-auto mb-3"
-            priority
-            unoptimized
-          />
-          <p className="text-gray-500 mt-1">Registriraj se</p>
-        </div>
-
-        {error && (
-          <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="bg-green-50 text-green-700 p-3 rounded-lg text-sm">
-            {success}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Ime i prezime
-            </label>
-            <input
-              type="text"
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email (@fer.hr ili @student.fer.hr)
-            </label>
-            <input
-              type="email"
-              required
-              placeholder="ime.prezime@fer.hr"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Lozinka (min. 8 znakova)
-            </label>
-            <input
-              type="password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2 bg-brand-600 text-white rounded-lg
-                       hover:bg-brand-700 transition-colors disabled:opacity-50"
-          >
-            {loading ? "Registracija..." : "Registriraj se"}
-          </button>
-        </form>
-
-        <p className="text-center text-sm text-gray-500">
+    <AuthShell
+      subtitle="Registriraj se"
+      footer={
+        <>
           Već imaš račun?{" "}
-          <a href="/login" className="text-brand-600 hover:underline">
+          <Link href="/login" className="text-brand hover:underline">
             Prijavi se
-          </a>
-        </p>
-      </div>
-    </div>
+          </Link>
+        </>
+      }
+    >
+      <Alert tone="error">{error}</Alert>
+      <Alert tone="success">{success}</Alert>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          label="Ime i prezime"
+          type="text"
+          required
+          autoComplete="name"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+        />
+        <Input
+          label="Email"
+          type="email"
+          required
+          autoComplete="email"
+          placeholder="ime.prezime@fer.hr"
+          hint={`Dozvoljeno: ${ALLOWED_EMAIL_DOMAINS.join(", ")}`}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <Input
+          label="Lozinka"
+          type="password"
+          required
+          minLength={8}
+          autoComplete="new-password"
+          hint="Najmanje 8 znakova."
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <Button type="submit" fullWidth disabled={loading}>
+          {loading ? "Registracija…" : "Registriraj se"}
+        </Button>
+      </form>
+
+      <p className="text-center text-sm text-fg-muted">
+        Već si dobio/la kod?{" "}
+        <Link href="/verify" className="text-brand hover:underline">
+          Verificiraj email
+        </Link>
+      </p>
+    </AuthShell>
   );
 }

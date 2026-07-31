@@ -100,8 +100,5 @@ export const ACTIVITY_STATUS_LABELS: Record<ActivityStatus, string> = {
   rejected: "Odbijeno",
 };
 
-export const ACTIVITY_STATUS_COLORS: Record<ActivityStatus, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  approved: "bg-green-100 text-green-800",
-  rejected: "bg-red-100 text-red-800",
-};
+// Status colours live with the component that renders them:
+// see `StatusBadge` in src/components/ui/Badge.tsx.
