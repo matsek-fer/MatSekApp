@@ -5,6 +5,7 @@ import ContentPanel from "@/components/landing/ContentPanel";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import Logo from "@/components/ui/Logo";
 import { ButtonLink } from "@/components/ui/Button";
+import { randomSeed } from "@/lib/ascii-tree";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +47,8 @@ export default async function HomePage() {
         </div>
       </div>
 
-      <ContentPanel />
+      {/* Seeded here so the server render and hydration agree on the first tree. */}
+      <ContentPanel initialSeed={randomSeed()} />
 
       <Link
         href="/calendar"
