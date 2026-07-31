@@ -48,43 +48,33 @@ fi
 # ── 3. Key material anywhere in the staged content ─────────────────────────
 # Supabase keys are JWTs; the base64 payload carries the role verbatim.
 #   InNlcnZpY2Vfcm9sZSI = "service_role"      ImFub24i = "anon"
+#
+# Scanned with `grep -a` over a pipe rather than a shell variable: command
+# substitution strips null bytes and would warn on every staged binary.
+scan() { git show ":$1" 2>/dev/null | grep -qa "$2"; }
+
 for file in $staged; do
   # This script necessarily contains the patterns it looks for.
   case "$file" in .githooks/*) continue ;; esac
 
-  git show ":$file" 2>/dev/null > /dev/null || continue
-  blob=$(git show ":$file" 2>/dev/null)
-
-  case "$blob" in
-    *InNlcnZpY2Vfcm9sZSI*)
-      fail "SUPABASE SERVICE_ROLE KEY found in: $file
+  if scan "$file" 'InNlcnZpY2Vfcm9sZSI'; then
+    fail "SUPABASE SERVICE_ROLE KEY found in: $file
 
   This key bypasses Row Level Security — it grants full read/write on
   every table. It must never reach the repo, and if it already has,
   rotate it in the Supabase dashboard immediately."
-      ;;
-  esac
+  fi
 
-  case "$blob" in
-    *ImFub24i*)
-      fail "Supabase anon key found in: $file
+  if scan "$file" 'ImFub24i'; then
+    fail "Supabase anon key found in: $file
 
   The anon key is public by design (it ships to the browser), but it
   should still come from the environment rather than be committed."
-      ;;
-  esac
-done
+  fi
 
-# ── 4. Private keys ────────────────────────────────────────────────────────
-for file in $staged; do
-  case "$file" in .githooks/*) continue ;; esac
-
-  blob=$(git show ":$file" 2>/dev/null)
-  case "$blob" in
-    *"BEGIN RSA PRIVATE KEY"*|*"BEGIN OPENSSH PRIVATE KEY"*|*"BEGIN PRIVATE KEY"*)
-      fail "Private key material found in: $file"
-      ;;
-  esac
+  if scan "$file" 'BEGIN \(RSA \|OPENSSH \|EC \)\?PRIVATE KEY'; then
+    fail "Private key material found in: $file"
+  fi
 done
 
 exit 0
