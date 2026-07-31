@@ -191,47 +191,52 @@ type Layer = (typeof LAYER)[keyof typeof LAYER];
 class Grid {
   readonly cells: string[];
   readonly layers: number[];
+  /**
+   * Simulation time at which each cell first appeared. Keeping it lets the
+   * finished tree be replayed as growth instead of only drawn complete.
+   */
+  readonly times: number[];
 
   constructor(readonly cols: number, readonly rows: number) {
     this.cells = new Array(cols * rows).fill(" ");
     this.layers = new Array(cols * rows).fill(0);
+    this.times = new Array(cols * rows).fill(Infinity);
   }
 
-  put(x: number, y: number, ch: string, layer: Layer) {
+  put(x: number, y: number, ch: string, layer: Layer, time: number) {
     const cx = Math.round(x);
     const cy = Math.round(y);
     if (cx < 0 || cy < 0 || cx >= this.cols || cy >= this.rows) return;
     const i = cy * this.cols + cx;
+
+    // Earliest appearance wins, so a cell never blinks back out when a later
+    // branch happens to cross it.
+    if (time < this.times[i]) this.times[i] = time;
+
     if (this.layers[i] > layer) return;
     this.cells[i] = ch;
     this.layers[i] = layer;
   }
 
-  /** Rows trimmed to the tree's bounding box, so short trees are not padded. */
-  toLines(): string[] {
-    const lines: string[] = [];
-    for (let y = 0; y < this.rows; y++) {
-      lines.push(this.cells.slice(y * this.cols, (y + 1) * this.cols).join(""));
-    }
-
-    let top = 0;
-    while (top < lines.length - 1 && lines[top].trim() === "") top++;
-    let bottom = lines.length - 1;
-    while (bottom > top && lines[bottom].trim() === "") bottom--;
-
-    const visible = lines.slice(top, bottom + 1);
-
+  /** Tight box around everything drawn — frames must not drift as it grows. */
+  bounds(): Bounds {
+    let top = this.rows;
+    let bottom = -1;
     let left = this.cols;
-    let right = 0;
-    for (const line of visible) {
-      const a = line.search(/\S/);
-      if (a === -1) continue;
-      left = Math.min(left, a);
-      right = Math.max(right, line.trimEnd().length);
-    }
-    if (left > right) return [""];
+    let right = -1;
 
-    return visible.map((l) => l.slice(left, right).trimEnd());
+    for (let y = 0; y < this.rows; y++) {
+      for (let x = 0; x < this.cols; x++) {
+        if (this.cells[y * this.cols + x] === " ") continue;
+        if (y < top) top = y;
+        if (y > bottom) bottom = y;
+        if (x < left) left = x;
+        if (x > right) right = x;
+      }
+    }
+
+    if (bottom < 0) return { top: 0, bottom: 0, left: 0, right: 0 };
+    return { top, bottom, left, right };
   }
 }
 
@@ -276,7 +281,9 @@ function stroke(
   ch: string,
   layer: Layer,
   width: number,
-  wideChar: string
+  wideChar: string,
+  timeFrom: number,
+  timeTo: number
 ) {
   const span = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
   const steps = Math.max(1, Math.ceil(span));
@@ -285,9 +292,11 @@ function stroke(
     const t = i / steps;
     const x = x0 + (x1 - x0) * t;
     const y = y0 + (y1 - y0) * t;
-    grid.put(x, y, ch, layer);
-    if (width >= 2) grid.put(x - 1, y, wideChar, layer);
-    if (width >= 3) grid.put(x + 1, y, wideChar, layer);
+    // Interpolated so a single growth step still extends smoothly cell by cell.
+    const time = timeFrom + (timeTo - timeFrom) * t;
+    grid.put(x, y, ch, layer, time);
+    if (width >= 2) grid.put(x - 1, y, wideChar, layer, time);
+    if (width >= 3) grid.put(x + 1, y, wideChar, layer, time);
   }
 }
 
@@ -300,6 +309,8 @@ interface Shoot {
   length: number;
   thickness: number;
   depth: number;
+  /** Simulation time at which this shoot starts extending. */
+  t0: number;
   /** A side shoot: it leafs out at its tip and never forks or branches again. */
   terminal?: boolean;
 }
@@ -322,13 +333,50 @@ const MAX_SHOOTS = 260;
 /** Soft ceiling on canopy density — past this, shoots stop forking. */
 const SOFT_CAP = 52;
 
+interface Bounds {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
 export interface AsciiTree {
-  lines: string[];
   seed: number;
   species: string;
+  cols: number;
+  rows: number;
+  /** Flat grid of characters, row-major. */
+  cells: string[];
+  /** Per-cell appearance time, aligned with `cells`. */
+  times: number[];
+  bounds: Bounds;
+  /** Simulation time at which the last cell appears. */
+  duration: number;
   width: number;
   height: number;
   branches: number;
+}
+
+/**
+ * Renders the tree as it stood at simulation time `upTo`.
+ *
+ * Always crops to the finished tree's bounding box, so a growing tree stays
+ * anchored instead of shifting under itself frame by frame.
+ */
+export function renderTree(tree: AsciiTree, upTo = Infinity): string[] {
+  const { cols, cells, times, bounds } = tree;
+  const lines: string[] = [];
+
+  for (let y = bounds.top; y <= bounds.bottom; y++) {
+    let line = "";
+    for (let x = bounds.left; x <= bounds.right; x++) {
+      const i = y * cols + x;
+      line += times[i] <= upTo ? cells[i] : " ";
+    }
+    lines.push(line.trimEnd());
+  }
+
+  return lines;
 }
 
 export interface TreeOptions {
@@ -368,8 +416,13 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
       length: range(rng, ...species.trunkLength),
       thickness: range(rng, ...species.trunkThickness),
       depth: 0,
+      t0: 0,
     },
   ];
+
+  // Breadth-first, so siblings extend during the same span of simulation time
+  // — branches grow alongside each other rather than one subtree at a time.
+  let duration = 0;
 
   while (queue.length > 0 && branches < MAX_SHOOTS) {
     const shoot = queue.shift()!;
@@ -404,7 +457,12 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
       const t = shoot.thickness * (1 - 0.3 * (i / steps));
       const width = t >= 3.6 ? 3 : t >= 2.3 ? 2 : 1;
       const ch = width > 1 ? species.trunkChar : branchChar(nx - x, ny - y);
-      stroke(grid, x, y, nx, ny, ch, layer, width, species.trunkChar);
+
+      // One unit of simulation time per growth step.
+      const tFrom = shoot.t0 + i;
+      const tTo = shoot.t0 + i + 1;
+      stroke(grid, x, y, nx, ny, ch, layer, width, species.trunkChar, tFrom, tTo);
+      if (tTo > duration) duration = tTo;
 
       x = nx;
       y = ny;
@@ -432,6 +490,8 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
           length: range(rng, 1.5, 2.5) + taper * 4,
           thickness: shoot.thickness * range(rng, 0.3, 0.45),
           depth: shoot.depth + 1,
+          // Starts where and when the trunk reached this point.
+          t0: shoot.t0 + i + 1,
           terminal: true,
         });
       }
@@ -457,15 +517,22 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
 
     if (isTip) {
       const count = Math.round(p.leafDensity);
+      const tipTime = shoot.t0 + steps;
+
       for (let i = 0; i < count; i++) {
         const a = rng() * Math.PI * 2;
         const r = Math.sqrt(rng()); // sqrt keeps the cluster evenly filled
+        // Staggered so foliage unfurls after its twig arrives rather than
+        // popping into place all at once.
+        const time = tipTime + 1 + r * 2 + i * 0.12;
         grid.put(
           x + Math.cos(a) * r * p.leafSpread * X_SCALE,
           y + Math.sin(a) * r * p.leafSpread * 0.55,
           pick(rng, species.leaves),
-          LAYER.leaf
+          LAYER.leaf,
+          time
         );
+        if (time > duration) duration = time;
       }
       continue;
     }
@@ -491,18 +558,25 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
         length: shoot.length * p.lengthDecay * range(rng, 0.82, 1.18),
         thickness: shoot.thickness * range(rng, 0.58, 0.72),
         depth: shoot.depth + 1,
+        // Children pick up exactly where the parent stopped.
+        t0: shoot.t0 + steps,
       });
     }
   }
 
-  const lines = grid.toLines();
+  const bounds = grid.bounds();
 
   return {
-    lines,
     seed,
     species: species.label,
-    width: Math.max(...lines.map((l) => l.length), 0),
-    height: lines.length,
+    cols,
+    rows,
+    cells: grid.cells,
+    times: grid.times,
+    bounds,
+    duration,
+    width: bounds.right - bounds.left + 1,
+    height: bounds.bottom - bounds.top + 1,
     branches,
   };
 }

@@ -1,9 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { generateTree, randomSeed } from "@/lib/ascii-tree";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { generateTree, randomSeed, renderTree } from "@/lib/ascii-tree";
 
-const REGENERATE_MS = 5000;
+/** How long a tree takes to draw itself, and how long it stands once grown. */
+const GROW_MS = 2600;
+const HOLD_MS = 2400;
+/** ~30fps: fast enough to read as growth, cheap enough not to thrash React. */
+const FRAME_MS = 33;
 
 export default function ContentPanel({
   /**
@@ -17,17 +21,72 @@ export default function ContentPanel({
   const [seed, setSeed] = useState(initialSeed);
   const [paused, setPaused] = useState(false);
 
+  // 0 = bare ground, 1 = fully grown. Starts empty so the server markup and
+  // the first client frame agree, and the tree grows in rather than appearing
+  // whole and then restarting.
+  const [growth, setGrowth] = useState(0);
+  const growthRef = useRef(0);
+
   const tree = useMemo(() => generateTree(seed), [seed]);
+  const lines = useMemo(
+    () => renderTree(tree, growth >= 1 ? Infinity : tree.duration * growth),
+    [tree, growth]
+  );
 
-  const regenerate = useCallback(() => setSeed(randomSeed()), []);
+  const advance = useCallback((value: number) => {
+    growthRef.current = value;
+    setGrowth(value);
+  }, []);
 
-  // One timeout per tree. The countdown bar is a CSS animation keyed to the
-  // seed, so nothing re-renders between trees.
+  const plant = useCallback(
+    (nextSeed: number) => {
+      setSeed(nextSeed);
+      advance(0);
+    },
+    [advance]
+  );
+
+  const reducedMotion = useRef(false);
   useEffect(() => {
-    if (paused) return;
-    const id = setTimeout(regenerate, REGENERATE_MS);
+    reducedMotion.current = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    if (reducedMotion.current) advance(1);
+  }, [advance]);
+
+  // Draw the tree from the ground up.
+  useEffect(() => {
+    if (paused || growthRef.current >= 1) return;
+    if (reducedMotion.current) {
+      advance(1);
+      return;
+    }
+
+    const startedAt = performance.now();
+    const from = growthRef.current;
+
+    const id = setInterval(() => {
+      const next = Math.min(
+        1,
+        from + (performance.now() - startedAt) / GROW_MS
+      );
+      advance(next);
+      if (next >= 1) clearInterval(id);
+    }, FRAME_MS);
+
+    return () => clearInterval(id);
+  }, [seed, paused, advance]);
+
+  // Let the finished tree stand for a beat, then plant the next one.
+  const grown = growth >= 1;
+  useEffect(() => {
+    if (paused || !grown) return;
+    // With motion reduced there is no growth phase, so the tree holds for the
+    // whole cycle instead of cutting it short.
+    const hold = reducedMotion.current ? GROW_MS + HOLD_MS : HOLD_MS;
+    const id = setTimeout(() => plant(randomSeed()), hold);
     return () => clearTimeout(id);
-  }, [seed, paused, regenerate]);
+  }, [seed, grown, paused, plant]);
 
   return (
     <section
@@ -51,13 +110,13 @@ export default function ContentPanel({
           <span className="text-fg-subtle">seed</span>{" "}
           <span className="select-all font-medium text-fg">{seed}</span>
           <span className="mx-2 text-fg-subtle">·</span>
-          <span className="text-fg-muted">{tree.species}</span>
+          <span>{tree.species}</span>
         </p>
 
         <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
-            onClick={regenerate}
+            onClick={() => plant(randomSeed())}
             className="rounded-lg p-1.5 text-fg-muted transition-colors
                        hover:bg-surface-hover hover:text-fg"
             aria-label="Generiraj novo stablo"
@@ -79,12 +138,14 @@ export default function ContentPanel({
         </div>
       </div>
 
-      {/* Countdown to the next tree. `key` restarts the animation each seed. */}
+      {/* Growth progress */}
       <div className="h-0.5 w-full bg-border" aria-hidden="true">
         <div
-          key={seed}
-          className="h-full w-0 animate-countdown bg-brand/60"
-          style={{ animationPlayState: paused ? "paused" : "running" }}
+          className="h-full bg-brand/60"
+          style={{
+            width: `${growth * 100}%`,
+            transition: growth === 0 ? "none" : `width ${FRAME_MS}ms linear`,
+          }}
         />
       </div>
 
@@ -96,8 +157,19 @@ export default function ContentPanel({
                      text-[9px] leading-[1.15] text-emerald-600
                      dark:text-emerald-400 sm:text-xs sm:leading-tight"
         >
-          {tree.lines.join("\n")}
+          {lines.join("\n")}
         </pre>
+
+        {/* Growth needs JavaScript; without it, show the finished tree. */}
+        <noscript>
+          <pre
+            className="select-none whitespace-pre text-center font-mono
+                       text-[9px] leading-[1.15] text-emerald-600
+                       dark:text-emerald-400 sm:text-xs sm:leading-tight"
+          >
+            {renderTree(tree).join("\n")}
+          </pre>
+        </noscript>
       </div>
     </section>
   );
