@@ -61,6 +61,21 @@ interface Species {
    * Zero for species whose structure comes entirely from forking.
    */
   laterals: number;
+  /** Extra length a side shoot gains at the base, tapering to none at the tip. */
+  lateralLength: number;
+  /** Emit side shoots in mirrored pairs — the giveaway shape of a conifer. */
+  symmetricLaterals?: boolean;
+  /**
+   * How far a side shoot points from straight up. Past PI/2 it slopes
+   * downward, which is what draws a conifer's outline as a cone rather than
+   * an upturned fan.
+   */
+  lateralAngle: [number, number];
+  /** Deepest branch that still puts out side shoots. */
+  lateralDepth: number;
+  /** Shallowest branch that puts them out — keeps a willow's strands on the
+   * outer limbs instead of hanging them straight off the trunk. */
+  lateralMinDepth?: number;
   /** Character used once a branch is thick enough to read as a trunk. */
   trunkChar: string;
 }
@@ -83,6 +98,9 @@ const SPECIES: readonly Species[] = [
     leafDensity: [7, 11],
     leafSpread: [2.2, 3.0],
     laterals: 1.5,
+    lateralLength: 3,
+    lateralAngle: [0.7, 1.0],
+    lateralDepth: 1,
     trunkChar: "#",
   },
   {
@@ -92,8 +110,8 @@ const SPECIES: readonly Species[] = [
     trunkThickness: [2.4, 3.0],
     maxDepth: [4, 5],
     children: [2, 2],
-    spread: [0.34, 0.5],
-    maxAngle: 1.0,
+    spread: [0.4, 0.56],
+    maxAngle: 1.12,
     gravity: [-0.02, 0.008],
     hardness: [3.5, 5],
     temperature: [0.06, 0.13],
@@ -101,45 +119,33 @@ const SPECIES: readonly Species[] = [
     leaves: ["'", "`", "*", "."],
     leafDensity: [5, 8],
     leafSpread: [1.6, 2.4],
-    laterals: 2,
-    trunkChar: "|",
-  },
-  {
-    id: "willow",
-    label: "Vrba",
-    trunkLength: [5, 7],
-    trunkThickness: [2.8, 3.6],
-    maxDepth: [4, 5],
-    children: [2, 2],
-    spread: [0.45, 0.7],
-    maxAngle: 2.2,
-    gravity: [0.06, 0.11],
-    hardness: [1.1, 1.8],
-    temperature: [0.08, 0.16],
-    lengthDecay: [0.7, 0.8],
-    leaves: [",", ".", "'", ":"],
-    leafDensity: [6, 10],
-    leafSpread: [1.6, 2.4],
-    laterals: 2,
+    laterals: 1.5,
+    lateralLength: 3,
+    lateralAngle: [0.7, 1.0],
+    lateralDepth: 1,
     trunkChar: "|",
   },
   {
     id: "conifer",
     label: "Crnogorica",
-    trunkLength: [11, 14],
-    trunkThickness: [2.4, 3.0],
-    maxDepth: [1, 2],
+    trunkLength: [13, 16],
+    trunkThickness: [2.2, 2.8],
+    maxDepth: [0, 0],
     children: [2, 2],
     spread: [0.5, 0.7],
-    maxAngle: 1.3,
+    maxAngle: 2.0,
     gravity: [0.05, 0.09],
     hardness: [2.5, 3.5],
-    temperature: [0.04, 0.09],
+    temperature: [0.02, 0.05],
     lengthDecay: [0.48, 0.58],
     leaves: ["^", "*", "'"],
-    leafDensity: [4, 7],
-    leafSpread: [1.2, 1.9],
-    laterals: 16,
+    leafDensity: [3, 5],
+    leafSpread: [0.9, 1.4],
+    laterals: 15,
+    lateralLength: 6,
+    lateralAngle: [1.72, 1.95],
+    lateralDepth: 0,
+    symmetricLaterals: true,
     trunkChar: "|",
   },
   {
@@ -159,6 +165,9 @@ const SPECIES: readonly Species[] = [
     leafDensity: [7, 11],
     leafSpread: [1.9, 2.7],
     laterals: 1,
+    lateralLength: 2.5,
+    lateralAngle: [0.7, 1.0],
+    lateralDepth: 1,
     trunkChar: "#",
   },
   {
@@ -169,7 +178,7 @@ const SPECIES: readonly Species[] = [
     maxDepth: [3, 4],
     children: [2, 3],
     spread: [0.6, 0.9],
-    maxAngle: 1.5,
+    maxAngle: 1.4,
     gravity: [0.0, 0.03],
     hardness: [1.4, 2.2],
     temperature: [0.16, 0.3],
@@ -178,6 +187,9 @@ const SPECIES: readonly Species[] = [
     leafDensity: [6, 10],
     leafSpread: [1.6, 2.4],
     laterals: 0,
+    lateralLength: 2,
+    lateralAngle: [0.7, 1.0],
+    lateralDepth: 1,
     trunkChar: "|",
   },
 ];
@@ -385,12 +397,16 @@ export interface TreeOptions {
 }
 
 export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree {
-  const cols = options.cols ?? 68;
-  const rows = options.rows ?? 26;
+  const cols = options.cols ?? 110;
+  const rows = options.rows ?? 34;
 
   const rng = mulberry32(seed);
   const species = pick(rng, SPECIES);
   const grid = new Grid(cols, rows);
+
+  // Species dimensions are authored against a 26-row canvas; scale them so a
+  // taller panel grows a bigger tree rather than the same tree with more air.
+  const scale = rows / 26;
 
   const p: Params = {
     maxDepth: Math.round(range(rng, ...species.maxDepth)),
@@ -401,7 +417,7 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
     temperature: range(rng, ...species.temperature),
     lengthDecay: range(rng, ...species.lengthDecay),
     leafDensity: range(rng, ...species.leafDensity),
-    leafSpread: range(rng, ...species.leafSpread),
+    leafSpread: range(rng, ...species.leafSpread) * scale,
   };
 
   // A slight lean keeps trees from all looking like the same mirror image.
@@ -413,7 +429,7 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
       x: cols / 2,
       y: rows - 1,
       angle: -Math.PI / 2 + lean,
-      length: range(rng, ...species.trunkLength),
+      length: range(rng, ...species.trunkLength) * scale,
       thickness: range(rng, ...species.trunkThickness),
       depth: 0,
       t0: 0,
@@ -447,7 +463,10 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
 
       // Directional instability — thin branches wander, thick ones hold course.
       angle += (rng() - 0.5) * (p.temperature / Math.max(0.45, shoot.thickness));
-      angle = clampToSky(angle, species.maxAngle);
+      // A side shoot keeps the angle it was given; only the forking skeleton is
+      // held toward the sky. That is what lets a willow hang strands straight
+      // down while its branches still reach upward.
+      if (!shoot.terminal) angle = clampToSky(angle, species.maxAngle);
 
       const nx = x + Math.cos(angle) * X_SCALE;
       const ny = y + Math.sin(angle);
@@ -472,28 +491,37 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
       if (
         species.laterals > 0 &&
         !shoot.terminal &&
-        shoot.depth <= 1 &&
-        i > steps * 0.15 &&
+        shoot.depth <= species.lateralDepth &&
+        shoot.depth >= (species.lateralMinDepth ?? 0) &&
+        i > steps * 0.12 &&
         i < steps - 1 &&
         queue.length + branches < SOFT_CAP &&
         rng() < species.laterals / steps
       ) {
-        const side = rng() < 0.5 ? -1 : 1;
         // Longest near the base, shortest near the tip — that taper is what
         // gives a conifer its cone rather than a column of even stubs.
         const taper = 1 - i / steps;
+        const length =
+          (range(rng, 1.2, 2) + taper * species.lateralLength) * scale;
 
-        queue.push({
-          x,
-          y,
-          angle: clampToSky(UP + side * range(rng, 0.85, 1.2), species.maxAngle),
-          length: range(rng, 1.5, 2.5) + taper * 4,
-          thickness: shoot.thickness * range(rng, 0.3, 0.45),
-          depth: shoot.depth + 1,
-          // Starts where and when the trunk reached this point.
-          t0: shoot.t0 + i + 1,
-          terminal: true,
-        });
+        // A conifer's whorls come off both sides at the same height; the
+        // symmetry is most of what makes the silhouette read as a conifer.
+        // Broadleaves put out one shoot at a time instead.
+        const sides = species.symmetricLaterals ? [-1, 1] : [rng() < 0.5 ? -1 : 1];
+
+        for (const side of sides) {
+          queue.push({
+            x,
+            y,
+            angle: UP + side * range(rng, ...species.lateralAngle),
+            length,
+            thickness: shoot.thickness * range(rng, 0.3, 0.45),
+            depth: shoot.depth + 1,
+            // Starts where and when the trunk reached this point.
+            t0: shoot.t0 + i + 1,
+            terminal: true,
+          });
+        }
       }
 
       // Stop a branch that has wandered off the canvas rather than letting it
