@@ -1,5 +1,6 @@
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
+import { pickActivityFields } from "@/lib/validation";
 import type { ApiResponse, Activity } from "@/types";
 
 /**
@@ -111,9 +112,20 @@ export async function PATCH(
       );
     }
 
+    // Never trust the body wholesale — `status`, `reviewed_by`, `admin_comment`
+    // and friends are set by the approve/deny routes, not by the client.
+    const patch = pickActivityFields(body);
+
+    if (Object.keys(patch).length === 0) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: "Nema polja za ažuriranje." },
+        { status: 400 }
+      );
+    }
+
     const { data: updated, error } = await supabase
       .from("activities")
-      .update(body)
+      .update(patch)
       .eq("id", id)
       .select()
       .single();

@@ -1,5 +1,6 @@
-import { createClient as createServerClient, createAdminClient } from "@/lib/supabase/server";
+import { createClient as createServerClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
+import { isActivityStatus, pickActivityFields } from "@/lib/validation";
 import type { ApiResponse, Activity } from "@/types";
 
 /**
@@ -17,8 +18,18 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createServerClient();
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get("status") || undefined;
     const limit = Math.min(Number(searchParams.get("limit")) || 50, 200);
+
+    // `status` is interpolated into a PostgREST filter expression below, so it
+    // has to be one of the known enum values — never raw user input.
+    const rawStatus = searchParams.get("status");
+    if (rawStatus !== null && !isActivityStatus(rawStatus)) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: "Nepoznat status." },
+        { status: 400 }
+      );
+    }
+    const status = rawStatus ?? undefined;
 
     const {
       data: { session },
@@ -128,15 +139,11 @@ export async function POST(request: NextRequest) {
     const { data: activity, error } = await supabase
       .from("activities")
       .insert({
-        created_by: session.user.id,
-        title: body.title,
-        activity_type: body.activity_type,
-        start_time: body.start_time,
-        end_time: body.end_time,
-        location: body.location,
-        description: body.description,
+        ...pickActivityFields(body),
         prerequisites: body.prerequisites || "",
         target_audience: body.target_audience || "",
+        // Server-owned: a proposal always starts unreviewed.
+        created_by: session.user.id,
         status: "pending",
       })
       .select()
