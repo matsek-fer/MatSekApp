@@ -68,16 +68,10 @@ const config: Config = {
           "0%": { opacity: "0", transform: "translateY(-4px) scale(0.98)" },
           "100%": { opacity: "1", transform: "translateY(0) scale(1)" },
         },
-        countdown: {
-          "0%": { width: "0%" },
-          "100%": { width: "100%" },
-        },
       },
       animation: {
         // Dropdowns settle in place instead of sliding across the viewport.
         "fade-in-up": "fade-in-up 0.15s ease-out",
-        // Runs on the compositor, so the countdown costs no React renders.
-        countdown: "countdown 5s linear forwards",
       },
     },
   },
