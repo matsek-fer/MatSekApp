@@ -1,0 +1,90 @@
+#!/bin/sh
+#
+# Blocks commits that would leak credentials.
+#
+# Enable (once per clone):   git config core.hooksPath .githooks
+# Bypass a false positive:   git commit --no-verify
+#
+# This exists because a build output directory was committed once, which baked
+# the Supabase keys into tracked JS chunks — .gitignore alone did not catch it,
+# since the leak was inside an artifact rather than in a .env file.
+
+fail() {
+  echo ""
+  echo "  ✖ COMMIT BLOCKED — possible credential leak"
+  echo ""
+  echo "  $1"
+  echo ""
+  echo "  Fix it, then commit again."
+  echo "  If this is a false positive: git commit --no-verify"
+  echo ""
+  exit 1
+}
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$staged" ] && exit 0
+
+# ── 1. Environment files ───────────────────────────────────────────────────
+env_files=$(printf '%s\n' "$staged" \
+  | grep -E '(^|/)\.env' \
+  | grep -vE '\.(example|sample|template)$')
+if [ -n "$env_files" ]; then
+  fail "Staged environment file(s):
+$(printf '%s\n' "$env_files" | sed 's/^/      /')
+
+  These hold real credentials. Keep them untracked — the template
+  .env.local.example is the file that belongs in the repo."
+fi
+
+# ── 2. Build output (this is how the keys leaked last time) ────────────────
+build_files=$(printf '%s\n' "$staged" | grep -E '^(\.next|out|build|dist)/')
+if [ -n "$build_files" ]; then
+  fail "Staged build output:
+$(printf '%s\n' "$build_files" | head -5 | sed 's/^/      /')
+
+  Next.js inlines every NEXT_PUBLIC_* value into these bundles."
+fi
+
+# ── 3. Key material anywhere in the staged content ─────────────────────────
+# Supabase keys are JWTs; the base64 payload carries the role verbatim.
+#   InNlcnZpY2Vfcm9sZSI = "service_role"      ImFub24i = "anon"
+for file in $staged; do
+  # This script necessarily contains the patterns it looks for.
+  case "$file" in .githooks/*) continue ;; esac
+
+  git show ":$file" 2>/dev/null > /dev/null || continue
+  blob=$(git show ":$file" 2>/dev/null)
+
+  case "$blob" in
+    *InNlcnZpY2Vfcm9sZSI*)
+      fail "SUPABASE SERVICE_ROLE KEY found in: $file
+
+  This key bypasses Row Level Security — it grants full read/write on
+  every table. It must never reach the repo, and if it already has,
+  rotate it in the Supabase dashboard immediately."
+      ;;
+  esac
+
+  case "$blob" in
+    *ImFub24i*)
+      fail "Supabase anon key found in: $file
+
+  The anon key is public by design (it ships to the browser), but it
+  should still come from the environment rather than be committed."
+      ;;
+  esac
+done
+
+# ── 4. Private keys ────────────────────────────────────────────────────────
+for file in $staged; do
+  case "$file" in .githooks/*) continue ;; esac
+
+  blob=$(git show ":$file" 2>/dev/null)
+  case "$blob" in
+    *"BEGIN RSA PRIVATE KEY"*|*"BEGIN OPENSSH PRIVATE KEY"*|*"BEGIN PRIVATE KEY"*)
+      fail "Private key material found in: $file"
+      ;;
+  esac
+done
+
+exit 0
