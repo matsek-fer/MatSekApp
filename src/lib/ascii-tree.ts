@@ -73,6 +73,12 @@ interface Species {
   lateralAngle: [number, number];
   /** Deepest branch that still puts out side shoots. */
   lateralDepth: number;
+  /**
+   * Fraction along a branch before side shoots start. A willow keeps its
+   * strands on the outer half of each limb, so the curtain hangs clear of the
+   * trunk instead of piling up over it.
+   */
+  lateralStart: number;
   /** Shallowest branch that puts them out — keeps a willow's strands on the
    * outer limbs instead of hanging them straight off the trunk. */
   lateralMinDepth?: number;
@@ -101,28 +107,57 @@ const SPECIES: readonly Species[] = [
     lateralLength: 3,
     lateralAngle: [0.7, 1.0],
     lateralDepth: 1,
+    lateralStart: 0.2,
     trunkChar: "#",
   },
   {
     id: "birch",
     label: "Breza",
-    trunkLength: [8, 10],
+    trunkLength: [8, 11],
     trunkThickness: [2.4, 3.0],
-    maxDepth: [4, 5],
+    maxDepth: [5, 5],
     children: [2, 2],
-    spread: [0.4, 0.56],
+    spread: [0.42, 0.6],
     maxAngle: 1.12,
     gravity: [-0.02, 0.008],
     hardness: [3.5, 5],
     temperature: [0.06, 0.13],
-    lengthDecay: [0.58, 0.68],
+    lengthDecay: [0.52, 0.62],
     leaves: ["'", "`", "*", "."],
-    leafDensity: [5, 8],
+    leafDensity: [5, 9],
     leafSpread: [1.6, 2.4],
-    laterals: 1.5,
-    lateralLength: 3,
+    laterals: 3,
+    lateralLength: 2,
     lateralAngle: [0.7, 1.0],
     lateralDepth: 1,
+    lateralStart: 0.2,
+    trunkChar: "|",
+  },
+  {
+    id: "willow",
+    label: "Vrba",
+    // Deliberately minimal skeleton: a stout trunk and a wide fan of limbs,
+    // nothing more. The character of a willow is the curtain hanging off those
+    // limbs, and earlier versions buried it under three levels of forking.
+    trunkLength: [6, 8],
+    trunkThickness: [3.0, 3.8],
+    maxDepth: [2, 2],
+    children: [2, 2],
+    spread: [0.92, 1.15],
+    maxAngle: 1.3,
+    gravity: [0.02, 0.04],
+    hardness: [1.8, 2.6],
+    temperature: [0.03, 0.06],
+    lengthDecay: [0.95, 1.05],
+    leaves: [",", "'", ".", ":"],
+    leafDensity: [2, 3],
+    leafSpread: [0.6, 1.0],
+    laterals: 8,
+    lateralLength: 5,
+    lateralAngle: [3.06, 3.22], // straight down, give or take a few degrees
+    lateralDepth: 2,
+    lateralStart: 0.3,
+    lateralMinDepth: 1, // strands hang off the limbs, never off the trunk
     trunkChar: "|",
   },
   {
@@ -145,6 +180,7 @@ const SPECIES: readonly Species[] = [
     lateralLength: 6,
     lateralAngle: [1.72, 1.95],
     lateralDepth: 0,
+    lateralStart: 0.1,
     symmetricLaterals: true,
     trunkChar: "|",
   },
@@ -168,6 +204,7 @@ const SPECIES: readonly Species[] = [
     lateralLength: 2.5,
     lateralAngle: [0.7, 1.0],
     lateralDepth: 1,
+    lateralStart: 0.2,
     trunkChar: "#",
   },
   {
@@ -175,21 +212,22 @@ const SPECIES: readonly Species[] = [
     label: "Grm",
     trunkLength: [3, 4],
     trunkThickness: [1.8, 2.4],
-    maxDepth: [3, 4],
-    children: [2, 3],
-    spread: [0.6, 0.9],
+    maxDepth: [4, 4],
+    children: [3, 3],
+    spread: [0.7, 1.0],
     maxAngle: 1.4,
     gravity: [0.0, 0.03],
     hardness: [1.4, 2.2],
     temperature: [0.16, 0.3],
-    lengthDecay: [0.74, 0.82],
+    lengthDecay: [0.72, 0.8],
     leaves: ["*", "o", "&", "."],
-    leafDensity: [6, 10],
+    leafDensity: [7, 11],
     leafSpread: [1.6, 2.4],
     laterals: 0,
     lateralLength: 2,
     lateralAngle: [0.7, 1.0],
     lateralDepth: 1,
+    lateralStart: 0.2,
     trunkChar: "|",
   },
 ];
@@ -493,7 +531,7 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
         !shoot.terminal &&
         shoot.depth <= species.lateralDepth &&
         shoot.depth >= (species.lateralMinDepth ?? 0) &&
-        i > steps * 0.12 &&
+        i > steps * species.lateralStart &&
         i < steps - 1 &&
         queue.length + branches < SOFT_CAP &&
         rng() < species.laterals / steps
