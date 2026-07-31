@@ -66,10 +66,7 @@ export default function ContentPanel({
     const from = growthRef.current;
 
     const id = setInterval(() => {
-      const next = Math.min(
-        1,
-        from + (performance.now() - startedAt) / GROW_MS
-      );
+      const next = Math.min(1, from + (performance.now() - startedAt) / GROW_MS);
       advance(next);
       if (next >= 1) clearInterval(id);
     }, FRAME_MS);
@@ -88,74 +85,24 @@ export default function ContentPanel({
     return () => clearTimeout(id);
   }, [seed, grown, paused, plant]);
 
+  // The grid is a fixed number of characters; the glyphs scale with the
+  // viewport so the tree fills a wide screen without overflowing a narrow one.
+  const artStyle = {
+    fontSize: "clamp(5px, 1.7vw, 18px)",
+    lineHeight: 1.08,
+  } as const;
+
   return (
     <section
       aria-label="Generator ASCII stabala"
-      className="mx-4 mb-8 flex w-full max-w-3xl flex-col overflow-hidden
-                 rounded-xl border border-border bg-surface shadow-sm"
+      className="flex w-full flex-1 flex-col items-center justify-center gap-4 py-6"
     >
-      {/* Terminal title bar */}
-      <div className="flex items-center gap-2 border-b border-border bg-surface-hover px-4 py-2.5">
-        <span className="h-3 w-3 rounded-full bg-danger/70" />
-        <span className="h-3 w-3 rounded-full bg-warning/70" />
-        <span className="h-3 w-3 rounded-full bg-success/70" />
-        <span className="ml-2 font-mono text-xs text-fg-subtle">
-          matsek — ascii-tree
-        </span>
-      </div>
-
-      {/* Seed + controls */}
-      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5">
-        <p className="min-w-0 font-mono text-xs text-fg-muted sm:text-sm">
-          <span className="text-fg-subtle">seed</span>{" "}
-          <span className="select-all font-medium text-fg">{seed}</span>
-          <span className="mx-2 text-fg-subtle">·</span>
-          <span>{tree.species}</span>
-        </p>
-
-        <div className="flex shrink-0 items-center gap-1">
-          <button
-            type="button"
-            onClick={() => plant(randomSeed())}
-            className="rounded-lg p-1.5 text-fg-muted transition-colors
-                       hover:bg-surface-hover hover:text-fg"
-            aria-label="Generiraj novo stablo"
-            title="Generiraj novo stablo"
-          >
-            <RefreshIcon />
-          </button>
-          <button
-            type="button"
-            onClick={() => setPaused((v) => !v)}
-            className="rounded-lg p-1.5 text-fg-muted transition-colors
-                       hover:bg-surface-hover hover:text-fg"
-            aria-label={paused ? "Nastavi" : "Pauziraj"}
-            aria-pressed={paused}
-            title={paused ? "Nastavi" : "Pauziraj"}
-          >
-            {paused ? <PlayIcon /> : <PauseIcon />}
-          </button>
-        </div>
-      </div>
-
-      {/* Growth progress */}
-      <div className="h-0.5 w-full bg-border" aria-hidden="true">
-        <div
-          className="h-full bg-brand/60"
-          style={{
-            width: `${growth * 100}%`,
-            transition: growth === 0 ? "none" : `width ${FRAME_MS}ms linear`,
-          }}
-        />
-      </div>
-
-      {/* The tree */}
-      <div className="flex min-h-[20rem] flex-1 items-center justify-center overflow-x-auto p-4 sm:min-h-[24rem]">
+      <div className="flex min-h-[52vh] w-full items-center justify-center overflow-x-auto px-2">
         <pre
-          aria-label={`ASCII stablo, vrsta ${tree.species}, seed ${seed}`}
+          aria-label={`ASCII stablo, seed ${seed}`}
+          style={artStyle}
           className="select-none whitespace-pre text-center font-mono
-                     text-[9px] leading-[1.15] text-emerald-600
-                     dark:text-emerald-400 sm:text-xs sm:leading-tight"
+                     text-emerald-700 dark:text-emerald-400"
         >
           {lines.join("\n")}
         </pre>
@@ -163,13 +110,39 @@ export default function ContentPanel({
         {/* Growth needs JavaScript; without it, show the finished tree. */}
         <noscript>
           <pre
+            style={artStyle}
             className="select-none whitespace-pre text-center font-mono
-                       text-[9px] leading-[1.15] text-emerald-600
-                       dark:text-emerald-400 sm:text-xs sm:leading-tight"
+                       text-emerald-700 dark:text-emerald-400"
           >
             {renderTree(tree).join("\n")}
           </pre>
         </noscript>
+      </div>
+
+      <div className="flex items-center gap-2 font-mono text-xs text-fg-subtle">
+        <span>
+          seed <span className="select-all text-fg-muted">{seed}</span>
+        </span>
+
+        <button
+          type="button"
+          onClick={() => plant(randomSeed())}
+          className="rounded-lg p-1.5 transition-colors hover:bg-surface-hover hover:text-fg"
+          aria-label="Generiraj novo stablo"
+          title="Generiraj novo stablo"
+        >
+          <RefreshIcon />
+        </button>
+        <button
+          type="button"
+          onClick={() => setPaused((v) => !v)}
+          className="rounded-lg p-1.5 transition-colors hover:bg-surface-hover hover:text-fg"
+          aria-label={paused ? "Nastavi" : "Pauziraj"}
+          aria-pressed={paused}
+          title={paused ? "Nastavi" : "Pauziraj"}
+        >
+          {paused ? <PlayIcon /> : <PauseIcon />}
+        </button>
       </div>
     </section>
   );
@@ -177,8 +150,8 @@ export default function ContentPanel({
 
 const ICON = {
   xmlns: "http://www.w3.org/2000/svg",
-  width: 18,
-  height: 18,
+  width: 16,
+  height: 16,
   viewBox: "0 0 24 24",
   "aria-hidden": true,
 } as const;
