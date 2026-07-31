@@ -1,11 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { hr } from "date-fns/locale";
-import { ACTIVITY_TYPE_LABELS, ACTIVITY_STATUS_LABELS } from "@/types";
+import { ACTIVITY_TYPE_LABELS } from "@/types";
 import type { Activity } from "@/types";
+import Card from "@/components/ui/Card";
+import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
+import { Textarea } from "@/components/ui/Field";
+import { StatusBadge } from "@/components/ui/Badge";
+
+type Action = "approve" | "deny" | null;
 
 export default function AdminReviewPage({
   params,
@@ -15,159 +22,172 @@ export default function AdminReviewPage({
   const router = useRouter();
   const [activity, setActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(true);
-  const [denyComment, setDenyComment] = useState("");
-  const [actionLoading, setActionLoading] = useState("");
+  const [comment, setComment] = useState("");
+  const [pendingAction, setPendingAction] = useState<Action>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let cancelled = false;
+
     fetch(`/api/activities/${params.id}`)
       .then((r) => r.json())
       .then((json) => {
+        if (cancelled) return;
         if (json.success) setActivity(json.data);
-        else setError("Aktivnost nije pronađena.");
+        else setError(json.error || "Aktivnost nije pronađena.");
       })
-      .catch(() => setError("Greška pri učitavanju."))
-      .finally(() => setLoading(false));
+      .catch(() => !cancelled && setError("Greška pri učitavanju."))
+      .finally(() => !cancelled && setLoading(false));
+
+    return () => {
+      cancelled = true;
+    };
   }, [params.id]);
 
-  async function handleApprove() {
-    setActionLoading("approve");
-    const res = await fetch(`/api/activities/${params.id}/approve`, {
-      method: "POST",
-    });
-    const json = await res.json();
-    if (json.success) {
-      router.push("/admin");
-      router.refresh();
-    } else {
-      setError(json.error || "Greška.");
-      setActionLoading("");
-    }
-  }
+  const submit = useCallback(
+    async (action: Exclude<Action, null>, body?: unknown) => {
+      setError("");
+      setPendingAction(action);
+      try {
+        const res = await fetch(`/api/activities/${params.id}/${action}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: body ? JSON.stringify(body) : undefined,
+        });
+        const json = await res.json();
 
-  async function handleDeny() {
-    if (!denyComment.trim()) {
+        if (!json.success) {
+          setError(json.error || "Greška.");
+          setPendingAction(null);
+          return;
+        }
+
+        router.push("/admin");
+        router.refresh();
+      } catch {
+        setError("Greška u vezi. Pokušaj ponovno.");
+        setPendingAction(null);
+      }
+    },
+    [params.id, router]
+  );
+
+  function handleDeny() {
+    if (!comment.trim()) {
       setError("Unesi komentar za odbijanje.");
       return;
     }
-    setActionLoading("deny");
-    const res = await fetch(`/api/activities/${params.id}/deny`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ admin_comment: denyComment }),
-    });
-    const json = await res.json();
-    if (json.success) {
-      router.push("/admin");
-      router.refresh();
-    } else {
-      setError(json.error || "Greška.");
-      setActionLoading("");
-    }
+    submit("deny", { admin_comment: comment.trim() });
   }
 
   if (loading) {
-    return <p className="text-gray-500">Učitavanje...</p>;
+    return <p className="text-fg-muted">Učitavanje…</p>;
   }
 
   if (!activity) {
-    return <p className="text-red-500">{error || "Aktivnost nije pronađena."}</p>;
+    return <Alert tone="error">{error || "Aktivnost nije pronađena."}</Alert>;
   }
 
+  const isPending = activity.status === "pending";
+  const dateFmt = (iso: string) =>
+    format(parseISO(iso), "dd.MM.yyyy. HH:mm", { locale: hr });
+
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">
-        Pregled aktivnosti
-      </h1>
+    <div className="mx-auto max-w-3xl space-y-6">
+      <h1 className="text-2xl font-bold text-fg">Pregled aktivnosti</h1>
 
-      {error && (
-        <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">
-          {error}
-        </div>
-      )}
+      <Alert tone="error">{error}</Alert>
 
-      <div className="bg-white rounded-lg border p-6 space-y-4">
-        <h2 className="text-xl font-semibold">{activity.title}</h2>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="text-gray-500">Tip:</span>{" "}
-            {ACTIVITY_TYPE_LABELS[activity.activity_type]}
-          </div>
-          <div>
-            <span className="text-gray-500">Status:</span>{" "}
-            {ACTIVITY_STATUS_LABELS[activity.status]}
-          </div>
-          <div>
-            <span className="text-gray-500">Lokacija:</span> {activity.location}
-          </div>
-          <div>
-            <span className="text-gray-500">Početak:</span>{" "}
-            {format(parseISO(activity.start_time), "dd.MM.yyyy. HH:mm", {
-              locale: hr,
-            })}
-          </div>
-          <div>
-            <span className="text-gray-500">Kraj:</span>{" "}
-            {format(parseISO(activity.end_time), "dd.MM.yyyy. HH:mm", {
-              locale: hr,
-            })}
-          </div>
+      <Card className="space-y-5 p-6">
+        <div className="flex items-start justify-between gap-4">
+          <h2 className="text-xl font-semibold text-fg">{activity.title}</h2>
+          <StatusBadge status={activity.status} />
         </div>
+
+        <dl className="grid gap-4 text-sm sm:grid-cols-2">
+          <div>
+            <dt className="text-fg-subtle">Tip</dt>
+            <dd className="text-fg">
+              {ACTIVITY_TYPE_LABELS[activity.activity_type]}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-fg-subtle">Lokacija</dt>
+            <dd className="text-fg">{activity.location || "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-fg-subtle">Početak</dt>
+            <dd className="text-fg">{dateFmt(activity.start_time)}</dd>
+          </div>
+          <div>
+            <dt className="text-fg-subtle">Kraj</dt>
+            <dd className="text-fg">{dateFmt(activity.end_time)}</dd>
+          </div>
+        </dl>
+
         <div>
-          <h3 className="font-medium">Opis</h3>
-          <p className="text-gray-600 whitespace-pre-wrap">
+          <h3 className="font-medium text-fg">Opis</h3>
+          <p className="mt-1 whitespace-pre-wrap text-fg-muted">
             {activity.description}
           </p>
         </div>
+
         {activity.prerequisites && (
           <div>
-            <h3 className="font-medium">Preduvjeti</h3>
-            <p className="text-gray-600">{activity.prerequisites}</p>
+            <h3 className="font-medium text-fg">Preduvjeti</h3>
+            <p className="mt-1 text-fg-muted">{activity.prerequisites}</p>
           </div>
         )}
+
         {activity.target_audience && (
           <div>
-            <h3 className="font-medium">Ciljana publika</h3>
-            <p className="text-gray-600">{activity.target_audience}</p>
+            <h3 className="font-medium text-fg">Ciljana publika</h3>
+            <p className="mt-1 text-fg-muted">{activity.target_audience}</p>
           </div>
         )}
-        <p className="text-xs text-gray-400">
+
+        <p className="border-t border-border pt-4 text-xs text-fg-subtle">
           Predložio/la: {activity.creator?.full_name || activity.creator?.email}
         </p>
-      </div>
+      </Card>
 
-      {/* Actions */}
-      <div className="bg-white rounded-lg border p-6 space-y-4">
-        <h3 className="font-semibold">Administratorske akcije</h3>
+      <Card className="space-y-4 p-6">
+        <h3 className="font-semibold text-fg">Administratorske akcije</h3>
 
-        <button
-          onClick={handleApprove}
-          disabled={actionLoading === "approve" || activity.status !== "pending"}
-          className="w-full py-2 bg-green-600 text-white rounded-lg
-                     hover:bg-green-700 transition-colors disabled:opacity-50"
+        {!isPending && (
+          <Alert tone="info">
+            Ova aktivnost je već pregledana — akcije su onemogućene.
+          </Alert>
+        )}
+
+        <Button
+          variant="success"
+          fullWidth
+          onClick={() => submit("approve")}
+          disabled={!isPending || pendingAction !== null}
         >
-          {actionLoading === "approve" ? "Odobravam..." : "✅ Odobri aktivnost"}
-        </button>
+          {pendingAction === "approve" ? "Odobravam…" : "✅ Odobri aktivnost"}
+        </Button>
 
         <div className="space-y-2">
-          <textarea
-            placeholder="Komentar za odbijanje (obavezno)..."
+          <Textarea
+            label="Komentar za odbijanje"
+            hint="Obavezno — šalje se autoru mailom."
             rows={3}
-            value={denyComment}
-            onChange={(e) => setDenyComment(e.target.value)}
-            disabled={activity.status !== "pending"}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            disabled={!isPending || pendingAction !== null}
           />
-          <button
+          <Button
+            variant="danger"
+            fullWidth
             onClick={handleDeny}
-            disabled={actionLoading === "deny" || activity.status !== "pending"}
-            className="w-full py-2 bg-red-600 text-white rounded-lg
-                       hover:bg-red-700 transition-colors disabled:opacity-50"
+            disabled={!isPending || pendingAction !== null}
           >
-            {actionLoading === "deny" ? "Odbijam..." : "❌ Odbij aktivnost"}
-          </button>
+            {pendingAction === "deny" ? "Odbijam…" : "❌ Odbij aktivnost"}
+          </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

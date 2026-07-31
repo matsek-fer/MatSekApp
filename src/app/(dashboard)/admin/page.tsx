@@ -1,15 +1,18 @@
-import { createClient as createServerClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { hr } from "date-fns/locale";
-import type { ActivityType } from "@/types";
+import { createClient as createServerClient } from "@/lib/supabase/server";
 import { ACTIVITY_TYPE_LABELS } from "@/types";
+import type { Activity } from "@/types";
+import Card, { CardHeader, CardTitle } from "@/components/ui/Card";
+import { ButtonLink } from "@/components/ui/Button";
+
+export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
   const supabase = createServerClient();
 
-  // Verify admin
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -23,65 +26,61 @@ export default async function AdminDashboardPage() {
 
   if (profile?.role !== "admin") redirect("/calendar");
 
-  // Fetch pending activities
-  const { data: pending } = await supabase
+  const { data } = await supabase
     .from("activities")
     .select("*, creator:profiles!created_by(id, email, full_name)")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
+  const pending = (data ?? []) as Activity[];
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Admin panel</h1>
+      <h1 className="text-2xl font-bold text-fg">Admin panel</h1>
 
-      <div className="bg-white rounded-lg border">
-        <div className="p-4 border-b">
-          <h2 className="font-semibold text-gray-900">
-            Aktivnosti na čekanju ({pending?.length || 0})
-          </h2>
-        </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Aktivnosti na čekanju ({pending.length})</CardTitle>
+        </CardHeader>
 
-        {!pending || pending.length === 0 ? (
-          <p className="p-4 text-gray-500">Nema aktivnosti na čekanju.</p>
+        {pending.length === 0 ? (
+          <p className="p-6 text-center text-fg-muted">
+            Nema aktivnosti na čekanju.
+          </p>
         ) : (
-          <div className="divide-y">
+          <ul>
             {pending.map((a) => (
-              <div
+              <li
                 key={a.id}
-                className="p-4 flex justify-between items-start gap-4"
+                className="flex flex-wrap items-start justify-between gap-4
+                           border-b border-border p-4 last:border-b-0"
               >
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <Link
                     href={`/activities/${a.id}`}
-                    className="font-medium text-gray-900 hover:text-brand-600"
+                    className="font-medium text-fg hover:text-brand"
                   >
                     {a.title}
                   </Link>
-                  <p className="text-sm text-gray-500">
-                    {ACTIVITY_TYPE_LABELS[a.activity_type as ActivityType]} •{" "}
+                  <p className="mt-0.5 text-sm text-fg-muted">
+                    {ACTIVITY_TYPE_LABELS[a.activity_type]} ·{" "}
                     {format(parseISO(a.start_time), "dd.MM.yyyy. HH:mm", {
                       locale: hr,
-                    })}{" "}
-                    • {a.location}
+                    })}
+                    {a.location && ` · ${a.location}`}
                   </p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-fg-subtle">
                     Predložio/la: {a.creator?.full_name || a.creator?.email}
                   </p>
                 </div>
-                <div className="flex gap-2 shrink-0">
-                  <Link
-                    href={`/admin/review/${a.id}`}
-                    className="px-3 py-1 text-sm bg-brand-600 text-white rounded-lg
-                               hover:bg-brand-700 transition-colors"
-                  >
-                    Pregledaj
-                  </Link>
-                </div>
-              </div>
+                <ButtonLink href={`/admin/review/${a.id}`} size="sm">
+                  Pregledaj
+                </ButtonLink>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

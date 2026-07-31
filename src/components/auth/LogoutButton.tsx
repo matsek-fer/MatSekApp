@@ -1,20 +1,21 @@
 "use client";
 
 import { useLogout } from "@/hooks/useLogout";
+import Button from "@/components/ui/Button";
 
 export default function LogoutButton() {
   const { logout, loading } = useLogout();
 
   return (
-    <button
+    <Button
+      variant="ghost"
+      size="sm"
       onClick={logout}
       disabled={loading}
-      className="px-3 py-2 text-sm text-gray-500 hover:text-red-600
-                 hover:bg-red-50 rounded-lg transition-colors
-                 disabled:opacity-50 disabled:cursor-not-allowed"
+      className="hover:bg-danger/10 hover:text-danger"
       title="Odjavi se"
     >
-      {loading ? "Odjava..." : "Odjavi se"}
-    </button>
+      {loading ? "Odjava…" : "Odjavi se"}
+    </Button>
   );
 }

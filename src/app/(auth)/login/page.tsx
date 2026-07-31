@@ -1,9 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
+import AuthShell from "@/components/auth/AuthShell";
+import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
+import { Input } from "@/components/ui/Field";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,76 +33,49 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/calendar");
+    // Middleware parks the original destination on `?next=` when it bounces an
+    // unauthenticated request here. Read it off the URL rather than with
+    // useSearchParams so this page can stay statically rendered.
+    const next = new URLSearchParams(window.location.search).get("next");
+    router.push(next?.startsWith("/") ? next : "/calendar");
     router.refresh();
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="max-w-md w-full bg-white rounded-lg border p-8 space-y-6">
-        <div className="text-center">
-          <Image
-            src="/logo.png"
-            alt="MATSEK — Matematička sekcija"
-            width={240}
-            height={90}
-            className="h-auto w-60 mx-auto mb-3"
-            priority
-            unoptimized
-          />
-          <p className="text-gray-500 mt-1">Prijavi se</p>
-        </div>
-
-        {error && (
-          <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email (@fer.hr)
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2
-                         focus:ring-2 focus:ring-brand-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Lozinka
-            </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2
-                         focus:ring-2 focus:ring-brand-500"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2 bg-brand-600 text-white rounded-lg
-                       hover:bg-brand-700 transition-colors disabled:opacity-50"
-          >
-            {loading ? "Prijava..." : "Prijavi se"}
-          </button>
-        </form>
-
-        <p className="text-center text-sm text-gray-500">
+    <AuthShell
+      subtitle="Prijavi se"
+      footer={
+        <>
           Nemaš račun?{" "}
-          <a href="/register" className="text-brand-600 hover:underline">
+          <Link href="/register" className="text-brand hover:underline">
             Registriraj se
-          </a>
-        </p>
-      </div>
-    </div>
+          </Link>
+        </>
+      }
+    >
+      <Alert tone="error">{error}</Alert>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          label="Email (@fer.hr)"
+          type="email"
+          required
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <Input
+          label="Lozinka"
+          type="password"
+          required
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <Button type="submit" fullWidth disabled={loading}>
+          {loading ? "Prijava…" : "Prijavi se"}
+        </Button>
+      </form>
+    </AuthShell>
   );
 }
