@@ -2,32 +2,105 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   Design tokens
+
+   Every colour the UI uses is declared here once, as space-separated RGB
+   channels so Tailwind can apply opacity modifiers (`bg-surface/50`).
+   Components reference the semantic name (`bg-surface`, `border-border`),
+   never a raw hex — so retheming happens in this file alone.
+   ========================================================================== */
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 228 75% 59%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --border: 214.3 31.8% 91.4%;
-    --ring: 228 75% 59%;
+    /* Surfaces */
+    --bg: 249 250 251; /* page background */
+    --surface: 255 255 255; /* cards, navbar, dropdowns */
+    --surface-raised: 255 255 255; /* inputs, nested panels */
+    --surface-hover: 243 244 246; /* row / item hover */
+
+    /* Text */
+    --fg: 17 24 39; /* primary copy */
+    --fg-muted: 107 114 128; /* labels, metadata */
+    --fg-subtle: 156 163 175; /* timestamps, placeholders */
+
+    /* Lines */
+    --border: 229 231 235;
+    --border-strong: 209 213 219;
+
+    /* Brand + focus */
+    --brand: 76 110 245; /* brand-600 */
+    --brand-fg: 255 255 255;
+    --ring: 92 124 250; /* brand-500 */
+
+    /* Status */
+    --success: 22 163 74;
+    --success-bg: 220 252 231;
+    --success-fg: 22 101 52;
+    --warning: 202 138 4;
+    --warning-bg: 254 249 195;
+    --warning-fg: 133 77 14;
+    --danger: 220 38 38;
+    --danger-bg: 254 226 226;
+    --danger-fg: 153 27 27;
+
+    /* Voronoi navbar hover mesh */
+    --mesh: 71 85 105;
+  }
+
+  .dark {
+    --bg: 13 17 23;
+    --surface: 22 27 34;
+    --surface-raised: 13 17 23;
+    --surface-hover: 33 38 45;
+
+    --fg: 230 237 243;
+    --fg-muted: 139 148 158;
+    --fg-subtle: 110 118 129;
+
+    --border: 48 54 61;
+    --border-strong: 68 76 86;
+
+    --brand: 116 143 252; /* brand-400 — lifts off the dark surface */
+    --brand-fg: 13 17 23;
+    --ring: 116 143 252;
+
+    --success: 63 185 80;
+    --success-bg: 20 51 30;
+    --success-fg: 126 231 135;
+    --warning: 210 153 34;
+    --warning-bg: 59 46 10;
+    --warning-fg: 240 200 90;
+    --danger: 248 81 73;
+    --danger-bg: 63 22 22;
+    --danger-fg: 255 154 148;
+
+    --mesh: 156 163 175;
   }
 }
 
 @layer base {
-  * {
-    @apply border-gray-200;
-  }
   body {
-    @apply bg-white text-gray-900;
+    @apply bg-bg text-fg antialiased;
+  }
+
+  /* One consistent focus treatment everywhere, keyboard-only. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-bg;
+  }
+}
+
+@layer components {
+  /* Shared field shell — inputs, selects and textareas render identically. */
+  .field {
+    @apply w-full rounded-lg border border-border bg-surface-raised px-3 py-2
+           text-fg placeholder:text-fg-subtle
+           focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/40
+           disabled:cursor-not-allowed disabled:opacity-60
+           transition-colors;
+  }
+
+  .field-label {
+    @apply mb-1 block text-sm font-medium text-fg-muted;
   }
 }

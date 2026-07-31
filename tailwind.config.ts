@@ -1,13 +1,52 @@
 import type { Config } from "tailwindcss";
 
+/** Reads a token from globals.css, keeping Tailwind's `/opacity` modifier working. */
+const token = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
+
 const config: Config = {
-  content: [
-    "./src/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+  darkMode: "class",
+  content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
       colors: {
+        // ── Semantic tokens (see src/app/globals.css) ──
+        bg: token("bg"),
+        surface: {
+          DEFAULT: token("surface"),
+          raised: token("surface-raised"),
+          hover: token("surface-hover"),
+        },
+        fg: {
+          DEFAULT: token("fg"),
+          muted: token("fg-muted"),
+          subtle: token("fg-subtle"),
+        },
+        border: {
+          DEFAULT: token("border"),
+          strong: token("border-strong"),
+        },
+        ring: token("ring"),
+        mesh: token("mesh"),
+        success: {
+          DEFAULT: token("success"),
+          bg: token("success-bg"),
+          fg: token("success-fg"),
+        },
+        warning: {
+          DEFAULT: token("warning"),
+          bg: token("warning-bg"),
+          fg: token("warning-fg"),
+        },
+        danger: {
+          DEFAULT: token("danger"),
+          bg: token("danger-bg"),
+          fg: token("danger-fg"),
+        },
+
+        // ── Brand scale (fixed palette) ──
         brand: {
+          DEFAULT: token("brand"),
+          fg: token("brand-fg"),
           50: "#f0f4ff",
           100: "#dbe4ff",
           200: "#bac8ff",
@@ -20,14 +59,19 @@ const config: Config = {
           900: "#364fc7",
         },
       },
+      borderColor: {
+        // `border` with no colour utility should mean the token, not gray-200.
+        DEFAULT: token("border"),
+      },
       keyframes: {
-        "slide-in": {
-          "0%": { transform: "translateX(100%)" },
-          "100%": { transform: "translateX(0)" },
+        "fade-in-up": {
+          "0%": { opacity: "0", transform: "translateY(-4px) scale(0.98)" },
+          "100%": { opacity: "1", transform: "translateY(0) scale(1)" },
         },
       },
       animation: {
-        "slide-in": "slide-in 0.3s ease-out",
+        // Dropdowns settle in place instead of sliding across the viewport.
+        "fade-in-up": "fade-in-up 0.15s ease-out",
       },
     },
   },
