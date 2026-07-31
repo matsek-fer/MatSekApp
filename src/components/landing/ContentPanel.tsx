@@ -9,6 +9,14 @@ const HOLD_MS = 2400;
 /** ~30fps: fast enough to read as growth, cheap enough not to thrash React. */
 const FRAME_MS = 33;
 
+/** Tight enough that the canopy reads as foliage rather than stacked rows. */
+const LINE_HEIGHT = 1.05;
+/** Share of the viewport the art claims until the band has been measured. */
+const WIDTH_BUDGET_VW = 94;
+const HEIGHT_BUDGET_VH = 58;
+/** Advance width of a monospace glyph, in em. */
+const GLYPH_ADVANCE = 0.62;
+
 export default function ContentPanel({
   /**
    * Chosen on the server so the first render matches hydration. After that the
@@ -28,8 +36,14 @@ export default function ContentPanel({
   const growthRef = useRef(0);
 
   const tree = useMemo(() => generateTree(seed), [seed]);
+  // Padded to the finished tree's full width: renderTree trims each row, and a
+  // block whose width changes every frame would drift sideways under the
+  // centring flex as the tree grows.
   const lines = useMemo(
-    () => renderTree(tree, growth >= 1 ? Infinity : tree.duration * growth),
+    () =>
+      renderTree(tree, growth >= 1 ? Infinity : tree.duration * growth).map(
+        (line) => line.padEnd(tree.width)
+      ),
     [tree, growth]
   );
 
@@ -85,23 +99,61 @@ export default function ContentPanel({
     return () => clearTimeout(id);
   }, [seed, grown, paused, plant]);
 
-  // The grid is a fixed number of characters; the glyphs scale with the
-  // viewport so the tree fills a wide screen without overflowing a narrow one.
-  const artStyle = {
-    fontSize: "clamp(5px, 1.7vw, 18px)",
-    lineHeight: 1.08,
-  } as const;
+  // The grid is a fixed number of characters, so the glyph size — not the
+  // layout — decides how big the tree looks. Measure the band and scale this
+  // tree to fill it: whichever runs out first, width or height, sets the size.
+  // Species differ in shape (a willow is wide, a birch tall), so each one is
+  // sized on its own rather than sharing one compromise scale.
+  const band = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState<{ w: number; h: number } | null>(null);
+  useEffect(() => {
+    const el = band.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      setBox({ w: width, h: height });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const artStyle = useMemo(() => {
+    // Until the band has been measured — server render, and the first client
+    // render, which must match it — fall back to viewport units.
+    // A hair under the full width: monospace advance varies by a percent or
+    // two between fonts, and a wide species should not graze the edges.
+    const w = box ? `${box.w * 0.96}px` : `${WIDTH_BUDGET_VW}vw`;
+    const h = box ? `${box.h}px` : `${HEIGHT_BUDGET_VH}vh`;
+    return {
+      fontSize: `max(5px, min(
+        calc(${w} / ${(tree.width * GLYPH_ADVANCE).toFixed(2)}),
+        calc(${h} / ${(tree.height * LINE_HEIGHT).toFixed(2)})
+      ))`,
+      lineHeight: LINE_HEIGHT,
+    } as const;
+  }, [box, tree.width, tree.height]);
 
   return (
     <section
       aria-label="Generator ASCII stabala"
-      className="flex w-full flex-1 flex-col items-center justify-center gap-4 py-6"
+      className="flex w-full flex-1 flex-col items-center justify-center gap-2 py-2"
     >
-      <div className="flex min-h-[52vh] w-full items-center justify-center overflow-x-auto px-2">
+      {/* Edge to edge: no frame, no max width. The band takes whatever height
+          the viewport has left below the header, with a floor so it does not
+          collapse on a short screen. basis-0 keeps that a one-way street — the
+          art is sized to the band, never the band to the art, which would
+          otherwise feed back into the measurement. */}
+      <div
+        ref={band}
+        className="flex w-full flex-1 basis-0 items-center justify-center
+                   overflow-hidden min-h-[20rem]"
+      >
+        {/* Left-aligned on purpose: centring would centre each row separately
+            and shear the art. The block as a whole is centred by the flex. */}
         <pre
           aria-label={`ASCII stablo, seed ${seed}`}
           style={artStyle}
-          className="select-none whitespace-pre text-center font-mono
+          className="select-none whitespace-pre text-left font-mono
                      text-emerald-700 dark:text-emerald-400"
         >
           {lines.join("\n")}
@@ -111,7 +163,7 @@ export default function ContentPanel({
         <noscript>
           <pre
             style={artStyle}
-            className="select-none whitespace-pre text-center font-mono
+            className="select-none whitespace-pre text-left font-mono
                        text-emerald-700 dark:text-emerald-400"
           >
             {renderTree(tree).join("\n")}
