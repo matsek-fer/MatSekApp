@@ -93,6 +93,14 @@ interface Species {
    * off the outer limbs, never straight off the trunk. */
   lateralMinDepth?: number;
   /**
+   * How many characters this species is drawn with, relative to the others, at
+   * the same physical size. The page scales every tree to fill the band's
+   * height, so the species with the fewest rows gets the biggest type — which
+   * is backwards for a willow, whose whole character is fine, dense strands.
+   * Above 1 buys a finer grid and smaller glyphs for that species alone.
+   */
+  charScale: number;
+  /**
    * Range the per-tree leader depth is drawn from — how far up the trunk keeps
    * a dominant leader instead of forking evenly. A willow wants [0, 0]: it has
    * no stem above the first fork, and a leader would carry the trunk up through
@@ -136,6 +144,7 @@ const SPECIES: readonly Species[] = [
     lateralDepth: 1,
     lateralStart: 0.2,
     leaderDepth: [0, 2],
+    charScale: 1,
     trunkLean: 0.16,
     trunkChar: "#",
   },
@@ -165,6 +174,7 @@ const SPECIES: readonly Species[] = [
     lateralDepth: 1,
     lateralStart: 0.2,
     leaderDepth: [0, 2],
+    charScale: 1.3,
     trunkLean: 0.2,
     trunkChar: "#",
   },
@@ -194,6 +204,7 @@ const SPECIES: readonly Species[] = [
     lateralDepth: 1,
     lateralStart: 0.2,
     leaderDepth: [0, 2],
+    charScale: 1.08,
     trunkLean: 0.5,
     trunkChar: "|",
   },
@@ -216,8 +227,8 @@ const SPECIES: readonly Species[] = [
     maxAngle: 1.5,
     // The limbs themselves have to finish pointing at the ground, not just the
     // strands hanging off them, so this runs well above the other species.
-    droopPerDepth: 0.52,
-    reachRate: 1.0,
+    droopPerDepth: 0.62,
+    reachRate: 0.62,
     gravity: [0.1, 0.16],
     hardness: [1.6, 2.2],
     temperature: [0.03, 0.07],
@@ -225,7 +236,7 @@ const SPECIES: readonly Species[] = [
     // what carries the width.
     // Limbs far longer than the trunk. With only one generation of them, their
     // length is the entire width of the tree.
-    lengthDecay: [2.0, 2.5],
+    lengthDecay: [1.6, 2.0],
     leaves: [",", "'", ".", ":"],
     leafDensity: [2, 3],
     leafSpread: [0.6, 1.0],
@@ -236,6 +247,7 @@ const SPECIES: readonly Species[] = [
     lateralStart: 0.25,
     lateralMinDepth: 1,
     leaderDepth: [0, 0],
+    charScale: 1.95,
     trunkLean: 0.4,
     // Same glyph as the oak, and for the same reason: it separates the parts
     // that hold the tree up from the strands, which stay thin single lines.
@@ -513,15 +525,15 @@ export interface TreeOptions {
  * characters — the page scales the glyphs to whatever the character count is,
  * so raising this shrinks the type without shrinking the tree.
  */
-const CANVAS_COLS = 215;
-const CANVAS_ROWS = 58;
+const CANVAS_COLS = 285;
+const CANVAS_ROWS = 72;
 
 /**
  * Rows a species' authored size is measured against. Deliberately fewer than
  * the canvas has: at parity the nominal tree is exactly canvas height, and
  * every taller-than-average one loses its crown to the top row.
  */
-const SPECIES_ROWS = 31;
+const SPECIES_ROWS = 38.5;
 
 /** Canvas-to-species ratio the stroke widths and leaf counts were tuned at. */
 const TUNED_SCALE = 34 / 26;
@@ -535,8 +547,9 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
   const grid = new Grid(cols, rows);
 
   // Species dimensions are authored against SPECIES_ROWS; scale them so a taller
-  // canvas grows a bigger tree rather than the same tree with more air.
-  const scale = rows / SPECIES_ROWS;
+  // canvas grows a bigger tree rather than the same tree with more air. The
+  // species' own charScale rides on top, buying it a finer grid than the rest.
+  const scale = (rows / SPECIES_ROWS) * species.charScale;
 
   // Resolution relative to the canvas the look was tuned on. The page sizes
   // glyphs so the tree fills its band whatever the character count, so a finer
@@ -544,6 +557,12 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
   // measured in whole cells keep up: stroke widths, and the leaf count needed
   // to fill a cluster whose area grows with the square.
   const detail = scale / TUNED_SCALE;
+
+  // Side shoots per branch, grown with the species' character density. Held
+  // constant instead, a finer grid would draw the same number of strands in
+  // thinner type — the same curtain with more air in it, when the point of the
+  // finer grid was to pack more strands into the same width.
+  const lateralRate = species.laterals * species.charScale;
 
   const p: Params = {
     maxDepth: Math.round(range(rng, ...species.maxDepth)),
@@ -659,7 +678,7 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
         i > steps * species.lateralStart &&
         i < steps - 1 &&
         queue.length + branches < SOFT_CAP &&
-        rng() < species.laterals / steps
+        rng() < lateralRate / steps
       ) {
         // Longest near the base, shortest near the tip, so the shoots follow
         // the taper of the limb they grow from.
