@@ -30,16 +30,17 @@ export default async function CalendarPage() {
       .select("*, creator:profiles!created_by(id, email, full_name)")
       .eq("status", "approved")
       .lt("end_time", now)
-      // Newest first: this list is opened to look back, and what just happened
-      // is what is being looked for, so it sits right under the close control
-      // rather than at the far end of a term's scroll.
+      // Newest first *for the query*, so the limit keeps the most recent slice
+      // of history rather than the oldest. It is reversed below for display.
       .order("start_time", { ascending: false })
       .limit(PAST_LIMIT),
     supabase.auth.getSession(),
   ]);
 
   const upcoming = (ahead ?? []) as Activity[];
-  const past = (before ?? []) as Activity[];
+  // Displayed oldest to newest, so the page reads as one timeline: history
+  // runs down into the most recent past event, and the next event follows it.
+  const past = [...((before ?? []) as Activity[])].reverse();
 
   return (
     <div className="space-y-6">
