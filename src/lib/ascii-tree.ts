@@ -101,6 +101,31 @@ interface Species {
    */
   charScale: number;
   /**
+   * Fraction of its thickness a branch loses between base and tip. At the
+   * default it stays roughly the same weight the whole way; near 1 it comes to
+   * a point, so a limb drawn as trunk at the fork thins to a single-character
+   * line by its end.
+   */
+  tipTaper: number;
+  /**
+   * Side shoots are lengthened to reach the ground rather than given a length
+   * of their own. A willow's strands hang from wherever the limb happens to
+   * be, so the ones from a high limb are long and the ones from a low limb
+   * short, and they all finish at about the same height — which is the whole
+   * look of the tree.
+   */
+  strandsToGround?: boolean;
+  /** Overrides the shared ceiling on how far past vertical a branch may point. */
+  droopCeiling?: number;
+  /**
+   * Extra droop, radians per step, ramped in over the last quarter of every
+   * branch. Gravity alone only turns a branch down if it has the length left
+   * to do it in, so a limb that runs out early finishes pointing wherever it
+   * happened to be — which on a willow left flat spurs trailing off sideways.
+   * This makes the last stretch fall regardless.
+   */
+  tipDrop?: number;
+  /**
    * Range the per-tree leader depth is drawn from — how far up the trunk keeps
    * a dominant leader instead of forking evenly. A willow wants [0, 0]: it has
    * no stem above the first fork, and a leader would carry the trunk up through
@@ -145,6 +170,7 @@ const SPECIES: readonly Species[] = [
     lateralStart: 0.2,
     leaderDepth: [0, 2],
     charScale: 1,
+    tipTaper: 0.35,
     trunkLean: 0.16,
     trunkChar: "#",
   },
@@ -175,6 +201,7 @@ const SPECIES: readonly Species[] = [
     lateralStart: 0.2,
     leaderDepth: [0, 2],
     charScale: 1.3,
+    tipTaper: 0.4,
     trunkLean: 0.2,
     trunkChar: "#",
   },
@@ -205,6 +232,7 @@ const SPECIES: readonly Species[] = [
     lateralStart: 0.2,
     leaderDepth: [0, 2],
     charScale: 1.08,
+    tipTaper: 0.4,
     trunkLean: 0.5,
     trunkChar: "|",
   },
@@ -248,6 +276,13 @@ const SPECIES: readonly Species[] = [
     lateralMinDepth: 1,
     leaderDepth: [0, 0],
     charScale: 1.95,
+    // Comes to a point: a limb that leaves the fork as a four-cell # band is a
+    // single-character line by its tip, which is what makes the hard structure
+    // and the strands read as different materials rather than one texture.
+    tipTaper: 0.82,
+    strandsToGround: true,
+    droopCeiling: 2.45,
+    tipDrop: 0.09,
     trunkLean: 0.4,
     // Same glyph as the oak, and for the same reason: it separates the parts
     // that hold the tree up from the strands, which stay thin single lines.
@@ -377,7 +412,8 @@ function skyLimit(species: Species, depth: number, progress = 0): number {
   // base rather than over it.
   const reach = Math.min(species.maxAngle, TRUNK_LIMIT + d * species.reachRate);
   const beyondOnset = Math.max(0, d - DROOP_ONSET);
-  return Math.min(DROOP_CEILING, reach + beyondOnset * species.droopPerDepth);
+  const ceiling = species.droopCeiling ?? DROOP_CEILING;
+  return Math.min(ceiling, reach + beyondOnset * species.droopPerDepth);
 }
 
 function branchChar(dx: number, dy: number): string {
@@ -631,6 +667,13 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
           (p.gravity * (shoot.depth + 1) * (i / steps + 0.35) * (0.3 + tilt)) /
           p.hardness;
         angle += droop * Math.sign(Math.cos(angle) || 1);
+
+        // The deliberate hook at the end of a branch, on top of gravity.
+        const intoTip = (i / steps - 0.75) / 0.25;
+        if (species.tipDrop && intoTip > 0) {
+          angle +=
+            species.tipDrop * intoTip * Math.sign(Math.cos(angle) || 1);
+        }
       }
 
       // Directional instability — thin branches wander, thick ones hold course.
@@ -647,7 +690,7 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
 
       // A branch narrows along its own length, not just at each fork — without
       // the taper a thick trunk reads as an extruded pole.
-      const t = shoot.thickness * (1 - 0.3 * (i / steps));
+      const t = shoot.thickness * (1 - species.tipTaper * (i / steps));
       // Continuous rather than the three tiers this used to step through: the
       // tiers, once multiplied up for the finer canvas, jumped straight from
       // one cell to three and a limb either vanished to a hairline or came out
@@ -680,11 +723,18 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
         queue.length + branches < SOFT_CAP &&
         rng() < lateralRate / steps
       ) {
-        // Longest near the base, shortest near the tip, so the shoots follow
-        // the taper of the limb they grow from.
+        // A strand is cut to the drop beneath it rather than given a length of
+        // its own, so one hanging off a high limb is long and one off a low
+        // limb is short, and both finish near the ground. The spread in the
+        // multiplier is what keeps the bottom of the curtain ragged instead of
+        // level, which would read as a hedge.
+        //
+        // Otherwise: longest near the base, shortest near the tip, following
+        // the taper of the limb it grows from.
         const taper = 1 - i / steps;
-        const length =
-          (range(rng, 1.2, 2) + taper * species.lateralLength) * scale;
+        const length = species.strandsToGround
+          ? Math.max(2, (rows - 1 - y) * range(rng, 0.55, 0.95))
+          : (range(rng, 1.2, 2) + taper * species.lateralLength) * scale;
 
         const side = rng() < 0.5 ? -1 : 1;
         queue.push({
