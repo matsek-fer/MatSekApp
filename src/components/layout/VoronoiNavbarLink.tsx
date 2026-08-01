@@ -263,6 +263,34 @@ export default function VoronoiNavbarLink({
 
   /* ── lifecycle ─────────────────────────────────────────────────────────── */
 
+  // Hover is only ever told to us by pointer events, and there is one sequence
+  // where the browser owes us an event it never sends: hover the link, switch
+  // windows, move the pointer away while this window is unfocused, switch back.
+  // No pointerleave was delivered — the pointer moved while we were not the
+  // focused window — so the mesh stays lit over a link nobody is pointing at,
+  // until some later event happens to knock it loose.
+  //
+  // Coming back into focus, ask the browser what is true rather than trusting
+  // the events we were given: :hover is its own hover state, and it is correct
+  // whatever we missed while we were away.
+  useEffect(() => {
+    const el = linkRef.current;
+    if (!el) return;
+
+    const resync = () => {
+      const lit = el.matches(":hover") || document.activeElement === el;
+      if (lit) handleEnter();
+      else handleLeave();
+    };
+
+    window.addEventListener("focus", resync);
+    document.addEventListener("visibilitychange", resync);
+    return () => {
+      window.removeEventListener("focus", resync);
+      document.removeEventListener("visibilitychange", resync);
+    };
+  }, [handleEnter, handleLeave]);
+
   useEffect(() => {
     const el = linkRef.current;
     if (!el) return;
