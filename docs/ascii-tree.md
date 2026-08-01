@@ -78,6 +78,7 @@ variety between two oaks comes from.
 | `tipDrop` | Extra droop ramped in over a branch's last quarter, so the end hooks down whether or not gravity had the length to do it |
 | `droopCeiling` | Per-species override of the shared limit on how far past vertical a branch may point |
 | `strandsToGround` | Side shoots are cut to the drop beneath them instead of being given a length — the willow's curtain |
+| `minFanOffset` | Smallest angle a child may leave its parent at, so no limb comes off a wide fork pointing straight up |
 | `gravity`, `hardness` | Downward pull per step, and resistance to it |
 | `temperature` | Directional noise. High values wander and gnarl |
 | `lengthDecay` | How much shorter each generation is than its parent |
@@ -103,11 +104,23 @@ What separates them:
   11 at a `lateralAngle` near π, hanging straight down as thin single lines
   against the `#` of the limbs that carry them.
 
-  Its curtain is built by `strandsToGround`: a strand is cut to the distance
-  between the limb it hangs from and the floor, times 0.55–0.95. A strand off a
-  high limb is therefore long and one off a low limb short, they all finish near
-  the ground, and the spread in the multiplier keeps the bottom edge ragged
-  rather than level — level would read as a hedge.
+  Its curtain is built by `strandsToGround`: a strand is cut to the drop between
+  the limb it hangs from and the floor, less `STRAND_CLEARANCE` (8 % of canvas
+  height), times a share that runs from `STRAND_REACH_AT_FORK` (0.3) at the
+  fork end of a limb to that plus `STRAND_REACH_GAIN` (0.62) at its tip, times
+  a 0.85–1.1 jitter. Three things fall out of that: strands stop short of the
+  ground rather than resting on it, they lengthen along the limb so the curtain
+  sweeps down from the trunk outwards instead of dropping off at one length,
+  and the bottom edge stays ragged — level would read as a hedge. Measured over
+  the willow seeds in 400, the curtain ends 4–8 rows above the canvas floor
+  (median 6) while the trunk still reaches it.
+
+  `minFanOffset` 0.5 handles its fork. An even fan puts its middle child
+  straight along the parent, which on a crown of four to six limbs is one limb
+  going vertically up out of the middle of it. Every child is pushed onto one
+  side or the other instead, and `leanOut` then holds each one no steeper than
+  the parent it came from — the sky clamp can otherwise pull a child back
+  upright, leaving a limb standing straighter than the one it grew out of.
 
   Its skeleton comes to a point: `tipTaper` 0.82 against 0.35–0.4 for the
   others, so a limb four cells wide at the fork is a single `|` by its tip, and
