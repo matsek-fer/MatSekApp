@@ -1,33 +1,45 @@
-import Link from "next/link";
-import { format, parseISO } from "date-fns";
-import { hr } from "date-fns/locale";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { ACTIVITY_TYPE_LABELS } from "@/types";
 import type { Activity } from "@/types";
 import Card from "@/components/ui/Card";
-import Badge from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
+import ActivityBrowser from "@/components/activities/ActivityBrowser";
 
 export const dynamic = "force-dynamic";
 
-const PAGE_SIZE = 20;
+const UPCOMING_LIMIT = 50;
+/** A term or two of history is plenty to look back over. */
+const PAST_LIMIT = 60;
 
 export default async function CalendarPage() {
   const supabase = createServerClient();
 
-  const [{ data: activities }, { data: auth }] = await Promise.all([
+  const now = new Date().toISOString();
+
+  const [{ data: ahead }, { data: before }, { data: auth }] = await Promise.all([
     supabase
       .from("activities")
       .select("*, creator:profiles!created_by(id, email, full_name)")
       .eq("status", "approved")
-      // Only what's still ahead — a calendar led by last term's events is noise.
-      .gte("end_time", new Date().toISOString())
+      // The page leads with what is still ahead — a calendar headed by last
+      // term's events is noise.
+      .gte("end_time", now)
       .order("start_time", { ascending: true })
-      .limit(PAGE_SIZE),
+      .limit(UPCOMING_LIMIT),
+    supabase
+      .from("activities")
+      .select("*, creator:profiles!created_by(id, email, full_name)")
+      .eq("status", "approved")
+      .lt("end_time", now)
+      // Newest first: this list is opened to look back, and what just happened
+      // is what is being looked for, so it sits right under the close control
+      // rather than at the far end of a term's scroll.
+      .order("start_time", { ascending: false })
+      .limit(PAST_LIMIT),
     supabase.auth.getSession(),
   ]);
 
-  const upcoming = (activities ?? []) as Activity[];
+  const upcoming = (ahead ?? []) as Activity[];
+  const past = (before ?? []) as Activity[];
 
   return (
     <div className="space-y-6">
@@ -38,7 +50,7 @@ export default async function CalendarPage() {
         )}
       </div>
 
-      {upcoming.length === 0 ? (
+      {upcoming.length === 0 && past.length === 0 ? (
         <Card className="p-12 text-center">
           <p className="text-fg-muted">Još nema nadolazećih aktivnosti.</p>
           {auth?.session && (
@@ -48,42 +60,7 @@ export default async function CalendarPage() {
           )}
         </Card>
       ) : (
-        <ul className="grid gap-3">
-          {upcoming.map((activity) => (
-            <li key={activity.id}>
-              <Link
-                href={`/activities/${activity.id}`}
-                className="block rounded-xl border border-border bg-surface p-4
-                           transition-colors hover:border-brand/40 hover:bg-surface-hover"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <h2 className="font-semibold text-fg">{activity.title}</h2>
-                    <p className="mt-1 text-sm text-fg-muted">
-                      <time dateTime={activity.start_time}>
-                        {format(
-                          parseISO(activity.start_time),
-                          "EEEE, dd.MM.yyyy. 'u' HH:mm",
-                          { locale: hr }
-                        )}
-                      </time>
-                      {" – "}
-                      {format(parseISO(activity.end_time), "HH:mm")}
-                    </p>
-                    {activity.location && (
-                      <p className="text-sm text-fg-subtle">
-                        📍 {activity.location}
-                      </p>
-                    )}
-                  </div>
-                  <Badge tone="brand">
-                    {ACTIVITY_TYPE_LABELS[activity.activity_type]}
-                  </Badge>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <ActivityBrowser upcoming={upcoming} past={past} />
       )}
     </div>
   );
