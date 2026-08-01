@@ -122,7 +122,9 @@ function ticks(span: Span, level: Level, width: number) {
 
   if (level === 0) {
     all = eachMonthOfInterval({ start: from, end: to });
-    fmt = "LLL yy";
+    // Four-digit year, not two: "srp 26" is a month and a year, but it reads
+    // as the twenty-sixth of July, which is how dates are written here.
+    fmt = "LLL yyyy.";
     step = nice(Math.ceil(all.length / room), [1, 2, 3, 6, 12]);
     keep = (d) => (d.getFullYear() * 12 + d.getMonth()) % step === 0;
   } else if (level === 1) {
