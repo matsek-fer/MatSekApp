@@ -138,15 +138,16 @@ export default function ContentPanel({
       aria-label="Generator ASCII stabala"
       className="flex w-full flex-1 flex-col items-center justify-center gap-2 py-2"
     >
-      {/* Edge to edge: no frame, no max width. The band takes whatever height
-          the viewport has left below the header, with a floor so it does not
-          collapse on a short screen. basis-0 keeps that a one-way street — the
-          art is sized to the band, never the band to the art, which would
-          otherwise feed back into the measurement. */}
+      {/* Edge to edge: no frame, no max width. The band takes exactly whatever
+          height the viewport has left below the header and never asks for
+          more, so the page fits on one screen and the tree is sized down to
+          suit rather than running off the bottom. basis-0 and min-h-0 keep
+          that a one-way street: the art is sized to the band, never the band
+          to the art, which would otherwise feed back into the measurement. */}
       <div
         ref={band}
-        className="flex w-full flex-1 basis-0 items-center justify-center
-                   overflow-hidden min-h-[20rem]"
+        className="flex w-full min-h-0 flex-1 basis-0 items-center
+                   justify-center overflow-hidden"
       >
         {/* Left-aligned on purpose: centring would centre each row separately
             and shear the art. The block as a whole is centred by the flex. */}
