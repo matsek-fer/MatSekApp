@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seed": "node scripts/seed-activities.mjs",
+    "seed:clean": "node scripts/seed-activities.mjs --clean"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.0.5",
