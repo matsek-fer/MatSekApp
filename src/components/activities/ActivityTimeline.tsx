@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   addMonths,
+  startOfDay,
   eachDayOfInterval,
   eachHourOfInterval,
   eachMonthOfInterval,
@@ -27,8 +28,13 @@ import Button from "@/components/ui/Button";
  * aiming rather than guessing which side of a boundary it falls on.
  */
 
-const HEIGHT = 190;
-const AXIS_Y = 104;
+const HEIGHT = 204;
+const AXIS_Y = 96;
+/** Clear of the largest circle, so a date never sits under one. */
+const TICK_DROP = 38;
+const LABEL_DROP = 56;
+/** Half-height of the "now" marker, drawn the same distance either side. */
+const NOW_HALF = 46;
 const PAD_X = 34;
 const ZOOM_MS = 480;
 
@@ -93,29 +99,51 @@ function cluster(events: Activity[], x: (t: number) => number) {
 
 type Cluster = ReturnType<typeof cluster>[number];
 
+/**
+ * Marks fall on the first instant of a period — the first of the month, Monday,
+ * midnight, the top of the hour — never on wherever the view happens to begin.
+ *
+ * Thinning keeps every nth *period* rather than every nth item in the list, so
+ * which dates are labelled does not shuffle as the window is panned: the first
+ * of January stays labelled whether it is the second mark on screen or the
+ * fifth.
+ */
 function ticks(span: Span, level: Level, width: number) {
   const [from, to] = [new Date(span[0]), new Date(span[1])];
-  const room = Math.max(2, Math.floor((width - PAD_X * 2) / 84));
+  const room = Math.max(2, Math.floor((width - PAD_X * 2) / 92));
+
+  const nice = (want: number, options: number[]) =>
+    options.find((o) => o >= want) ?? options[options.length - 1];
 
   let all: Date[];
   let fmt: string;
+  let step: number;
+  let keep: (d: Date) => boolean;
+
   if (level === 0) {
     all = eachMonthOfInterval({ start: from, end: to });
     fmt = "LLL yy";
+    step = nice(Math.ceil(all.length / room), [1, 2, 3, 6, 12]);
+    keep = (d) => (d.getFullYear() * 12 + d.getMonth()) % step === 0;
   } else if (level === 1) {
     all = eachWeekOfInterval({ start: from, end: to }, { weekStartsOn: 1 });
     fmt = "d. MMM";
+    step = nice(Math.ceil(all.length / room), [1, 2, 4]);
+    keep = (d) => Math.round(+d / (7 * DAY)) % step === 0;
   } else if (level === 2) {
     all = eachDayOfInterval({ start: from, end: to });
     fmt = "EEE d.";
+    step = nice(Math.ceil(all.length / room), [1, 2, 3, 7]);
+    keep = (d) => Math.round(+startOfDay(d) / DAY) % step === 0;
   } else {
     all = eachHourOfInterval({ start: from, end: to });
     fmt = "HH:mm";
+    step = nice(Math.ceil(all.length / room), [1, 2, 3, 4, 6, 12]);
+    keep = (d) => d.getHours() % step === 0;
   }
 
-  const step = Math.max(1, Math.ceil(all.length / room));
   return all
-    .filter((_, i) => i % step === 0)
+    .filter(keep)
     .map((d) => ({ at: +d, label: format(d, fmt, { locale: hr }) }));
 }
 
@@ -374,34 +402,56 @@ export default function ActivityTimeline({ events }: { events: Activity[] }) {
             markerEnd="url(#tl-arrow)"
           />
 
+          {/* Drawn before the circles, so a guide that runs under one is
+              covered by it rather than cutting across it. */}
           {marks.map((m) => (
             <g key={m.at}>
               <line
                 x1={toX(m.at)}
                 x2={toX(m.at)}
                 y1={AXIS_Y}
-                y2={AXIS_Y + 7}
-                className="stroke-border-strong"
+                y2={AXIS_Y + TICK_DROP}
+                className="stroke-border"
               />
               <text
                 x={toX(m.at)}
-                y={AXIS_Y + 23}
+                y={AXIS_Y + LABEL_DROP}
                 textAnchor="middle"
-                className="fill-fg-subtle text-[11px]"
+                className="fill-fg-muted text-[13px]"
               >
                 {m.label}
               </text>
             </g>
           ))}
 
-          <line
-            x1={toX(Date.now())}
-            x2={toX(Date.now())}
-            y1={26}
-            y2={AXIS_Y}
-            className="stroke-fg-subtle"
-            strokeDasharray="3 4"
-          />
+          {/* Now: the same distance above and below the line, with an arrow
+              onto it and a word, because a bare dashed line said nothing. */}
+          <g>
+            <line
+              x1={toX(Date.now())}
+              x2={toX(Date.now())}
+              y1={AXIS_Y - NOW_HALF}
+              y2={AXIS_Y + NOW_HALF}
+              className="stroke-fg-muted"
+              strokeDasharray="4 4"
+            />
+            <path
+              d={`M ${toX(Date.now()) - 6} ${AXIS_Y - NOW_HALF} L ${
+                toX(Date.now()) + 6
+              } ${AXIS_Y - NOW_HALF} L ${toX(Date.now())} ${
+                AXIS_Y - NOW_HALF + 10
+              } z`}
+              className="fill-fg-muted"
+            />
+            <text
+              x={toX(Date.now())}
+              y={AXIS_Y - NOW_HALF - 8}
+              textAnchor="middle"
+              className="fill-fg text-[12px] font-semibold uppercase tracking-wider"
+            >
+              now
+            </text>
+          </g>
 
           {groups.length === 0 && (
             <text
