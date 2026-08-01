@@ -133,10 +133,12 @@ export default function ContentPanel({
     } as const;
   }, [box, tree.width, tree.height]);
 
+  // Padded more at the top than the bottom, so the tree sits lower in the space
+  // it is given rather than centred in it.
   return (
     <section
       aria-label="Generator ASCII stabala"
-      className="flex w-full flex-1 flex-col items-center justify-center gap-2 py-2"
+      className="flex w-full flex-1 flex-col items-center justify-center gap-2 pb-2 pt-10"
     >
       {/* Edge to edge: no frame, no max width. The band takes exactly whatever
           height the viewport has left below the header and never asks for

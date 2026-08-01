@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import LogoutButton from "@/components/auth/LogoutButton";
 import ContentPanel from "@/components/landing/ContentPanel";
@@ -66,13 +65,6 @@ export default async function HomePage({
 
       {/* Seeded here so the server render and hydration agree on the first tree. */}
       <ContentPanel initialSeed={firstSeed} />
-
-      <Link
-        href="/calendar"
-        className="shrink-0 pb-4 text-brand hover:underline sm:pb-6"
-      >
-        Pogledaj kalendar aktivnosti →
-      </Link>
     </main>
   );
 }
