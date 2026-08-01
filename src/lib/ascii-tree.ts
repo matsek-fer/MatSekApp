@@ -289,8 +289,8 @@ const SPECIES: readonly Species[] = [
     // and the strands read as different materials rather than one texture.
     tipTaper: 0.82,
     strandsToGround: true,
-    droopCeiling: 2.45,
-    tipDrop: 0.09,
+    droopCeiling: 2.95,
+    tipDrop: 0.16,
     minFanOffset: 0.5,
     trunkLean: 0.4,
     // Same glyph as the oak, and for the same reason: it separates the parts
@@ -402,13 +402,26 @@ const WIDTH_PER_THICKNESS = 0.62;
 /** No branch is drawn wider than this, whatever the canvas. */
 const MAX_STROKE = 4;
 
-/** Share of the canvas height a hanging strand stops short of the ground by. */
-const STRAND_CLEARANCE = 0.08;
+/** Characters above the floor a strand is allowed to finish at. Drawn per
+ * strand, so the longest ones end at slightly different heights. */
+const STRAND_GROUND_GAP: [number, number] = [1, 4];
 
 /** Share of the drop beneath it that a strand at the fork end of a limb takes,
- * and how much more one out at the tip takes. */
-const STRAND_REACH_AT_FORK = 0.3;
-const STRAND_REACH_GAIN = 0.62;
+ * and how much more one out at the tip takes. At the tip the two sum to 1, so
+ * the outermost strands run the whole way down and are stopped only by the
+ * ground gap. */
+const STRAND_REACH_AT_FORK = 0.35;
+const STRAND_REACH_GAIN = 0.65;
+
+/**
+ * How far a strand hangs: the share of the drop beneath it that its position
+ * along the limb earns, but never closer to the floor than the ground gap.
+ */
+function strandLength(rng: Rng, rows: number, y: number, share: number): number {
+  const drop = rows - 1 - y;
+  const stopAt = drop - range(rng, ...STRAND_GROUND_GAP);
+  return Math.max(2, Math.min(drop * share, stopAt));
+}
 
 /** How far from vertical the trunk itself may wander, in radians. */
 const TRUNK_LIMIT = 0.22;
@@ -778,10 +791,9 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
         // the taper of the limb it grows from.
         const along = i / steps;
         const taper = 1 - along;
-        const clearance = rows * STRAND_CLEARANCE;
         const share = STRAND_REACH_AT_FORK + STRAND_REACH_GAIN * along;
         const length = species.strandsToGround
-          ? Math.max(2, (rows - 1 - clearance - y) * share * range(rng, 0.85, 1.1))
+          ? strandLength(rng, rows, y, share)
           : (range(rng, 1.2, 2) + taper * species.lateralLength) * scale;
 
         const side = rng() < 0.5 ? -1 : 1;
@@ -816,6 +828,32 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
       shoot.length < 1.2 ||
       shoot.thickness < 0.3 ||
       branches + queue.length >= SOFT_CAP;
+
+    // A limb that simply stops is the one thing a willow cannot do: the arc has
+    // to carry on down and join the curtain, or it reads as a branch snapped
+    // off in mid air. The tail picks up the limb's tip at whatever angle it had
+    // reached, turns straight down and runs to the ground with the strands.
+    if (isTip && species.strandsToGround && !shoot.terminal) {
+      const tail = strandLength(rng, rows, y, 1);
+      if (tail > 2) {
+        queue.push({
+          x,
+          y,
+          angle: UP + (rng() < 0.5 ? -1 : 1) * range(rng, ...species.lateralAngle),
+          length: tail,
+          // Carries on from the thickness the limb had actually tapered to,
+          // not the one it started with — inheriting the base thickness sends a
+          // four-cell # column to the floor, and the tree grows a second trunk
+          // at the end of every limb.
+          thickness:
+            shoot.thickness * (1 - species.tipTaper) * range(rng, 0.7, 1),
+          depth: shoot.depth + 1,
+          t0: shoot.t0 + steps,
+          terminal: true,
+        });
+        continue;
+      }
+    }
 
     if (isTip) {
       const count = Math.round(p.leafDensity);
