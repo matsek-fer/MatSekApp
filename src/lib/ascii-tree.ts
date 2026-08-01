@@ -115,6 +115,14 @@ interface Species {
    * look of the tree.
    */
   strandsToGround?: boolean;
+  /**
+   * Smallest angle, radians, a child may leave its parent at. An even fan puts
+   * its middle child straight along the parent — on a willow, whose fork is a
+   * wide crown of limbs, that is one limb going vertically up out of the middle
+   * of it. Set, every child is pushed onto one side or the other, and none of
+   * them is allowed to be steeper than the parent it came from.
+   */
+  minFanOffset?: number;
   /** Overrides the shared ceiling on how far past vertical a branch may point. */
   droopCeiling?: number;
   /**
@@ -283,6 +291,7 @@ const SPECIES: readonly Species[] = [
     strandsToGround: true,
     droopCeiling: 2.45,
     tipDrop: 0.09,
+    minFanOffset: 0.5,
     trunkLean: 0.4,
     // Same glyph as the oak, and for the same reason: it separates the parts
     // that hold the tree up from the strands, which stay thin single lines.
@@ -393,6 +402,14 @@ const WIDTH_PER_THICKNESS = 0.62;
 /** No branch is drawn wider than this, whatever the canvas. */
 const MAX_STROKE = 4;
 
+/** Share of the canvas height a hanging strand stops short of the ground by. */
+const STRAND_CLEARANCE = 0.08;
+
+/** Share of the drop beneath it that a strand at the fork end of a limb takes,
+ * and how much more one out at the tip takes. */
+const STRAND_REACH_AT_FORK = 0.3;
+const STRAND_REACH_GAIN = 0.62;
+
 /** How far from vertical the trunk itself may wander, in radians. */
 const TRUNK_LIMIT = 0.22;
 
@@ -414,6 +431,27 @@ function skyLimit(species: Species, depth: number, progress = 0): number {
   const beyondOnset = Math.max(0, d - DROOP_ONSET);
   const ceiling = species.droopCeiling ?? DROOP_CEILING;
   return Math.min(ceiling, reach + beyondOnset * species.droopPerDepth);
+}
+
+/**
+ * Keeps a child no steeper than the parent it came from.
+ *
+ * The clamp above can pull a child back towards the tree's up, and on a species
+ * that forks wide that undoes the fan: a limb ends up standing more upright
+ * than the one it grew out of, which no branch does. `slack` of zero leaves the
+ * angle alone.
+ */
+function leanOut(
+  child: number,
+  parent: number,
+  axis: number,
+  slack: number
+): number {
+  if (slack <= 0) return child;
+  const childOff = child - axis;
+  const floor = Math.abs(parent - axis);
+  if (Math.abs(childOff) >= floor) return child;
+  return axis + Math.sign(childOff || 1) * floor;
 }
 
 function branchChar(dx: number, dy: number): string {
@@ -725,15 +763,25 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
       ) {
         // A strand is cut to the drop beneath it rather than given a length of
         // its own, so one hanging off a high limb is long and one off a low
-        // limb is short, and both finish near the ground. The spread in the
-        // multiplier is what keeps the bottom of the curtain ragged instead of
-        // level, which would read as a hedge.
+        // limb is short. Two things shape the curtain:
+        //
+        // It stops short of the ground. Strands that actually reach the floor
+        // read as a curtain resting on it rather than hanging free.
+        //
+        // It lengthens along the limb. A strand near the trunk takes a small
+        // share of the drop beneath it and one out at the tip nearly all of it,
+        // so the curtain sweeps down from the trunk outwards instead of
+        // dropping off the limb at one length. The jitter on top keeps the
+        // bottom edge ragged — even would read as a hedge.
         //
         // Otherwise: longest near the base, shortest near the tip, following
         // the taper of the limb it grows from.
-        const taper = 1 - i / steps;
+        const along = i / steps;
+        const taper = 1 - along;
+        const clearance = rows * STRAND_CLEARANCE;
+        const share = STRAND_REACH_AT_FORK + STRAND_REACH_GAIN * along;
         const length = species.strandsToGround
-          ? Math.max(2, (rows - 1 - y) * range(rng, 0.55, 0.95))
+          ? Math.max(2, (rows - 1 - clearance - y) * share * range(rng, 0.85, 1.1))
           : (range(rng, 1.2, 2) + taper * species.lateralLength) * scale;
 
         const side = rng() < 0.5 ? -1 : 1;
@@ -828,7 +876,17 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
       // Fan children evenly across the spread, then jitter so pairs are not
       // perfect mirrors of each other.
       const t = childCount === 1 ? 0 : (c / (childCount - 1)) * 2 - 1;
-      const fan = c === leader ? t * p.spread * 0.2 : t * p.spread;
+      let fan = c === leader ? t * p.spread * 0.2 : t * p.spread;
+
+      if (species.minFanOffset && c !== leader) {
+        // Pick a side for a child the even fan left pointing along its parent,
+        // then hold every child at least that far over.
+        const side = t === 0 ? (rng() < 0.5 ? -1 : 1) : Math.sign(t);
+        if (Math.abs(fan) < species.minFanOffset) {
+          fan = side * species.minFanOffset;
+        }
+      }
+
       const offset = fan + (rng() - 0.5) * p.spread * 0.45;
 
       queue.push({
@@ -836,10 +894,15 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
         y,
         // Judged at the child's own depth, so each generation is allowed to
         // sit further out and further down than the one that produced it.
-        angle: clampToSky(
-          angle + offset + (c === leader ? 0 : outward),
-          skyLimit(species, shoot.depth + 1),
-          axis
+        angle: leanOut(
+          clampToSky(
+            angle + offset + (c === leader ? 0 : outward),
+            skyLimit(species, shoot.depth + 1),
+            axis
+          ),
+          angle,
+          axis,
+          c === leader ? 0 : species.minFanOffset ?? 0
         ),
         // The leader keeps its parent's vigour; limbs are the ones that taper.
         length:
