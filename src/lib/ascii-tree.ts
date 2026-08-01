@@ -82,6 +82,15 @@ interface Species {
   /** Fraction along a branch before side shoots start, so a limb keeps a bare
    * stretch at its base instead of sprouting from the fork. */
   lateralStart: number;
+  /** Shallowest branch that puts out side shoots. A willow hangs its strands
+   * off the outer limbs, never straight off the trunk. */
+  lateralMinDepth?: number;
+  /**
+   * Half-range, radians, of the lean the whole tree starts with. Small values
+   * stand a tree up straight; large ones let the trunk set off well off
+   * vertical, and the crown follows it over.
+   */
+  trunkLean: number;
   /** Character used once a branch is thick enough to read as a trunk. */
   trunkChar: string;
 }
@@ -111,6 +120,7 @@ const SPECIES: readonly Species[] = [
     lateralAngle: [0.9, 1.35],
     lateralDepth: 1,
     lateralStart: 0.2,
+    trunkLean: 0.16,
     trunkChar: "#",
   },
   {
@@ -137,7 +147,64 @@ const SPECIES: readonly Species[] = [
     lateralAngle: [1.0, 1.45],
     lateralDepth: 1,
     lateralStart: 0.2,
+    trunkLean: 0.2,
     trunkChar: "#",
+  },
+  {
+    id: "birch",
+    // Tall, fine and whippy. It leans off vertical from the ground — a stand of
+    // birches never stands to attention — and the crown follows the trunk over.
+    label: "Breza",
+    trunkLength: [6, 9],
+    trunkThickness: [2.2, 3.0],
+    maxDepth: [5, 6],
+    children: [2, 2],
+    spread: [0.42, 0.62],
+    maxAngle: 1.12,
+    droopPerDepth: 0.22,
+    gravity: [0.02, 0.05],
+    hardness: [3.5, 5],
+    temperature: [0.06, 0.14],
+    lengthDecay: [0.52, 0.64],
+    leaves: ["'", "`", "*", "."],
+    leafDensity: [5, 9],
+    leafSpread: [1.6, 2.4],
+    laterals: 3,
+    lateralLength: 2,
+    lateralAngle: [0.7, 1.0],
+    lateralDepth: 1,
+    lateralStart: 0.2,
+    trunkLean: 0.5,
+    trunkChar: "|",
+  },
+  {
+    id: "willow",
+    // Deliberately minimal skeleton: a stout leaning trunk and a wide fan of
+    // limbs, nothing more. The character of a willow is the curtain hanging off
+    // those limbs, and burying it under levels of forking loses it.
+    label: "Vrba",
+    trunkLength: [6, 8],
+    trunkThickness: [3.0, 3.8],
+    maxDepth: [2, 2],
+    children: [2, 2],
+    spread: [0.92, 1.15],
+    maxAngle: 1.3,
+    droopPerDepth: 0.3,
+    gravity: [0.02, 0.05],
+    hardness: [1.8, 2.6],
+    temperature: [0.03, 0.07],
+    lengthDecay: [0.88, 1.0],
+    leaves: [",", "'", ".", ":"],
+    leafDensity: [2, 3],
+    leafSpread: [0.6, 1.0],
+    laterals: 8,
+    lateralLength: 3.4,
+    lateralAngle: [3.06, 3.22], // straight down, give or take a few degrees
+    lateralDepth: 2,
+    lateralStart: 0.3,
+    lateralMinDepth: 1,
+    trunkLean: 0.4,
+    trunkChar: "|",
   },
 ];
 
@@ -206,14 +273,19 @@ const X_SCALE = 1.8;
 const UP = -Math.PI / 2;
 
 /**
- * Keeps a direction within `limit` radians of straight up.
+ * Keeps a direction within `limit` radians of the tree's own up.
  *
  * Gravity and noise otherwise accumulate until branches run sideways or dive
  * into the ground, which reads as scribble rather than as a tree.
+ *
+ * `axis` is that up: straight up plus the tree's lean. Measuring from the lean
+ * rather than from vertical is what lets a birch set off at 30 degrees and
+ * carry its crown over with it — clamped against true vertical, the trunk would
+ * simply be bent back upright on its first step.
  */
-function clampToSky(angle: number, limit: number): number {
-  const off = angle - UP;
-  return UP + Math.max(-limit, Math.min(limit, off));
+function clampToSky(angle: number, limit: number, axis: number = UP): number {
+  const off = angle - axis;
+  return axis + Math.max(-limit, Math.min(limit, off));
 }
 
 /**
@@ -292,8 +364,14 @@ function stroke(
     // Interpolated so a single growth step still extends smoothly cell by cell.
     const time = timeFrom + (timeTo - timeFrom) * t;
     grid.put(x, y, ch, layer, time);
-    if (width >= 2) grid.put(x - 1, y, wideChar, layer, time);
-    if (width >= 3) grid.put(x + 1, y, wideChar, layer, time);
+
+    // Widened to the left first, then alternating, which is how the original
+    // two- and three-cell trunks were drawn; the loop only generalises it so a
+    // finer canvas can carry a proportionally wider one.
+    for (let w = 1; w < width; w++) {
+      const offset = w % 2 === 1 ? -Math.ceil(w / 2) : Math.ceil(w / 2);
+      grid.put(x + offset, y, wideChar, layer, time);
+    }
   }
 }
 
@@ -388,40 +466,73 @@ export interface TreeOptions {
   rows?: number;
 }
 
+/**
+ * Canvas the trees are drawn on. Bigger means the same tree in more, smaller
+ * characters — the page scales the glyphs to whatever the character count is,
+ * so raising this shrinks the type without shrinking the tree.
+ */
+const CANVAS_COLS = 215;
+const CANVAS_ROWS = 58;
+
+/**
+ * Rows a species' authored size is measured against. Deliberately fewer than
+ * the canvas has: at parity the nominal tree is exactly canvas height, and
+ * every taller-than-average one loses its crown to the top row.
+ */
+const SPECIES_ROWS = 31;
+
+/** Canvas-to-species ratio the stroke widths and leaf counts were tuned at. */
+const TUNED_SCALE = 34 / 26;
+
 export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree {
-  const cols = options.cols ?? 110;
-  const rows = options.rows ?? 34;
+  const cols = options.cols ?? CANVAS_COLS;
+  const rows = options.rows ?? CANVAS_ROWS;
 
   const rng = mulberry32(seed);
   const species = pick(rng, SPECIES);
   const grid = new Grid(cols, rows);
 
-  // Species dimensions are authored against a 26-row canvas; scale them so a
-  // taller panel grows a bigger tree rather than the same tree with more air.
-  const scale = rows / 26;
+  // Species dimensions are authored against SPECIES_ROWS; scale them so a taller
+  // canvas grows a bigger tree rather than the same tree with more air.
+  const scale = rows / SPECIES_ROWS;
+
+  // Resolution relative to the canvas the look was tuned on. The page sizes
+  // glyphs so the tree fills its band whatever the character count, so a finer
+  // canvas is the same tree drawn in smaller type — but only if the things
+  // measured in whole cells keep up: stroke widths, and the leaf count needed
+  // to fill a cluster whose area grows with the square.
+  const detail = scale / TUNED_SCALE;
 
   const p: Params = {
     maxDepth: Math.round(range(rng, ...species.maxDepth)),
     children: Math.round(range(rng, ...species.children)),
     spread: range(rng, ...species.spread),
-    gravity: range(rng, ...species.gravity),
+    // Both are applied per growth step, and a finer canvas gives a branch of
+    // the same length more steps. Left alone, the extra steps would bend and
+    // rattle the branch further than the same tree on a coarse canvas — the
+    // shape would drift with the resolution instead of holding.
+    gravity: range(rng, ...species.gravity) / detail,
     hardness: range(rng, ...species.hardness),
-    temperature: range(rng, ...species.temperature),
+    temperature: range(rng, ...species.temperature) / Math.sqrt(detail),
     lengthDecay: range(rng, ...species.lengthDecay),
-    leafDensity: range(rng, ...species.leafDensity),
+    leafDensity: range(rng, ...species.leafDensity) * detail * detail,
     leafSpread: range(rng, ...species.leafSpread) * scale,
     leaderDepth: Math.floor(range(rng, 0, 2.999)),
   };
 
-  // A slight lean keeps trees from all looking like the same mirror image.
-  const lean = range(rng, -0.16, 0.16);
+  // Which way the whole tree leans, and how far it may. A birch or a willow
+  // gets a wide range here, so the trunk starts off well away from vertical
+  // rather than every tree standing to attention.
+  const lean = range(rng, -species.trunkLean, species.trunkLean);
+  // The tree's own vertical. Every clamp below is measured from it.
+  const axis = UP + lean;
   let branches = 0;
 
   const queue: Shoot[] = [
     {
       x: cols / 2,
       y: rows - 1,
-      angle: -Math.PI / 2 + lean,
+      angle: axis,
       length: range(rng, ...species.trunkLength) * scale,
       thickness: range(rng, ...species.trunkThickness),
       depth: 0,
@@ -454,9 +565,9 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
         // horizontal. It is also what stops the flat runs a constant droop
         // produced — a branch reaching sideways now keeps turning instead of
         // holding one angle for its whole length, so the end curls down.
-        const lean = Math.abs(Math.sin(angle - UP));
+        const tilt = Math.abs(Math.sin(angle - UP));
         const droop =
-          (p.gravity * (shoot.depth + 1) * (i / steps + 0.35) * (0.3 + lean)) /
+          (p.gravity * (shoot.depth + 1) * (i / steps + 0.35) * (0.3 + tilt)) /
           p.hardness;
         angle += droop * Math.sign(Math.cos(angle) || 1);
       }
@@ -467,7 +578,7 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
       // held toward the sky. That is what lets a willow hang strands straight
       // down while its branches still reach upward.
       if (!shoot.terminal) {
-        angle = clampToSky(angle, skyLimit(species, shoot.depth, i / steps));
+        angle = clampToSky(angle, skyLimit(species, shoot.depth, i / steps), axis);
       }
 
       const nx = x + Math.cos(angle) * X_SCALE;
@@ -476,7 +587,10 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
       // A branch narrows along its own length, not just at each fork — without
       // the taper a thick trunk reads as an extruded pole.
       const t = shoot.thickness * (1 - 0.3 * (i / steps));
-      const width = t >= 3.6 ? 3 : t >= 2.3 ? 2 : 1;
+      const width = Math.max(
+        1,
+        Math.round((t >= 3.6 ? 3 : t >= 2.3 ? 2 : 1) * detail)
+      );
       const ch = width > 1 ? species.trunkChar : branchChar(nx - x, ny - y);
 
       // One unit of simulation time per growth step.
@@ -494,6 +608,7 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
         species.laterals > 0 &&
         !shoot.terminal &&
         shoot.depth <= species.lateralDepth &&
+        shoot.depth >= (species.lateralMinDepth ?? 0) &&
         i > steps * species.lateralStart &&
         i < steps - 1 &&
         queue.length + branches < SOFT_CAP &&
@@ -607,7 +722,8 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
         // sit further out and further down than the one that produced it.
         angle: clampToSky(
           angle + offset + (c === leader ? 0 : outward),
-          skyLimit(species, shoot.depth + 1)
+          skyLimit(species, shoot.depth + 1),
+          axis
         ),
         // The leader keeps its parent's vigour; limbs are the ones that taper.
         length:
