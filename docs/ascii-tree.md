@@ -71,6 +71,8 @@ variety between two oaks comes from.
 | `spread` | Half-angle, radians, that children fan away from their parent |
 | `maxAngle` | The species' ceiling on how far from vertical a branch may point |
 | `droopPerDepth` | How fast that ceiling opens as branches get finer — this is the arch |
+| `reachRate` | How fast a branch is allowed out from the trunk per level. The main control on width: at 0.5 a first limb is still 40° off vertical, at 1.0 it is out near horizontal by the time it leaves the fork |
+| `leaderDepth` | Range the per-tree leader depth is drawn from — see §5.4 |
 | `gravity`, `hardness` | Downward pull per step, and resistance to it |
 | `temperature` | Directional noise. High values wander and gnarl |
 | `lengthDecay` | How much shorter each generation is than its parent |
@@ -87,9 +89,21 @@ What separates them:
   `droopPerDepth`. Short, twisted, wider than it is tall.
 - **Birch** — the stiffest and smoothest (3.5–5.0 / 0.06–0.14) with a narrow
   spread and six levels of depth: tall, fine and twiggy.
-- **Willow** — `maxDepth` 2, so the skeleton is only a trunk and one fan of
-  long limbs. Everything else about it is the curtain: `laterals` 8 at a
-  `lateralAngle` near π, i.e. hanging straight down.
+- **Willow** — the widest and lowest of the four, and the only one built to be
+  read as two materials at once. `maxDepth` 1 and `leaderDepth` [0, 0]: a short
+  `#` trunk forks once, low, into four to six limbs that run out near
+  horizontal (`reachRate` 1.0) and finish below it (`droopPerDepth` 0.52).
+  `lengthDecay` above 2 makes those limbs far longer than the trunk, which is
+  where all the width comes from. Everything else is the curtain — `laterals`
+  11 at a `lateralAngle` near π, hanging straight down as thin single lines
+  against the `#` of the limbs that carry them.
+
+  Three of its settings are there to stop failure modes worth knowing about:
+  `maxDepth` 1 because a second generation of limbs starts where the first
+  finished — already past horizontal — and drives into the ground; `leaderDepth`
+  [0, 0] because a leader keeps the trunk rising *through* the crown, and since
+  strands hang from depth ≥ 1 the still-rising trunk collects them; and
+  `lateralMinDepth` 1 so nothing hangs off the trunk itself.
 
 ---
 
@@ -148,6 +162,12 @@ about the change or the shape drifts with the resolution. `detail`
 | `temperature` | ÷ √`detail` | Same, but it is a random walk, so the total wander goes with the square root |
 | `leafDensity` | × `detail²` | A leaf cluster's *area* grows with the square, so the same count would thin out |
 | stroke width | × `detail` | A three-cell trunk on a coarse canvas is a four- or five-cell trunk on a fine one |
+
+Stroke width is `round(thickness × WIDTH_PER_THICKNESS × detail)`, capped at
+`MAX_STROKE`. It used to be three fixed tiers; multiplied up for the finer
+canvas those tiers jumped straight from one cell to three, so a limb either
+vanished to a hairline or came out as a slab. `WIDTH_PER_THICKNESS` = 0.62 is
+set so the old tier boundaries still land on the same widths.
 
 ### 5.1 The queue
 
@@ -234,14 +254,15 @@ shoots). Otherwise it forks.
 
 - `childCount` is normally 2, +1 with probability 0.35 near the base, −1 with
   probability 0.18 far out.
-- One child may be the **leader**: near the base (`depth ≤ leaderDepth`) a
+- One child may be the **leader**: near the base (`depth ≤ p.leaderDepth`) a
   randomly chosen child carries on nearly in the parent's direction (a fifth of
   the usual fan), keeps 78–90 % of its parent's thickness where a side limb
   keeps 55–70 %, takes 75 % of its length rather than `lengthDecay`, and skips
   the outward bias. The others come off it as limbs. Without a leader every
   fork splits the trunk in half and the tree reads as two trees leaning apart.
-  `leaderDepth` is drawn per tree from {0, 1, 2}: 0 gives an all-crown tree that
-  forks immediately, 2 a clear stem running most of the way up.
+  `p.leaderDepth` is drawn per tree from the species' own `leaderDepth` range:
+  {0, 1, 2} for oak, bonsai and birch, so the habit varies; [0, 0] for the
+  willow, which has no stem above its first fork.
 - **`OUTWARD_BIAS = 0.05` rad per level** nudges children on the left further
   left and on the right further right, in proportion to how far from the trunk
   they already are. It stops a wide fork from throwing half its children back
@@ -354,6 +375,11 @@ for (const s of [1, 2, 3]) {
 `generateTree` also takes `{ cols, rows }` if you want to see how it behaves on
 a different canvas.
 
+In the browser, `/?seed=123` pins the first tree, so a particular one can be
+looked at again instead of reloading until the species you want comes up. Only
+the first is pinned — the panel replants a random one every few seconds after
+that. Handy seeds: 1 is a Breza, 4 a Vrba, 7 a Hrast, 12 a Bonsai.
+
 To check a claim about bias or variety, generate a few hundred seeds and measure
 rather than eyeballing — the numbers in §5.5 came from exactly that, and the
 first impression ("always to the right") turned out to be a real but much
@@ -377,15 +403,21 @@ smaller effect than it looked.
 Sizes are load-bearing against each other. Measured over 600 seeds, mean and
 range of the bounding box each species lands in:
 
-| Species | Width | Height |
-| --- | --- | --- |
-| Hrast | 86 [51–155] | 44 [30–57] |
-| Bonsai | 83 [44–137] | 32 [19–51] |
-| Breza | 57 [39–84] | 40 [30–57] |
-| Vrba | 58 [35–97] | 33 [25–43] |
+| Species | Width | Height | Mean width on a 1536 × 528 band |
+| --- | --- | --- | --- |
+| Hrast | 87 [51–155] | 44 [30–57] | 613 px |
+| Bonsai | 83 [44–137] | 32 [19–51] | 811 px |
+| Breza | 57 [37–84] | 40 [29–56] | 449 px |
+| Vrba | 75 [41–107] | 25 [15–36] | 970 px |
 
-Height is what usually binds on the page, so a species that runs much taller
-than the others is drawn in noticeably smaller type. Keep them in the same
-band. The tallest oaks and birches still touch the top row of the canvas on
-about 8 % and 1 % of seeds respectively — visible as a crown clipped flat, and
-the number to watch if you make anything taller.
+The last column is the one that matters and the first two are misleading on
+their own: every tree is scaled to fill the band's *height*, so a short species
+is drawn in bigger type and ends up physically widest even with fewer columns
+than an oak. The willow has the fewest rows of the four and is nearly twice as
+wide on screen as the tree with the most columns. It also means a species that
+runs much taller than the others is drawn in noticeably smaller type — keep
+them in the same band.
+
+The tallest oaks still touch the top row of the canvas on about 8 % of seeds,
+visible as a crown clipped flat. That is the number to watch if you make
+anything taller.

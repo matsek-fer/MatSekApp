@@ -9,11 +9,23 @@ import { randomSeed } from "@/lib/ascii-tree";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: { seed?: string };
+}) {
   const supabase = createServerClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
+
+  // ?seed=123 pins the first tree, so a particular one can be looked at again
+  // — otherwise checking a change to one species means reloading until it comes
+  // up. Anything that is not a number falls through to a random tree.
+  const pinned = Number(searchParams.seed);
+  const firstSeed = Number.isFinite(pinned) && searchParams.seed
+    ? Math.abs(Math.trunc(pinned))
+    : randomSeed();
 
   // A fixed height, not a minimum: the tree section below sizes itself to the
   // room that is left over, so the page is meant to fit on one screen and never
@@ -53,7 +65,7 @@ export default async function HomePage() {
       </div>
 
       {/* Seeded here so the server render and hydration agree on the first tree. */}
-      <ContentPanel initialSeed={randomSeed()} />
+      <ContentPanel initialSeed={firstSeed} />
 
       <Link
         href="/calendar"

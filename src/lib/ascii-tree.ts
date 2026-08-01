@@ -53,6 +53,13 @@ interface Species {
    * broadleaf rather than an upturned broom.
    */
   droopPerDepth: number;
+  /**
+   * Radians the reach opens per level of depth, before the droop takes over.
+   * This is what sets how quickly limbs get out from the trunk, and so how
+   * wide the tree is: at 0.5 a first limb is still only 40 degrees off
+   * vertical, at 1.2 it is out near horizontal by the time it leaves the fork.
+   */
+  reachRate: number;
   /** Per-step droop. Negative curls the branch back upward. */
   gravity: [number, number];
   /** Resistance to gravity — higher keeps a branch straight. */
@@ -86,6 +93,13 @@ interface Species {
    * off the outer limbs, never straight off the trunk. */
   lateralMinDepth?: number;
   /**
+   * Range the per-tree leader depth is drawn from — how far up the trunk keeps
+   * a dominant leader instead of forking evenly. A willow wants [0, 0]: it has
+   * no stem above the first fork, and a leader would carry the trunk up through
+   * the crown collecting strands on the way.
+   */
+  leaderDepth: [number, number];
+  /**
    * Half-range, radians, of the lean the whole tree starts with. Small values
    * stand a tree up straight; large ones let the trunk set off well off
    * vertical, and the crown follows it over.
@@ -108,6 +122,7 @@ const SPECIES: readonly Species[] = [
     spread: [0.5, 0.9],
     maxAngle: 1.0,
     droopPerDepth: 0.34,
+    reachRate: 0.5,
     gravity: [0.05, 0.085],
     hardness: [2.2, 3.0],
     temperature: [0.1, 0.2],
@@ -120,6 +135,7 @@ const SPECIES: readonly Species[] = [
     lateralAngle: [0.9, 1.35],
     lateralDepth: 1,
     lateralStart: 0.2,
+    leaderDepth: [0, 2],
     trunkLean: 0.16,
     trunkChar: "#",
   },
@@ -135,6 +151,7 @@ const SPECIES: readonly Species[] = [
     spread: [0.6, 1.05],
     maxAngle: 1.08,
     droopPerDepth: 0.4,
+    reachRate: 0.5,
     gravity: [0.05, 0.08],
     hardness: [0.8, 1.4],
     temperature: [0.24, 0.42],
@@ -147,6 +164,7 @@ const SPECIES: readonly Species[] = [
     lateralAngle: [1.0, 1.45],
     lateralDepth: 1,
     lateralStart: 0.2,
+    leaderDepth: [0, 2],
     trunkLean: 0.2,
     trunkChar: "#",
   },
@@ -162,6 +180,7 @@ const SPECIES: readonly Species[] = [
     spread: [0.42, 0.62],
     maxAngle: 1.12,
     droopPerDepth: 0.22,
+    reachRate: 0.5,
     gravity: [0.02, 0.05],
     hardness: [3.5, 5],
     temperature: [0.06, 0.14],
@@ -174,37 +193,53 @@ const SPECIES: readonly Species[] = [
     lateralAngle: [0.7, 1.0],
     lateralDepth: 1,
     lateralStart: 0.2,
+    leaderDepth: [0, 2],
     trunkLean: 0.5,
     trunkChar: "|",
   },
   {
     id: "willow",
-    // Deliberately minimal skeleton: a stout leaning trunk and a wide fan of
-    // limbs, nothing more. The character of a willow is the curtain hanging off
-    // those limbs, and burying it under levels of forking loses it.
+    // The widest of the four, and deliberately the shortest: a stout leaning
+    // trunk that forks low into long, near-horizontal limbs, with the curtain
+    // hanging off them. Everything here is in service of width — a willow read
+    // as tall is a willow that has become a generic tree with strands on it.
     label: "Vrba",
-    trunkLength: [6, 8],
-    trunkThickness: [3.0, 3.8],
-    maxDepth: [2, 2],
-    children: [2, 2],
-    spread: [0.92, 1.15],
-    maxAngle: 1.3,
-    droopPerDepth: 0.3,
-    gravity: [0.02, 0.05],
-    hardness: [1.8, 2.6],
+    trunkLength: [5, 6.5],
+    trunkThickness: [3.8, 4.8],
+    // One generation of limbs and no more. A second one starts where the first
+    // finished — already past horizontal and heading down — and simply drives
+    // into the ground, which is what a "willow" full of limbs plunging to the
+    // floor was. The curtain, not more forking, is the tree.
+    maxDepth: [1, 1],
+    children: [4, 6],
+    spread: [1.0, 1.3],
+    maxAngle: 1.5,
+    // The limbs themselves have to finish pointing at the ground, not just the
+    // strands hanging off them, so this runs well above the other species.
+    droopPerDepth: 0.52,
+    reachRate: 1.0,
+    gravity: [0.1, 0.16],
+    hardness: [1.6, 2.2],
     temperature: [0.03, 0.07],
-    lengthDecay: [0.88, 1.0],
+    // Limbs as long as the trunk or longer. With the trunk this short that is
+    // what carries the width.
+    // Limbs far longer than the trunk. With only one generation of them, their
+    // length is the entire width of the tree.
+    lengthDecay: [2.0, 2.5],
     leaves: [",", "'", ".", ":"],
     leafDensity: [2, 3],
     leafSpread: [0.6, 1.0],
-    laterals: 8,
+    laterals: 11,
     lateralLength: 3.4,
     lateralAngle: [3.06, 3.22], // straight down, give or take a few degrees
-    lateralDepth: 2,
-    lateralStart: 0.3,
+    lateralDepth: 1,
+    lateralStart: 0.25,
     lateralMinDepth: 1,
+    leaderDepth: [0, 0],
     trunkLean: 0.4,
-    trunkChar: "|",
+    // Same glyph as the oak, and for the same reason: it separates the parts
+    // that hold the tree up from the strands, which stay thin single lines.
+    trunkChar: "#",
   },
 ];
 
@@ -304,6 +339,13 @@ const DROOP_ONSET = 1.2;
 /** Radians per level of depth that children are fanned away from the trunk. */
 const OUTWARD_BIAS = 0.05;
 
+/** Cells of stroke width per unit of branch thickness, before the resolution
+ * factor. Chosen so 2.3 thickness still draws two cells and 3.6 draws three. */
+const WIDTH_PER_THICKNESS = 0.62;
+
+/** No branch is drawn wider than this, whatever the canvas. */
+const MAX_STROKE = 4;
+
 /** How far from vertical the trunk itself may wander, in radians. */
 const TRUNK_LIMIT = 0.22;
 
@@ -321,7 +363,7 @@ function skyLimit(species: Species, depth: number, progress = 0): number {
   // last, up to the species' own limit. Without the tight start, gravity walks
   // the trunk sideways across the canvas and the crown ends up beside its own
   // base rather than over it.
-  const reach = Math.min(species.maxAngle, TRUNK_LIMIT + d * 0.5);
+  const reach = Math.min(species.maxAngle, TRUNK_LIMIT + d * species.reachRate);
   const beyondOnset = Math.max(0, d - DROOP_ONSET);
   return Math.min(DROOP_CEILING, reach + beyondOnset * species.droopPerDepth);
 }
@@ -401,10 +443,10 @@ interface Params {
   leafDensity: number;
   leafSpread: number;
   /**
-   * Deepest fork that still keeps a leader, drawn per tree rather than fixed.
-   * At 0 the trunk forks in two almost immediately and the tree is all crown;
-   * at 2 a clear stem runs most of the way up with limbs off it. Holding it
-   * constant was most of the reason every tree read the same.
+   * Deepest fork that still keeps a leader, drawn per tree from the species'
+   * own range. At 0 the trunk forks in two almost immediately and the tree is
+   * all crown; at 2 a clear stem runs most of the way up with limbs off it.
+   * Holding it constant was most of the reason every tree read the same.
    */
   leaderDepth: number;
 }
@@ -517,7 +559,7 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
     lengthDecay: range(rng, ...species.lengthDecay),
     leafDensity: range(rng, ...species.leafDensity) * detail * detail,
     leafSpread: range(rng, ...species.leafSpread) * scale,
-    leaderDepth: Math.floor(range(rng, 0, 2.999)),
+    leaderDepth: Math.round(range(rng, ...species.leaderDepth)),
   };
 
   // Which way the whole tree leans, and how far it may. A birch or a willow
@@ -587,9 +629,14 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
       // A branch narrows along its own length, not just at each fork — without
       // the taper a thick trunk reads as an extruded pole.
       const t = shoot.thickness * (1 - 0.3 * (i / steps));
+      // Continuous rather than the three tiers this used to step through: the
+      // tiers, once multiplied up for the finer canvas, jumped straight from
+      // one cell to three and a limb either vanished to a hairline or came out
+      // as a slab. WIDTH_PER_THICKNESS is set so the old tier boundaries still
+      // land on the same widths.
       const width = Math.max(
         1,
-        Math.round((t >= 3.6 ? 3 : t >= 2.3 ? 2 : 1) * detail)
+        Math.min(MAX_STROKE, Math.round(t * WIDTH_PER_THICKNESS * detail))
       );
       const ch = width > 1 ? species.trunkChar : branchChar(nx - x, ny - y);
 
