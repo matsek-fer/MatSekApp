@@ -104,16 +104,22 @@ What separates them:
   11 at a `lateralAngle` near π, hanging straight down as thin single lines
   against the `#` of the limbs that carry them.
 
-  Its curtain is built by `strandsToGround`: a strand is cut to the drop between
-  the limb it hangs from and the floor, less `STRAND_CLEARANCE` (8 % of canvas
-  height), times a share that runs from `STRAND_REACH_AT_FORK` (0.3) at the
-  fork end of a limb to that plus `STRAND_REACH_GAIN` (0.62) at its tip, times
-  a 0.85–1.1 jitter. Three things fall out of that: strands stop short of the
-  ground rather than resting on it, they lengthen along the limb so the curtain
-  sweeps down from the trunk outwards instead of dropping off at one length,
-  and the bottom edge stays ragged — level would read as a hedge. Measured over
-  the willow seeds in 400, the curtain ends 4–8 rows above the canvas floor
-  (median 6) while the trunk still reaches it.
+  Its curtain is built by `strandsToGround` and `strandLength`: a strand takes
+  the share of the drop beneath it that its position along the limb earns —
+  `STRAND_REACH_AT_FORK` (0.35) rising to 1.0 at the tip — but is never brought
+  closer to the floor than `STRAND_GROUND_GAP`, one to four characters drawn per
+  strand. So the ones near the trunk are short, the outermost run the whole way
+  down, and the bottom edge is ragged rather than level, which would read as a
+  hedge. Measured over the willow seeds in 400, the lowest strand stem finishes
+  1–2 rows above the floor; leaf characters scatter a row or two below that.
+
+  A limb that simply stopped was the remaining tell — a branch snapped off in
+  mid air. Because `maxDepth` is 1, every limb *is* a tip, so it used to leaf
+  out where it ended. It now spawns a tail instead: a terminal shoot from the
+  limb's end, turned straight down, running to the ground with the strands. The
+  tail inherits the thickness the limb had **tapered to**, not the one it
+  started with — inheriting the base thickness sends a four-cell `#` column to
+  the floor and the tree grows a second trunk at the end of every limb.
 
   `minFanOffset` 0.5 handles its fork. An even fan puts its middle child
   straight along the parent, which on a crown of four to six limbs is one limb
