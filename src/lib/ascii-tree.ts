@@ -123,6 +123,8 @@ interface Species {
    * them is allowed to be steeper than the parent it came from.
    */
   minFanOffset?: number;
+  /** Raises the shared canopy-density cap for this species. */
+  softCap?: number;
   /** Overrides the shared ceiling on how far past vertical a branch may point. */
   droopCeiling?: number;
   /**
@@ -280,7 +282,7 @@ const SPECIES: readonly Species[] = [
     lateralLength: 3.4,
     lateralAngle: [3.06, 3.22], // straight down, give or take a few degrees
     lateralDepth: 1,
-    lateralStart: 0.25,
+    lateralStart: 0.08,
     lateralMinDepth: 1,
     leaderDepth: [0, 0],
     charScale: 1.95,
@@ -289,6 +291,7 @@ const SPECIES: readonly Species[] = [
     // and the strands read as different materials rather than one texture.
     tipTaper: 0.82,
     strandsToGround: true,
+    softCap: 240,
     droopCeiling: 2.95,
     tipDrop: 0.16,
     minFanOffset: 0.5,
@@ -551,9 +554,17 @@ interface Params {
 }
 
 // A depth-5 binary tree is 63 branches; this only catches pathological seeds.
+// Nothing comes close in practice — the densest tree of 600 seeds uses 96.
 const MAX_SHOOTS = 260;
 
-/** Soft ceiling on canopy density — past this, shoots stop forking. */
+/**
+ * Soft ceiling on canopy density — past this, shoots stop forking and stop
+ * putting out side shoots. Species may raise it: on a willow the strands all
+ * come off limbs that are queued one after another, so a cap this low was spent
+ * by the first limb or two and every limb after them came out bare. A long
+ * horizontal branch with nothing hanging from it is the one thing a willow
+ * cannot have.
+ */
 const SOFT_CAP = 52;
 
 interface Bounds {
@@ -650,6 +661,7 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
   // thinner type — the same curtain with more air in it, when the point of the
   // finer grid was to pack more strands into the same width.
   const lateralRate = species.laterals * species.charScale;
+  const softCap = species.softCap ?? SOFT_CAP;
 
   const p: Params = {
     maxDepth: Math.round(range(rng, ...species.maxDepth)),
@@ -771,7 +783,7 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
         shoot.depth >= (species.lateralMinDepth ?? 0) &&
         i > steps * species.lateralStart &&
         i < steps - 1 &&
-        queue.length + branches < SOFT_CAP &&
+        queue.length + branches < softCap &&
         rng() < lateralRate / steps
       ) {
         // A strand is cut to the drop beneath it rather than given a length of
@@ -827,7 +839,7 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
       shoot.depth >= p.maxDepth ||
       shoot.length < 1.2 ||
       shoot.thickness < 0.3 ||
-      branches + queue.length >= SOFT_CAP;
+      branches + queue.length >= softCap;
 
     // A limb that simply stops is the one thing a willow cannot do: the arc has
     // to carry on down and join the curtain, or it reads as a branch snapped
