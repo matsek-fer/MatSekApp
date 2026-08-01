@@ -15,18 +15,23 @@ export default async function HomePage() {
     data: { session },
   } = await supabase.auth.getSession();
 
+  // A fixed height, not a minimum: the tree section below sizes itself to the
+  // room that is left over, so the page is meant to fit on one screen and never
+  // scroll. dvh rather than vh so a phone's collapsing URL bar does not push
+  // the bottom of the page out of view.
   return (
-    <main className="flex min-h-screen flex-col items-center bg-bg">
-      <div className="relative flex w-full flex-col items-center px-4 pb-4 pt-4 sm:pt-8">
+    <main className="flex h-[100dvh] flex-col items-center overflow-hidden bg-bg">
+      <div className="relative flex w-full shrink-0 flex-col items-center px-4 pb-2 pt-3 sm:pt-5">
         <div className="absolute right-4 top-4">
           <ThemeToggle />
         </div>
 
         {/* The dark-mode logo variant carries its own contrast — no backlight
-            hacks needed behind the artwork. */}
-        <Logo size="lg" width={520} className="w-full max-w-[500px] sm:max-w-[560px]" />
+            hacks needed behind the artwork. Kept modest on purpose: every pixel
+            the wordmark takes is a pixel of tree. */}
+        <Logo size="lg" width={380} className="w-full max-w-[300px] sm:max-w-[380px]" />
 
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
+        <div className="mt-4 flex flex-wrap justify-center gap-3">
           {session ? (
             <>
               <ButtonLink href="/calendar" size="lg">
@@ -52,7 +57,7 @@ export default async function HomePage() {
 
       <Link
         href="/calendar"
-        className="pb-6 text-brand hover:underline sm:pb-10"
+        className="shrink-0 pb-4 text-brand hover:underline sm:pb-6"
       >
         Pogledaj kalendar aktivnosti →
       </Link>
