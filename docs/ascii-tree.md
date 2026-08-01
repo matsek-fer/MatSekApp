@@ -74,6 +74,10 @@ variety between two oaks comes from.
 | `reachRate` | How fast a branch is allowed out from the trunk per level. The main control on width: at 0.5 a first limb is still 40° off vertical, at 1.0 it is out near horizontal by the time it leaves the fork |
 | `leaderDepth` | Range the per-tree leader depth is drawn from — see §5.4 |
 | `charScale` | How finely this species is drawn relative to the others at the same physical size — see §5.0 |
+| `tipTaper` | Fraction of its thickness a branch loses between base and tip. Near 1 a limb that leaves the fork as a `#` band comes to a single-character point |
+| `tipDrop` | Extra droop ramped in over a branch's last quarter, so the end hooks down whether or not gravity had the length to do it |
+| `droopCeiling` | Per-species override of the shared limit on how far past vertical a branch may point |
+| `strandsToGround` | Side shoots are cut to the drop beneath them instead of being given a length — the willow's curtain |
 | `gravity`, `hardness` | Downward pull per step, and resistance to it |
 | `temperature` | Directional noise. High values wander and gnarl |
 | `lengthDecay` | How much shorter each generation is than its parent |
@@ -99,7 +103,23 @@ What separates them:
   11 at a `lateralAngle` near π, hanging straight down as thin single lines
   against the `#` of the limbs that carry them.
 
-  Three of its settings are there to stop failure modes worth knowing about:
+  Its curtain is built by `strandsToGround`: a strand is cut to the distance
+  between the limb it hangs from and the floor, times 0.55–0.95. A strand off a
+  high limb is therefore long and one off a low limb short, they all finish near
+  the ground, and the spread in the multiplier keeps the bottom edge ragged
+  rather than level — level would read as a hedge.
+
+  Its skeleton comes to a point: `tipTaper` 0.82 against 0.35–0.4 for the
+  others, so a limb four cells wide at the fork is a single `|` by its tip, and
+  the hard structure reads as a different material from the strands rather than
+  the same texture at two weights. `tipDrop` then hooks that tip down —
+  gravity alone only turns a branch down if it has length left to do it in, so
+  short limbs used to finish as flat spurs trailing off sideways. `droopCeiling`
+  2.45 lets those ends get well below horizontal, and its `temperature`, high
+  for a tree this stiff, is aimed at the trunk: a willow's stem wanders rather
+  than standing straight.
+
+  Three more settings are there to stop failure modes worth knowing about:
   `maxDepth` 1 because a second generation of limbs starts where the first
   finished — already past horizontal — and drives into the ground; `leaderDepth`
   [0, 0] because a leader keeps the trunk rising *through* the crown, and since
@@ -163,7 +183,7 @@ the willow finest:
 
 | Species | Mean glyph |
 | --- | --- |
-| Vrba | 11.3 px |
+| Vrba | 11.1 px |
 | Hrast | 11.7 px |
 | Breza | 11.9 px |
 | Bonsai | 12.5 px |
@@ -417,6 +437,8 @@ smaller effect than it looked.
 | --- | --- |
 | Wider crowns | `spread` up, or `OUTWARD_BIAS` up |
 | More arch, ends pointing further down | `droopPerDepth` up, or `DROOP_CEILING` up |
+| Branch ends that hook down regardless of length | `tipDrop` up |
+| Limbs that thin to a line at the tip | `tipTaper` up |
 | Straighter, stiffer branches | `hardness` up, or `temperature` down |
 | A clearer trunk | `leaderDepth` range up (in `generateTree`), or `TRUNK_LIMIT` down |
 | Denser canopy | `SOFT_CAP` up, `leafDensity` up |
@@ -433,7 +455,7 @@ range of the bounding box each species lands in:
 | Hrast | 87 [51–155] | 44 [30–63] | 611 px |
 | Bonsai | 108 [60–179] | 41 [28–60] | 818 px |
 | Breza | 62 [40–91] | 43 [31–62] | 456 px |
-| Vrba | 120 [63–178] | 46 [31–66] | 839 px |
+| Vrba | 116 [63–175] | 44 [31–60] | 839 px |
 
 The last column is the one that matters: every tree is scaled to fill the
 band's *height*, so columns alone do not tell you how wide anything looks. The
