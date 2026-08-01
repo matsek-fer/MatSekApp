@@ -35,7 +35,9 @@ export default async function DashboardLayout({
       <nav className="sticky top-0 z-40 border-b border-border bg-surface">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between gap-4">
-            <div className="flex items-center gap-6">
+            {/* self-stretch down the chain so the nav links can fill the bar's
+                full height; the logo beside them stays vertically centred. */}
+            <div className="flex items-center gap-6 self-stretch">
               <Link
                 href="/"
                 className="shrink-0 rounded-lg"
@@ -44,7 +46,7 @@ export default async function DashboardLayout({
                 <Logo width={112} />
               </Link>
 
-              <div className="hidden gap-1 md:flex">
+              <div className="hidden gap-1 self-stretch md:flex">
                 <VoronoiNavbarLink href="/calendar">Kalendar</VoronoiNavbarLink>
                 {session && (
                   <VoronoiNavbarLink href="/activities/new">
@@ -59,14 +61,14 @@ export default async function DashboardLayout({
               </div>
             </div>
 
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-1 self-stretch sm:gap-2">
               <ThemeToggle />
               {session ? (
                 <>
                   <NotificationBell />
                   <VoronoiNavbarLink
                     href="/profile"
-                    className="hidden max-w-[16ch] truncate sm:inline-flex"
+                    className="hidden max-w-[16ch] self-stretch truncate sm:inline-flex"
                   >
                     {profile?.full_name || session.user.email}
                   </VoronoiNavbarLink>
@@ -74,7 +76,9 @@ export default async function DashboardLayout({
                 </>
               ) : (
                 <>
-                  <VoronoiNavbarLink href="/login">Prijavi se</VoronoiNavbarLink>
+                  <VoronoiNavbarLink href="/login" className="self-stretch">
+                    Prijavi se
+                  </VoronoiNavbarLink>
                   <ButtonLink href="/register">Registriraj se</ButtonLink>
                 </>
               )}
