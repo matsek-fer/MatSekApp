@@ -12,7 +12,7 @@ constant named here is in the source under the same name.
 
 A seed goes into a small PRNG. The PRNG picks a species and draws a set of
 parameters for this particular tree. A single shoot is placed at the bottom
-centre of a 215 × 58 character grid pointing along the tree's own lean, and
+centre of a 285 × 72 character grid pointing along the tree's own lean, and
 then grown one step at a time: each step nudges its direction (gravity down, noise sideways),
 draws a character, and occasionally sprouts a twig. When a shoot runs out of
 length it either forks into children — which go back in the queue — or stops
@@ -73,6 +73,7 @@ variety between two oaks comes from.
 | `droopPerDepth` | How fast that ceiling opens as branches get finer — this is the arch |
 | `reachRate` | How fast a branch is allowed out from the trunk per level. The main control on width: at 0.5 a first limb is still 40° off vertical, at 1.0 it is out near horizontal by the time it leaves the fork |
 | `leaderDepth` | Range the per-tree leader depth is drawn from — see §5.4 |
+| `charScale` | How finely this species is drawn relative to the others at the same physical size — see §5.0 |
 | `gravity`, `hardness` | Downward pull per step, and resistance to it |
 | `temperature` | Directional noise. High values wander and gnarl |
 | `lengthDecay` | How much shorter each generation is than its parent |
@@ -138,8 +139,8 @@ is why a leaning tree's downhill limbs fall away faster than its uphill ones.
 ## 5. Growing a tree
 
 `generateTree(seed, options)` is the whole of it. Canvas defaults to
-`CANVAS_COLS` × `CANVAS_ROWS` = 215 × 58, and species sizes are scaled by
-`rows / SPECIES_ROWS` (31), so a bigger canvas grows a bigger tree rather than
+`CANVAS_COLS` × `CANVAS_ROWS` = 285 × 72, and species sizes are scaled by
+`rows / SPECIES_ROWS` (38.5) times the species' own `charScale`, so a bigger canvas grows a bigger tree rather than
 the same tree with more air around it. `SPECIES_ROWS` is deliberately smaller
 than the canvas: at parity the nominal tree is exactly canvas height and every
 taller-than-average one loses its crown to the top row.
@@ -148,9 +149,27 @@ taller-than-average one loses its crown to the top row.
 
 The page sizes glyphs so that the tree fills its band whatever its character
 count (§7). Raising the canvas therefore does not make the tree bigger — it
-draws the *same* tree in more, smaller characters. The current 215 × 58 is
-about 1.43× the 110 × 34 it was tuned at, which is why the type on the page is
-roughly 30 % smaller than it used to be at the same physical tree size.
+draws the *same* tree in more, smaller characters. The current 285 × 72 is
+about 1.9× the 110 × 34 it was tuned at, which is why the type on the page is
+much smaller than it used to be at the same physical tree size.
+
+**`charScale` does the same thing for one species.** Because every tree is
+scaled to fill the band's *height*, the species with the fewest rows is drawn
+in the biggest type — which was backwards for the willow, whose whole character
+is fine, dense strands, and which is the shortest of the four. Its `charScale`
+of 1.95 buys it a finer grid than the rest; bonsai and birch carry small ones
+for the same reason. The four now land within about a pixel of each other, with
+the willow finest:
+
+| Species | Mean glyph |
+| --- | --- |
+| Vrba | 11.3 px |
+| Hrast | 11.7 px |
+| Breza | 11.9 px |
+| Bonsai | 12.5 px |
+
+`charScale` multiplies `scale`, so `detail` picks it up and every correction in
+the table above follows automatically. One does not follow automatically:
 
 Four quantities are measured in whole cells or per step, and have to be told
 about the change or the shape drifts with the resolution. `detail`
@@ -162,6 +181,11 @@ about the change or the shape drifts with the resolution. `detail`
 | `temperature` | ÷ √`detail` | Same, but it is a random walk, so the total wander goes with the square root |
 | `leafDensity` | × `detail²` | A leaf cluster's *area* grows with the square, so the same count would thin out |
 | stroke width | × `detail` | A three-cell trunk on a coarse canvas is a four- or five-cell trunk on a fine one |
+
+side-shoot *count*. `lateralRate` is `species.laterals × charScale`, so a finer
+grid packs proportionally more strands into the same width. Held constant, the
+finer grid would draw the same number of strands in thinner type — the same
+curtain with more air in it, when the point was to make it denser.
 
 Stroke width is `round(thickness × WIDTH_PER_THICKNESS × detail)`, capped at
 `MAX_STROKE`. It used to be three fixed tiers; multiplied up for the finer
@@ -397,6 +421,7 @@ smaller effect than it looked.
 | A clearer trunk | `leaderDepth` range up (in `generateTree`), or `TRUNK_LIMIT` down |
 | Denser canopy | `SOFT_CAP` up, `leafDensity` up |
 | Smaller type at the same tree size | `CANVAS_ROWS` and `CANVAS_COLS` up together, keeping their ratio |
+| Smaller type for one species only | its `charScale` up — which also makes its side shoots denser |
 | Trees that set off further from vertical | `trunkLean` up, per species |
 | Fewer long flat runs | `DROOP_ONSET` up — branches spend less time pinned near horizontal |
 
@@ -405,19 +430,19 @@ range of the bounding box each species lands in:
 
 | Species | Width | Height | Mean width on a 1536 × 528 band |
 | --- | --- | --- | --- |
-| Hrast | 87 [51–155] | 44 [30–57] | 613 px |
-| Bonsai | 83 [44–137] | 32 [19–51] | 811 px |
-| Breza | 57 [37–84] | 40 [29–56] | 449 px |
-| Vrba | 75 [41–107] | 25 [15–36] | 970 px |
+| Hrast | 87 [51–155] | 44 [30–63] | 611 px |
+| Bonsai | 108 [60–179] | 41 [28–60] | 818 px |
+| Breza | 62 [40–91] | 43 [31–62] | 456 px |
+| Vrba | 120 [63–178] | 46 [31–66] | 839 px |
 
-The last column is the one that matters and the first two are misleading on
-their own: every tree is scaled to fill the band's *height*, so a short species
-is drawn in bigger type and ends up physically widest even with fewer columns
-than an oak. The willow has the fewest rows of the four and is nearly twice as
-wide on screen as the tree with the most columns. It also means a species that
+The last column is the one that matters: every tree is scaled to fill the
+band's *height*, so columns alone do not tell you how wide anything looks. The
+willow is the widest on screen, and now also the finest-grained, because
+`charScale` decouples the two. It also means a species that
 runs much taller than the others is drawn in noticeably smaller type — keep
 them in the same band.
 
-The tallest oaks still touch the top row of the canvas on about 8 % of seeds,
-visible as a crown clipped flat. That is the number to watch if you make
-anything taller.
+No species touches the edge of the canvas on any of the 600 seeds measured.
+That is the number to watch if you raise any size or `charScale`: the check is
+`t.height >= CANVAS_ROWS - 1 || t.width >= CANVAS_COLS - 2`, and a hit shows up
+as a crown clipped flat.
