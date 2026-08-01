@@ -254,13 +254,13 @@ const SPECIES: readonly Species[] = [
     // as tall is a willow that has become a generic tree with strands on it.
     label: "Vrba",
     trunkLength: [5, 6.5],
-    trunkThickness: [3.8, 4.8],
+    trunkThickness: [2.9, 3.7],
     // One generation of limbs and no more. A second one starts where the first
     // finished — already past horizontal and heading down — and simply drives
     // into the ground, which is what a "willow" full of limbs plunging to the
     // floor was. The curtain, not more forking, is the tree.
     maxDepth: [1, 1],
-    children: [4, 6],
+    children: [3, 5],
     spread: [1.0, 1.3],
     maxAngle: 1.5,
     // The limbs themselves have to finish pointing at the ground, not just the
@@ -285,7 +285,7 @@ const SPECIES: readonly Species[] = [
     lateralStart: 0.08,
     lateralMinDepth: 1,
     leaderDepth: [0, 0],
-    charScale: 1.95,
+    charScale: 2.3,
     // Comes to a point: a limb that leaves the fork as a four-cell # band is a
     // single-character line by its tip, which is what makes the hard structure
     // and the strands read as different materials rather than one texture.
@@ -968,6 +968,12 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
     }
   }
 
+  // Grass is sown last, to the tree's own width. Run across the whole canvas it
+  // would become the widest thing drawn, and since the page scales a tree to
+  // fit its bounding box, every tree would shrink to make room for empty ground
+  // either side of it.
+  sowGrass(grid, rng, grid.bounds(), rows, cols);
+
   const bounds = grid.bounds();
 
   return {
@@ -984,6 +990,48 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
     branches,
   };
 }
+
+/** Characters the ground is drawn with: mostly specks, the odd upright blade. */
+const GRASS = [".", ".", ",", ",", "'", "`", "|"] as const;
+const GRASS_BLADE = ["|", "'", ",", "."] as const;
+
+/** Share of the columns under a tree that get something on them. */
+const GRASS_DENSITY = 0.55;
+/** ...and the share of those that also get a second character above. */
+const GRASS_TUFT = 0.22;
+
+/**
+ * Scatters ground cover along the bottom row, under the tree and a little way
+ * past it either side.
+ *
+ * On the leaf layer, so it can never draw over a trunk that is standing in it,
+ * and at time zero, because the ground is there before anything grows out of
+ * it. It stays on the bottom row the trunk already occupies — a taller blade
+ * goes on the row above, which is inside the tree's box as well — so it adds
+ * nothing to the height.
+ */
+function sowGrass(
+  grid: Grid,
+  rng: Rng,
+  bounds: Bounds,
+  rows: number,
+  cols: number
+) {
+  const y = rows - 1;
+  const from = Math.max(0, bounds.left - GRASS_MARGIN);
+  const to = Math.min(cols - 1, bounds.right + GRASS_MARGIN);
+
+  for (let x = from; x <= to; x++) {
+    if (rng() > GRASS_DENSITY) continue;
+    grid.put(x, y, pick(rng, GRASS), LAYER.leaf, 0);
+    if (rng() < GRASS_TUFT) {
+      grid.put(x, y - 1, pick(rng, GRASS_BLADE), LAYER.leaf, 0);
+    }
+  }
+}
+
+/** How far past the canopy the ground cover reaches, in characters. */
+const GRASS_MARGIN = 5;
 
 /** A fresh seed for the next tree. */
 export function randomSeed(): number {

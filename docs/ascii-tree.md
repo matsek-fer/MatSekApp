@@ -364,7 +364,25 @@ The residual is noise. Note the bias was always mild — roughly 54/46, never
 "every tree" — so a handful of consecutive right-leaning trees was partly the
 bias and partly small numbers.
 
-### 5.6 Leaves
+### 5.6 Ground cover
+
+`sowGrass` scatters specks and the odd upright blade along the bottom row once
+the tree is finished — `.` `,` `'` `` ` `` `|`, on `GRASS_DENSITY` (55 %) of the
+columns, a fifth of those getting a second character on the row above.
+
+Three details keep it from causing trouble:
+
+- **It is sown to the tree's width**, plus `GRASS_MARGIN` (5 characters) either
+  side, using the bounds of what has been drawn so far. Run across the whole
+  canvas it would become the widest thing in the frame, and since the page
+  scales a tree to fit its bounding box (§7), every tree would shrink to make
+  room for empty ground beside it.
+- **On the leaf layer**, so it can never draw over a trunk standing in it.
+- **At time zero**, because the ground is there before anything grows out of
+  it, and on the bottom row the trunk already occupies — a taller blade goes on
+  the row above, also inside the box — so it adds nothing to the height.
+
+### 5.7 Leaves
 
 A tip scatters `leafDensity` characters around itself: uniform angle, radius
 `√u × leafSpread` (the square root keeps the disc evenly filled rather than
@@ -372,7 +390,7 @@ clustered at the centre), squashed to 0.55 vertically and stretched by `X_SCALE`
 horizontally so the cluster is round on screen rather than in grid units. Each
 leaf's timestamp is staggered so foliage unfurls after its twig arrives.
 
-### 5.7 Layers
+### 5.8 Layers
 
 Cells are painted with a layer: `leaf` 1, `branch` 2, `trunk` 3. A higher layer
 may overwrite a lower one, never the reverse, so foliage drawn later cannot
