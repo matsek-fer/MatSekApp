@@ -138,6 +138,16 @@ What separates them:
   for a tree this stiff, is aimed at the trunk: a willow's stem wanders rather
   than standing straight.
 
+  `softCap` 240 against the shared 52. The density cap gates side shoots as
+  well as forking, and on a willow every strand comes off limbs that are queued
+  one after another — so a cap that low was spent by the first limb or two and
+  every limb after them came out bare. A long horizontal branch with nothing
+  hanging from it is the one thing a willow cannot have. Over the willow seeds
+  in 400, cells on a horizontal limb with nothing beneath them went from 8.9 %
+  to 4.6 %, and the longest unbroken bare stretch from 19 characters to 9; the
+  rest of that came from `lateralStart`, dropped to 0.08 so strands begin
+  almost at the fork.
+
   Three more settings are there to stop failure modes worth knowing about:
   `maxDepth` 1 because a second generation of limbs starts where the first
   finished — already past horizontal — and drives into the ground; `leaderDepth`
@@ -312,8 +322,8 @@ at the fork.
 ### 5.4 Forking
 
 A shoot stops and becomes a tip if it is terminal, has reached `maxDepth`, is
-shorter than 1.2, thinner than 0.3, or the canopy has hit `SOFT_CAP` (52 live
-shoots). Otherwise it forks.
+shorter than 1.2, thinner than 0.3, or the canopy has hit the density cap —
+`SOFT_CAP`, 52 live shoots, which a species may raise via `softCap`. Otherwise it forks.
 
 - `childCount` is normally 2, +1 with probability 0.35 near the base, −1 with
   probability 0.18 far out.
