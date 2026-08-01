@@ -3,7 +3,7 @@
  *
  * Structure follows PyBonsai-style fractal branching, but growth is simulated
  * step by step so gravity and "temperature" (directional instability) can bend
- * a branch as it extends — see copilot-instructions/ascii_physics_tree_system.md.
+ * a branch as it extends. docs/ascii-tree.md walks through the whole thing.
  *
  * Everything derives from the seed through a small PRNG, so the same seed
  * always yields the same tree. That is what makes printing the seed useful.
@@ -45,6 +45,14 @@ interface Species {
    * Without this, gravity flattens every tree into a sideways sprawl.
    */
   maxAngle: number;
+  /**
+   * Radians the `maxAngle` limit opens per level of depth. The trunk and its
+   * first limbs are held near the sky; the finer the branch, the further it is
+   * allowed to fall, so gravity carries the outer ends out past horizontal and
+   * points them at the ground. That arch is most of what reads as a mature
+   * broadleaf rather than an upturned broom.
+   */
+  droopPerDepth: number;
   /** Per-step droop. Negative curls the branch back upward. */
   gravity: [number, number];
   /** Resistance to gravity — higher keeps a branch straight. */
@@ -63,25 +71,17 @@ interface Species {
   laterals: number;
   /** Extra length a side shoot gains at the base, tapering to none at the tip. */
   lateralLength: number;
-  /** Emit side shoots in mirrored pairs — the giveaway shape of a conifer. */
-  symmetricLaterals?: boolean;
   /**
    * How far a side shoot points from straight up. Past PI/2 it slopes
-   * downward, which is what draws a conifer's outline as a cone rather than
-   * an upturned fan.
+   * downward, which is what hangs a twig off the underside of a limb rather
+   * than standing it on top.
    */
   lateralAngle: [number, number];
   /** Deepest branch that still puts out side shoots. */
   lateralDepth: number;
-  /**
-   * Fraction along a branch before side shoots start. A willow keeps its
-   * strands on the outer half of each limb, so the curtain hangs clear of the
-   * trunk instead of piling up over it.
-   */
+  /** Fraction along a branch before side shoots start, so a limb keeps a bare
+   * stretch at its base instead of sprouting from the fork. */
   lateralStart: number;
-  /** Shallowest branch that puts them out — keeps a willow's strands on the
-   * outer limbs instead of hanging them straight off the trunk. */
-  lateralMinDepth?: number;
   /** Character used once a branch is thick enough to read as a trunk. */
   trunkChar: string;
 }
@@ -89,146 +89,55 @@ interface Species {
 const SPECIES: readonly Species[] = [
   {
     id: "oak",
+    // A broad, low crown: limbs leave the trunk at a wide angle and the outer
+    // ones arch over and down, which is the silhouette an oak is recognised by.
     label: "Hrast",
-    trunkLength: [6, 8],
-    trunkThickness: [3.8, 4.8],
-    maxDepth: [4, 5],
+    trunkLength: [6, 11],
+    trunkThickness: [3.4, 4.8],
+    maxDepth: [4, 6],
     children: [2, 2],
-    spread: [0.55, 0.8],
-    maxAngle: 1.2,
-    gravity: [0.012, 0.025],
-    hardness: [2.2, 3.2],
-    temperature: [0.1, 0.22],
-    lengthDecay: [0.62, 0.72],
+    spread: [0.5, 0.9],
+    maxAngle: 1.0,
+    droopPerDepth: 0.34,
+    gravity: [0.05, 0.085],
+    hardness: [2.2, 3.0],
+    temperature: [0.1, 0.2],
+    lengthDecay: [0.6, 0.7],
     leaves: ["&", "%", "@", "*"],
     leafDensity: [7, 11],
     leafSpread: [2.2, 3.0],
     laterals: 1.5,
     lateralLength: 3,
-    lateralAngle: [0.7, 1.0],
+    lateralAngle: [0.9, 1.35],
     lateralDepth: 1,
     lateralStart: 0.2,
     trunkChar: "#",
   },
   {
-    id: "birch",
-    label: "Breza",
-    trunkLength: [8, 11],
-    trunkThickness: [2.4, 3.0],
-    maxDepth: [5, 5],
-    children: [2, 2],
-    spread: [0.42, 0.6],
-    maxAngle: 1.12,
-    gravity: [-0.02, 0.008],
-    hardness: [3.5, 5],
-    temperature: [0.06, 0.13],
-    lengthDecay: [0.52, 0.62],
-    leaves: ["'", "`", "*", "."],
-    leafDensity: [5, 9],
-    leafSpread: [1.6, 2.4],
-    laterals: 3,
-    lateralLength: 2,
-    lateralAngle: [0.7, 1.0],
-    lateralDepth: 1,
-    lateralStart: 0.2,
-    trunkChar: "|",
-  },
-  {
-    id: "willow",
-    label: "Vrba",
-    // Deliberately minimal skeleton: a stout trunk and a wide fan of limbs,
-    // nothing more. The character of a willow is the curtain hanging off those
-    // limbs, and earlier versions buried it under three levels of forking.
-    trunkLength: [6, 8],
-    trunkThickness: [3.0, 3.8],
-    maxDepth: [2, 2],
-    children: [2, 2],
-    spread: [0.92, 1.15],
-    maxAngle: 1.3,
-    gravity: [0.02, 0.04],
-    hardness: [1.8, 2.6],
-    temperature: [0.03, 0.06],
-    lengthDecay: [0.95, 1.05],
-    leaves: [",", "'", ".", ":"],
-    leafDensity: [2, 3],
-    leafSpread: [0.6, 1.0],
-    laterals: 8,
-    lateralLength: 5,
-    lateralAngle: [3.06, 3.22], // straight down, give or take a few degrees
-    lateralDepth: 2,
-    lateralStart: 0.3,
-    lateralMinDepth: 1, // strands hang off the limbs, never off the trunk
-    trunkChar: "|",
-  },
-  {
-    id: "conifer",
-    label: "Crnogorica",
-    trunkLength: [13, 16],
-    trunkThickness: [2.2, 2.8],
-    maxDepth: [0, 0],
-    children: [2, 2],
-    spread: [0.5, 0.7],
-    maxAngle: 2.0,
-    gravity: [0.05, 0.09],
-    hardness: [2.5, 3.5],
-    temperature: [0.02, 0.05],
-    lengthDecay: [0.48, 0.58],
-    leaves: ["^", "*", "'"],
-    leafDensity: [3, 5],
-    leafSpread: [0.9, 1.4],
-    laterals: 15,
-    lateralLength: 6,
-    lateralAngle: [1.72, 1.95],
-    lateralDepth: 0,
-    lateralStart: 0.1,
-    symmetricLaterals: true,
-    trunkChar: "|",
-  },
-  {
     id: "bonsai",
+    // Short, gnarled and wider than it is tall, with soft limbs that fall away
+    // into flat pads — hence the low hardness and the earlier, larger droop.
     label: "Bonsai",
-    trunkLength: [4, 6],
-    trunkThickness: [3.2, 4.2],
-    maxDepth: [4, 5],
+    trunkLength: [4, 8],
+    trunkThickness: [2.8, 4.2],
+    maxDepth: [4, 6],
     children: [2, 2],
-    spread: [0.6, 0.9],
-    maxAngle: 1.3,
-    gravity: [0.02, 0.05],
+    spread: [0.6, 1.05],
+    maxAngle: 1.08,
+    droopPerDepth: 0.4,
+    gravity: [0.05, 0.08],
     hardness: [0.8, 1.4],
     temperature: [0.24, 0.42],
-    lengthDecay: [0.68, 0.78],
+    lengthDecay: [0.72, 0.82],
     leaves: ["&", "*", "o", "@"],
     leafDensity: [7, 11],
     leafSpread: [1.9, 2.7],
     laterals: 1,
     lateralLength: 2.5,
-    lateralAngle: [0.7, 1.0],
+    lateralAngle: [1.0, 1.45],
     lateralDepth: 1,
     lateralStart: 0.2,
     trunkChar: "#",
-  },
-  {
-    id: "shrub",
-    label: "Grm",
-    trunkLength: [3, 4],
-    trunkThickness: [1.8, 2.4],
-    maxDepth: [4, 4],
-    children: [3, 3],
-    spread: [0.7, 1.0],
-    maxAngle: 1.4,
-    gravity: [0.0, 0.03],
-    hardness: [1.4, 2.2],
-    temperature: [0.16, 0.3],
-    lengthDecay: [0.72, 0.8],
-    leaves: ["*", "o", "&", "."],
-    leafDensity: [7, 11],
-    leafSpread: [1.6, 2.4],
-    laterals: 0,
-    lateralLength: 2,
-    lateralAngle: [0.7, 1.0],
-    lateralDepth: 1,
-    lateralStart: 0.2,
-    trunkChar: "|",
   },
 ];
 
@@ -307,6 +216,44 @@ function clampToSky(angle: number, limit: number): number {
   return UP + Math.max(-limit, Math.min(limit, off));
 }
 
+/**
+ * Past this the branch is heading back down towards its own trunk, which draws
+ * a hook rather than an arch. It bounds the limit the depth droop opens up.
+ */
+const DROOP_CEILING = 1.95;
+
+/**
+ * Depth at which the droop starts to open the limit. The trunk and the limbs
+ * that come straight off it hold their reach; letting those fall flattens the
+ * whole tree into a sprawl before the outer branches ever get their arch.
+ */
+const DROOP_ONSET = 1.2;
+
+/** Radians per level of depth that children are fanned away from the trunk. */
+const OUTWARD_BIAS = 0.05;
+
+/** How far from vertical the trunk itself may wander, in radians. */
+const TRUNK_LIMIT = 0.22;
+
+/**
+ * How far a branch may swing from straight up, given how deep it is and how
+ * far along its own length it has grown. Both loosen it: the trunk stands, each
+ * generation is allowed further over than the last, and every branch opens up
+ * as it extends. The second term is what puts the bend at the ends — a limb
+ * leaves the trunk reaching outward and only falls away once it is out there,
+ * instead of running flat from the fork.
+ */
+function skyLimit(species: Species, depth: number, progress = 0): number {
+  const d = depth + progress;
+  // The trunk is held close to vertical and each level out is freer than the
+  // last, up to the species' own limit. Without the tight start, gravity walks
+  // the trunk sideways across the canvas and the crown ends up beside its own
+  // base rather than over it.
+  const reach = Math.min(species.maxAngle, TRUNK_LIMIT + d * 0.5);
+  const beyondOnset = Math.max(0, d - DROOP_ONSET);
+  return Math.min(DROOP_CEILING, reach + beyondOnset * species.droopPerDepth);
+}
+
 function branchChar(dx: number, dy: number): string {
   if (Math.abs(dy) * 2 >= Math.abs(dx)) return "|";
   // Reserved for genuinely flat runs; used loosely it fills the canopy with
@@ -375,6 +322,13 @@ interface Params {
   lengthDecay: number;
   leafDensity: number;
   leafSpread: number;
+  /**
+   * Deepest fork that still keeps a leader, drawn per tree rather than fixed.
+   * At 0 the trunk forks in two almost immediately and the tree is all crown;
+   * at 2 a clear stem runs most of the way up with limbs off it. Holding it
+   * constant was most of the reason every tree read the same.
+   */
+  leaderDepth: number;
 }
 
 // A depth-5 binary tree is 63 branches; this only catches pathological seeds.
@@ -456,6 +410,7 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
     lengthDecay: range(rng, ...species.lengthDecay),
     leafDensity: range(rng, ...species.leafDensity),
     leafSpread: range(rng, ...species.leafSpread) * scale,
+    leaderDepth: Math.floor(range(rng, 0, 2.999)),
   };
 
   // A slight lean keeps trees from all looking like the same mirror image.
@@ -494,8 +449,15 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
       // Side shoots are stiff twigs — letting them droop sends the ones near
       // the base straight into the ground, leaving the trunk bare.
       if (!shoot.terminal) {
+        // Weighted by how far over the branch already leans, which is where
+        // the load on a real limb comes from: nothing at vertical, most at
+        // horizontal. It is also what stops the flat runs a constant droop
+        // produced — a branch reaching sideways now keeps turning instead of
+        // holding one angle for its whole length, so the end curls down.
+        const lean = Math.abs(Math.sin(angle - UP));
         const droop =
-          (p.gravity * (shoot.depth + 1) * (i / steps + 0.35)) / p.hardness;
+          (p.gravity * (shoot.depth + 1) * (i / steps + 0.35) * (0.3 + lean)) /
+          p.hardness;
         angle += droop * Math.sign(Math.cos(angle) || 1);
       }
 
@@ -504,7 +466,9 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
       // A side shoot keeps the angle it was given; only the forking skeleton is
       // held toward the sky. That is what lets a willow hang strands straight
       // down while its branches still reach upward.
-      if (!shoot.terminal) angle = clampToSky(angle, species.maxAngle);
+      if (!shoot.terminal) {
+        angle = clampToSky(angle, skyLimit(species, shoot.depth, i / steps));
+      }
 
       const nx = x + Math.cos(angle) * X_SCALE;
       const ny = y + Math.sin(angle);
@@ -524,42 +488,35 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
       x = nx;
       y = ny;
 
-      // Side shoots along the length, not just at the fork. A conifer is
-      // mostly one long trunk, so without these its lower half stays bare.
+      // Side shoots along the length, not just at the fork — without them the
+      // long lower stretches of the trunk and first limbs stay bare.
       if (
         species.laterals > 0 &&
         !shoot.terminal &&
         shoot.depth <= species.lateralDepth &&
-        shoot.depth >= (species.lateralMinDepth ?? 0) &&
         i > steps * species.lateralStart &&
         i < steps - 1 &&
         queue.length + branches < SOFT_CAP &&
         rng() < species.laterals / steps
       ) {
-        // Longest near the base, shortest near the tip — that taper is what
-        // gives a conifer its cone rather than a column of even stubs.
+        // Longest near the base, shortest near the tip, so the shoots follow
+        // the taper of the limb they grow from.
         const taper = 1 - i / steps;
         const length =
           (range(rng, 1.2, 2) + taper * species.lateralLength) * scale;
 
-        // A conifer's whorls come off both sides at the same height; the
-        // symmetry is most of what makes the silhouette read as a conifer.
-        // Broadleaves put out one shoot at a time instead.
-        const sides = species.symmetricLaterals ? [-1, 1] : [rng() < 0.5 ? -1 : 1];
-
-        for (const side of sides) {
-          queue.push({
-            x,
-            y,
-            angle: UP + side * range(rng, ...species.lateralAngle),
-            length,
-            thickness: shoot.thickness * range(rng, 0.3, 0.45),
-            depth: shoot.depth + 1,
-            // Starts where and when the trunk reached this point.
-            t0: shoot.t0 + i + 1,
-            terminal: true,
-          });
-        }
+        const side = rng() < 0.5 ? -1 : 1;
+        queue.push({
+          x,
+          y,
+          angle: UP + side * range(rng, ...species.lateralAngle),
+          length,
+          thickness: shoot.thickness * range(rng, 0.3, 0.45),
+          depth: shoot.depth + 1,
+          // Starts where and when the trunk reached this point.
+          t0: shoot.t0 + i + 1,
+          terminal: true,
+        });
       }
 
       // Stop a branch that has wandered off the canvas rather than letting it
@@ -611,18 +568,54 @@ export function generateTree(seed: number, options: TreeOptions = {}): AsciiTree
     if (shoot.depth >= 4 && rng() < 0.18) childCount -= 1;
     childCount = Math.max(1, Math.min(4, childCount));
 
-    for (let c = 0; c < childCount; c++) {
+    // Branches on the left of the trunk are nudged further left and those on
+    // the right further right, in proportion to how far out they already are.
+    // Without it a fork as wide as these species use throws half its children
+    // back across the trunk, and the crown fills in as a tangle rather than
+    // spreading. Zero at the trunk itself, so the first fork stays even.
+    const fromTrunk = (x - cols / 2) / (cols * 0.25);
+    const outward =
+      Math.max(-1, Math.min(1, fromTrunk)) * OUTWARD_BIAS * shoot.depth;
+
+    // Near the base one child carries on as the leader, roughly in the
+    // direction its parent was already going, and the others come off it as
+    // limbs. Forking evenly all the way down instead splits the trunk into a
+    // symmetric Y and the crown reads as two trees leaning apart.
+    const leader =
+      shoot.depth <= p.leaderDepth ? Math.floor(rng() * childCount) : -1;
+
+    // Children are fanned left to right, but a tree that always queues its
+    // leftmost child first grows lopsided: the density cap below turns whatever
+    // is still waiting in the queue into leaves, so the side that is enqueued
+    // first is the side that gets to keep forking. Mirroring the order on half
+    // the forks takes the handedness out of it — that bias is why the trunk
+    // used to sit right of the crown more often than left.
+    const mirrored = rng() < 0.5;
+
+    for (let k = 0; k < childCount; k++) {
+      const c = mirrored ? childCount - 1 - k : k;
       // Fan children evenly across the spread, then jitter so pairs are not
       // perfect mirrors of each other.
       const t = childCount === 1 ? 0 : (c / (childCount - 1)) * 2 - 1;
-      const offset = t * p.spread + (rng() - 0.5) * p.spread * 0.45;
+      const fan = c === leader ? t * p.spread * 0.2 : t * p.spread;
+      const offset = fan + (rng() - 0.5) * p.spread * 0.45;
 
       queue.push({
         x,
         y,
-        angle: clampToSky(angle + offset, species.maxAngle),
-        length: shoot.length * p.lengthDecay * range(rng, 0.82, 1.18),
-        thickness: shoot.thickness * range(rng, 0.58, 0.72),
+        // Judged at the child's own depth, so each generation is allowed to
+        // sit further out and further down than the one that produced it.
+        angle: clampToSky(
+          angle + offset + (c === leader ? 0 : outward),
+          skyLimit(species, shoot.depth + 1)
+        ),
+        // The leader keeps its parent's vigour; limbs are the ones that taper.
+        length:
+          shoot.length *
+          (c === leader ? 0.75 : p.lengthDecay) *
+          range(rng, 0.82, 1.18),
+        thickness:
+          shoot.thickness * (c === leader ? range(rng, 0.78, 0.9) : range(rng, 0.55, 0.7)),
         depth: shoot.depth + 1,
         // Children pick up exactly where the parent stopped.
         t0: shoot.t0 + steps,
