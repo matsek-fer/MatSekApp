@@ -12,8 +12,8 @@ constant named here is in the source under the same name.
 
 A seed goes into a small PRNG. The PRNG picks a species and draws a set of
 parameters for this particular tree. A single shoot is placed at the bottom
-centre of a 110 × 34 character grid pointing straight up, and then grown one
-step at a time: each step nudges its direction (gravity down, noise sideways),
+centre of a 215 × 58 character grid pointing along the tree's own lean, and
+then grown one step at a time: each step nudges its direction (gravity down, noise sideways),
 draws a character, and occasionally sprouts a twig. When a shoot runs out of
 length it either forks into children — which go back in the queue — or stops
 and scatters leaf characters. Every character written also records **when** it
@@ -55,8 +55,9 @@ That is expected, not a bug.
 
 ## 3. Species
 
-`SPECIES` is a table of two entries, `oak` (Hrast) and `bonsai` (Bonsai). The
-species is chosen with `pick`, so it is a coin flip per tree.
+`SPECIES` is a table of four entries — `oak` (Hrast), `bonsai` (Bonsai),
+`birch` (Breza) and `willow` (Vrba). The species is chosen with `pick`, so it
+is a uniform draw per tree.
 
 Most fields are a `[min, max]` pair rather than a single number — the species
 defines a *range*, and each tree draws its own value from it. That is where
@@ -66,7 +67,7 @@ variety between two oaks comes from.
 | --- | --- |
 | `trunkLength`, `trunkThickness` | Size of the first shoot. Thickness decides which character is drawn and how wide the stroke is |
 | `maxDepth` | How many generations of forking before everything leafs out |
-| `children` | Children per fork (2 for both species, occasionally ±1 — see §5.4) |
+| `children` | Children per fork (2 for all four, occasionally ±1 — see §5.4) |
 | `spread` | Half-angle, radians, that children fan away from their parent |
 | `maxAngle` | The species' ceiling on how far from vertical a branch may point |
 | `droopPerDepth` | How fast that ceiling opens as branches get finer — this is the arch |
@@ -74,13 +75,21 @@ variety between two oaks comes from.
 | `temperature` | Directional noise. High values wander and gnarl |
 | `lengthDecay` | How much shorter each generation is than its parent |
 | `leaves`, `leafDensity`, `leafSpread` | The characters scattered at each tip, how many, how far |
-| `laterals`, `lateralLength`, `lateralAngle`, `lateralDepth`, `lateralStart` | Side twigs along a branch, rather than at a fork |
+| `laterals`, `lateralLength`, `lateralAngle`, `lateralDepth`, `lateralStart`, `lateralMinDepth` | Side twigs along a branch, rather than at a fork. `lateralMinDepth` is the willow's: its strands hang off the limbs, never straight off the trunk |
+| `trunkLean` | Half-range of the lean the whole tree starts with — see §4.1 |
 | `trunkChar` | Character used once a branch is thick enough to read as trunk |
 
-The two species differ mostly in `hardness` and `temperature`: an oak is stiff
-and fairly smooth (2.2–3.0 / 0.10–0.20), a bonsai is soft and gnarled
-(0.8–1.4 / 0.24–0.42), which is what makes one read as a big tree and the other
-as a twisted small one.
+What separates them:
+
+- **Oak** — stiff and fairly smooth (`hardness` 2.2–3.0, `temperature` 0.10–0.20),
+  wide spread, strong droop. A broad low crown arching over and down.
+- **Bonsai** — soft and gnarled (0.8–1.4 / 0.24–0.42) with the largest
+  `droopPerDepth`. Short, twisted, wider than it is tall.
+- **Birch** — the stiffest and smoothest (3.5–5.0 / 0.06–0.14) with a narrow
+  spread and six levels of depth: tall, fine and twiggy.
+- **Willow** — `maxDepth` 2, so the skeleton is only a trunk and one fan of
+  long limbs. Everything else about it is the curtain: `laterals` 8 at a
+  `lateralAngle` near π, i.e. hanging straight down.
 
 ---
 
@@ -97,13 +106,48 @@ as a twisted small one.
   the endpoint. One growth step can cross two columns, and plotting endpoints
   only leaves a dotted `- - -` line.
 
+### 4.1 The tree's own up
+
+Each tree draws a `lean` from ±`species.trunkLean` and its **axis** is
+`UP + lean`. The trunk sets off along the axis, and every angle clamp below is
+measured from it rather than from true vertical. That is what lets a birch
+(`trunkLean` 0.5, about 29°) or a willow (0.4) start off well away from
+vertical and carry its crown over with it — clamped against true vertical, the
+trunk would be bent back upright on its first step. Oak and bonsai keep the
+old, near-upright range (0.16 and 0.2).
+
+Gravity is not measured from the axis. It pulls towards the real ground, which
+is why a leaning tree's downhill limbs fall away faster than its uphill ones.
+
 ---
 
 ## 5. Growing a tree
 
 `generateTree(seed, options)` is the whole of it. Canvas defaults to
-110 columns × 34 rows, and species sizes are scaled by `rows / 26`, so a bigger
-canvas grows a bigger tree rather than the same tree with more air around it.
+`CANVAS_COLS` × `CANVAS_ROWS` = 215 × 58, and species sizes are scaled by
+`rows / SPECIES_ROWS` (31), so a bigger canvas grows a bigger tree rather than
+the same tree with more air around it. `SPECIES_ROWS` is deliberately smaller
+than the canvas: at parity the nominal tree is exactly canvas height and every
+taller-than-average one loses its crown to the top row.
+
+### 5.0 Resolution, and why the canvas is this big
+
+The page sizes glyphs so that the tree fills its band whatever its character
+count (§7). Raising the canvas therefore does not make the tree bigger — it
+draws the *same* tree in more, smaller characters. The current 215 × 58 is
+about 1.43× the 110 × 34 it was tuned at, which is why the type on the page is
+roughly 30 % smaller than it used to be at the same physical tree size.
+
+Four quantities are measured in whole cells or per step, and have to be told
+about the change or the shape drifts with the resolution. `detail`
+(= `scale / TUNED_SCALE`) carries it:
+
+| Quantity | Correction | Why |
+| --- | --- | --- |
+| `gravity` | ÷ `detail` | Applied per step, and a branch of the same length now takes more steps. Left alone it would bend further |
+| `temperature` | ÷ √`detail` | Same, but it is a random walk, so the total wander goes with the square root |
+| `leafDensity` | × `detail²` | A leaf cluster's *area* grows with the square, so the same count would thin out |
+| stroke width | × `detail` | A three-cell trunk on a coarse canvas is a four- or five-cell trunk on a fine one |
 
 ### 5.1 The queue
 
@@ -113,7 +157,7 @@ simulation time, so the replay shows branches growing alongside each other
 rather than one whole subtree at a time.
 
 The first shoot is placed at `(cols / 2, rows - 1)` — bottom centre — pointing
-`UP + lean`, where `lean` is drawn from ±0.16 rad.
+along the axis of §4.1.
 
 ### 5.2 Stepping a shoot
 
@@ -162,6 +206,9 @@ skyLimit(species, depth, progress):
   extra  = max(0, d − DROOP_ONSET) × species.droopPerDepth   // DROOP_ONSET  = 1.2
   return min(DROOP_CEILING, reach + extra)                   // DROOP_CEILING = 1.95
 ```
+
+The limit is applied by `clampToSky(angle, limit, axis)`, and the axis is the
+tree's lean, not vertical (§4.1).
 
 Read it as three rules:
 
@@ -323,8 +370,22 @@ smaller effect than it looked.
 | Straighter, stiffer branches | `hardness` up, or `temperature` down |
 | A clearer trunk | `leaderDepth` range up (in `generateTree`), or `TRUNK_LIMIT` down |
 | Denser canopy | `SOFT_CAP` up, `leafDensity` up |
+| Smaller type at the same tree size | `CANVAS_ROWS` and `CANVAS_COLS` up together, keeping their ratio |
+| Trees that set off further from vertical | `trunkLean` up, per species |
 | Fewer long flat runs | `DROOP_ONSET` up — branches spend less time pinned near horizontal |
 
-Sizes are load-bearing against each other: both species are tuned to land
-roughly 30–90 columns by 15–33 rows, which is what the page's sizing assumes
-will fit a wide, short band.
+Sizes are load-bearing against each other. Measured over 600 seeds, mean and
+range of the bounding box each species lands in:
+
+| Species | Width | Height |
+| --- | --- | --- |
+| Hrast | 86 [51–155] | 44 [30–57] |
+| Bonsai | 83 [44–137] | 32 [19–51] |
+| Breza | 57 [39–84] | 40 [30–57] |
+| Vrba | 58 [35–97] | 33 [25–43] |
+
+Height is what usually binds on the page, so a species that runs much taller
+than the others is drawn in noticeably smaller type. Keep them in the same
+band. The tallest oaks and birches still touch the top row of the canvas on
+about 8 % and 1 % of seeds respectively — visible as a crown clipped flat, and
+the number to watch if you make anything taller.
