@@ -43,6 +43,9 @@ const MERGE_PX = 24;
  */
 const MERGE_MAX_SPAN = 21 * DAY;
 
+/** Height of the selection band, split evenly above and below the axis. */
+const BAND_H = 120;
+
 const R_UNIT = 7;
 const R_MAX = 30;
 
@@ -283,25 +286,31 @@ export default function ActivityTimeline({ events }: { events: Activity[] }) {
         );
 
   return (
-    <section aria-label="Vremenska crta aktivnosti" className="space-y-1 pt-2">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-        <div className="min-w-0 text-sm">
-          <span className="font-medium text-fg">{heading}</span>
-          {hovered ? (
-            <span className="ml-2 text-fg-muted">
-              {hovered.items.length === 1
-                ? hovered.items[0].title
-                : `${hovered.items.length} aktivnosti`}
-            </span>
-          ) : (
-            half !== null && (
-              <span className="ml-2 text-fg-subtle">
-                klikni za {BAND_NAME[level]}
-              </span>
-            )
-          )}
-        </div>
+    <section aria-label="Vremenska crta aktivnosti" className="relative py-10">
+      <h2
+        className="text-center text-xl font-semibold tracking-[0.2em] text-orange-400"
+        style={{
+          textShadow:
+            "0 0 10px rgb(249 115 22 / 0.55), 0 0 26px rgb(249 115 22 / 0.35)",
+        }}
+      >
+        TIMELINE
+      </h2>
 
+      {/* One line under the title carrying whatever is true right now: the
+          range once zoomed in, what the cursor is over, or what a click does.
+          Fixed height so the strip below it never shifts as it changes. */}
+      <p className="mt-1 h-5 text-center text-sm text-fg-subtle">
+        {hovered
+          ? hovered.items.length === 1
+            ? hovered.items[0].title
+            : `${hovered.items.length} aktivnosti`
+          : level === 0
+          ? half !== null && `klikni za ${BAND_NAME[level]}`
+          : heading}
+      </p>
+
+      <div className="absolute right-0 top-10">
         <Button variant="ghost" size="sm" onClick={reset} disabled={level === 0}>
           ⟲ Cijeli raspon
         </Button>
@@ -332,22 +341,22 @@ export default function ActivityTimeline({ events }: { events: Activity[] }) {
             <marker
               id="tl-arrow"
               viewBox="0 0 10 10"
-              refX="8"
+              refX="7"
               refY="5"
-              markerWidth="7"
-              markerHeight="7"
+              markerWidth="13"
+              markerHeight="13"
               orient="auto-start-reverse"
             >
-              <path d="M 0 0 L 10 5 L 0 10 z" className="fill-fg-subtle" />
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="rgb(249 115 22)" />
             </marker>
           </defs>
 
           {band && (
             <rect
               x={toX(band[0])}
-              y={22}
+              y={AXIS_Y - BAND_H / 2}
               width={Math.max(2, toX(band[1]) - toX(band[0]))}
-              height={HEIGHT - 66}
+              height={BAND_H}
               rx={8}
               fill="rgb(251 146 60 / 0.10)"
               stroke="rgb(251 146 60 / 0.45)"
@@ -423,20 +432,6 @@ export default function ActivityTimeline({ events }: { events: Activity[] }) {
             ))}
           </g>
 
-          {groups.map((g) =>
-            g.items.length > 1 ? (
-              <text
-                key={`n-${g.key}`}
-                x={g.cx}
-                y={AXIS_Y + 4}
-                textAnchor="middle"
-                className="pointer-events-none text-[11px] font-semibold"
-                fill="rgb(28 25 23)"
-              >
-                {g.items.length}
-              </text>
-            ) : null
-          )}
         </svg>
 
         {/* Arrows are live controls once zoomed: nothing else moves the window
@@ -450,8 +445,8 @@ export default function ActivityTimeline({ events }: { events: Activity[] }) {
               disabled={atStart}
               aria-label="Prikaži raniji raspon"
               className="absolute left-0 top-1/2 -translate-y-1/2 rounded-full px-2 py-3
-                         text-lg text-fg-muted transition-colors hover:text-fg
-                         disabled:opacity-25"
+                         text-4xl leading-none text-orange-500 transition-colors
+                         hover:text-orange-300 disabled:opacity-25"
             >
               ‹
             </button>
@@ -461,8 +456,8 @@ export default function ActivityTimeline({ events }: { events: Activity[] }) {
               disabled={atEnd}
               aria-label="Prikaži kasniji raspon"
               className="absolute right-0 top-1/2 -translate-y-1/2 rounded-full px-2 py-3
-                         text-lg text-fg-muted transition-colors hover:text-fg
-                         disabled:opacity-25"
+                         text-4xl leading-none text-orange-500 transition-colors
+                         hover:text-orange-300 disabled:opacity-25"
             >
               ›
             </button>
