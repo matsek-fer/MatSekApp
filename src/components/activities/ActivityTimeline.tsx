@@ -132,7 +132,7 @@ export default function ActivityTimeline({ events }: { events: Activity[] }) {
   const [span, setSpan] = useState<Span>(full);
   const spanRef = useRef<Span>(full);
   const [level, setLevel] = useState<Level>(0);
-  const [cursor, setCursor] = useState<number | null>(null);
+  const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
   const [opened, setOpened] = useState<Cluster | null>(null);
 
   const wrap = useRef<HTMLDivElement>(null);
@@ -202,19 +202,34 @@ export default function ActivityTimeline({ events }: { events: Activity[] }) {
     return cluster(visible, toX);
   }, [events, span, inner, toX]);
 
-  /** The circle under the cursor. While there is one, the band stays hidden. */
+  /**
+   * The circle under the cursor. While there is one, the band stays hidden.
+   *
+   * Distance from the circle's centre, not from its column: comparing only the
+   * horizontal gap made the whole height of the strip count as the circle, so
+   * the list opened while the pointer was well above it.
+   */
   const hovered =
     cursor === null
       ? null
-      : groups.find((g) => Math.abs(g.cx - cursor) <= Math.max(g.r, 12)) ?? null;
+      : groups.find(
+          (g) =>
+            Math.hypot(g.cx - cursor.x, AXIS_Y - cursor.y) <= Math.max(g.r, 11)
+        ) ?? null;
 
   const band: Span | null =
     cursor === null || half === null || hovered
       ? null
-      : [toTime(cursor) - half, toTime(cursor) + half];
+      : [toTime(cursor.x) - half, toTime(cursor.x) + half];
 
   function handleMove(e: React.PointerEvent<SVGSVGElement>) {
-    setCursor(e.clientX - e.currentTarget.getBoundingClientRect().left);
+    const box = e.currentTarget.getBoundingClientRect();
+    // The viewBox is the element's width, so x needs no scaling; y does, since
+    // the SVG is laid out at its natural height only when the two agree.
+    setCursor({
+      x: e.clientX - box.left,
+      y: ((e.clientY - box.top) / box.height) * HEIGHT,
+    });
   }
 
   function handleDown(e: React.PointerEvent<SVGSVGElement>) {
