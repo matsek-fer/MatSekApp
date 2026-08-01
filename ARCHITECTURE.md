@@ -197,6 +197,8 @@ MatSekApp/
 | `POST` | `/api/auth/register` | Public | Create user (domain lock enforced) |
 | `POST` | `/api/auth/verify` | Public | Verify email with OTP |
 | `POST` | `/api/auth/login` | Public | Sign in |
+| `POST` | `/api/auth/forgot-password` | Public | Send a password-recovery code |
+| `POST` | `/api/auth/reset-password` | Public | Redeem the code and set a new password |
 | `GET` | `/api/activities` | Public* | List activities (filtered by role) |
 | `POST` | `/api/activities` | User | Create activity (status → `pending`) |
 | `GET` | `/api/activities/[id]` | Public* | Get single activity (RLS-filtered) |

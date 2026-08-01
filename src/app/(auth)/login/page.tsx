@@ -72,6 +72,15 @@ export default function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+
+        <p className="text-right text-sm">
+          <Link
+            href="/forgot-password"
+            className="text-fg-muted hover:text-brand hover:underline"
+          >
+            Zaboravljena lozinka?
+          </Link>
+        </p>
         <Button type="submit" fullWidth disabled={loading}>
           {loading ? "Prijava…" : "Prijavi se"}
         </Button>

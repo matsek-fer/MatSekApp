@@ -22,6 +22,10 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith("/login") ||
       pathname.startsWith("/register") ||
       pathname.startsWith("/verify") ||
+      // Both halves of the password reset have to be reachable signed out —
+      // that is the whole situation the user is in.
+      pathname.startsWith("/forgot-password") ||
+      pathname.startsWith("/reset-password") ||
       pathname.startsWith("/_next") ||
       pathname.startsWith("/favicon") ||
       /\.(png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|eot)$/.test(pathname))
