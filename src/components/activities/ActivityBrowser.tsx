@@ -59,7 +59,7 @@ export default function ActivityBrowser({
             </ul>
 
             <p className="text-center text-sm text-fg-subtle">
-              Gore su prošle aktivnosti · dolje slijedi ono što tek dolazi
+              ↑ prošle aktivnosti · ↓ ono što tek dolazi
             </p>
           </section>
         ) : (
