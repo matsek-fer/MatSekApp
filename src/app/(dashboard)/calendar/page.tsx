@@ -3,6 +3,7 @@ import type { Activity } from "@/types";
 import Card from "@/components/ui/Card";
 import { ButtonLink } from "@/components/ui/Button";
 import ActivityBrowser from "@/components/activities/ActivityBrowser";
+import ActivityTimeline from "@/components/activities/ActivityTimeline";
 
 export const dynamic = "force-dynamic";
 
@@ -61,7 +62,11 @@ export default async function CalendarPage() {
           )}
         </Card>
       ) : (
-        <ActivityBrowser upcoming={upcoming} past={past} />
+        <>
+          <ActivityBrowser upcoming={upcoming} past={past} />
+          {/* Everything the page fetched, on one axis. */}
+          <ActivityTimeline events={[...past, ...upcoming]} />
+        </>
       )}
     </div>
   );
