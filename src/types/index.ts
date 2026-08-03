@@ -1,3 +1,5 @@
+import type { AiProvider } from "@/lib/ai/types";
+
 // ── Enums as string unions (mirroring PostgreSQL enums) ──────────────────
 
 export type ActivityType =
@@ -102,3 +104,18 @@ export const ACTIVITY_STATUS_LABELS: Record<ActivityStatus, string> = {
 
 // Status colours live with the component that renders them:
 // see `StatusBadge` in src/components/ui/Badge.tsx.
+
+// ── AI assistant ──────────────────────────────────────────────────────────
+
+export const AI_PROVIDER_LABELS: Record<AiProvider, string> = {
+  anthropic: "Anthropic (Claude)",
+  openai: "OpenAI (ChatGPT)",
+  google: "Google (Gemini)",
+};
+
+/** Where a member goes to create a key, linked from the settings page. */
+export const AI_PROVIDER_CONSOLE_URLS: Record<AiProvider, string> = {
+  anthropic: "https://platform.claude.com/settings/keys",
+  openai: "https://platform.openai.com/api-keys",
+  google: "https://aistudio.google.com/apikey",
+};

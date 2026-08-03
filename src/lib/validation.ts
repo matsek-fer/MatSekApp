@@ -1,4 +1,5 @@
 import type { ActivityStatus, ActivityType } from "@/types";
+import type { AiProvider } from "@/lib/ai/types";
 
 /**
  * Registration is restricted to faculty addresses. Enforced for real by the
@@ -26,6 +27,25 @@ export function isActivityStatus(value: unknown): value is ActivityStatus {
 export function isActivityType(value: unknown): value is ActivityType {
   return ACTIVITY_TYPES.includes(value as ActivityType);
 }
+
+// ── AI assistant ───────────────────────────────────────────────────────────
+
+const AI_PROVIDER_VALUES: AiProvider[] = ["anthropic", "openai", "google"];
+
+/**
+ * The provider arrives in a route path and picks which cookie is read and
+ * which vendor SDK is constructed, so it is checked before it is used — the
+ * same reason `status` is checked in the activities route.
+ */
+export function isAiProvider(value: unknown): value is AiProvider {
+  return AI_PROVIDER_VALUES.includes(value as AiProvider);
+}
+
+/**
+ * Longest key any provider currently issues, with room to spare. A bound on
+ * what we are willing to seal, so a large body cannot be smuggled in as a key.
+ */
+export const MAX_API_KEY_LENGTH = 512;
 
 /** Columns a client is allowed to write. Everything else is server-owned. */
 export const ACTIVITY_WRITABLE_FIELDS = [

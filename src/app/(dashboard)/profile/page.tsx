@@ -55,6 +55,12 @@ export default async function ProfilePage() {
             </dd>
           </div>
         </dl>
+        <Link
+          href="/profile/ai"
+          className="inline-block text-sm text-fg-muted hover:text-brand"
+        >
+          AI ključevi →
+        </Link>
       </Card>
 
       <Card>

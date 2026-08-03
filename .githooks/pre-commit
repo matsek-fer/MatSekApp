@@ -75,6 +75,39 @@ for file in $staged; do
   if scan "$file" 'BEGIN \(RSA \|OPENSSH \|EC \)\?PRIVATE KEY'; then
     fail "Private key material found in: $file"
   fi
+
+  # Members' AI provider keys. These bill to someone's personal account and we
+  # cannot revoke them for them, so a leak is their problem to clean up — which
+  # is exactly why it must not happen here. Developers handle real keys while
+  # working on the reading assistant, so the prefixes are worth catching.
+  #   sk-ant-  Anthropic      sk-proj- / sk-  OpenAI      AIza  Google
+  if scan "$file" 'sk-ant-[A-Za-z0-9_-]\{16,\}'; then
+    fail "Anthropic API key found in: $file
+
+  This is a member's or your own key, and it bills to that account.
+  Remove it, then revoke the key at platform.claude.com."
+  fi
+
+  if scan "$file" 'sk-proj-[A-Za-z0-9_-]\{16,\}'; then
+    fail "OpenAI API key found in: $file
+
+  Remove it, then revoke the key at platform.openai.com."
+  fi
+
+  if scan "$file" 'AIza[A-Za-z0-9_-]\{30,\}'; then
+    fail "Google API key found in: $file
+
+  Remove it, then revoke the key at aistudio.google.com."
+  fi
+
+  # The master secret itself. A real one is 44 base64 characters; the
+  # placeholder in .env.local.example is shorter and passes.
+  if scan "$file" 'AI_KEY_ENCRYPTION_SECRET=[A-Za-z0-9+/]\{40,\}'; then
+    fail "AI_KEY_ENCRYPTION_SECRET found in: $file
+
+  This decrypts every member's provider API key. Remove it, generate a
+  replacement with \`openssl rand -base64 32\`, and redeploy."
+  fi
 done
 
 exit 0
