@@ -11,6 +11,10 @@ export type ActivityStatus = "pending" | "approved" | "rejected";
 
 export type UserRole = "user" | "admin";
 
+export type DocumentKind = "pdf" | "markdown" | "text";
+
+export type DocumentStatus = "uploading" | "extracting" | "ready" | "failed";
+
 // ── Database row types ────────────────────────────────────────────────────
 
 export interface Profile {
@@ -57,6 +61,35 @@ export interface Notification {
   activity?: Pick<Activity, "id" | "title" | "status">;
 }
 
+export interface Document {
+  id: string;
+  owner_id: string;
+  title: string;
+  kind: DocumentKind;
+  status: DocumentStatus;
+  storage_path: string;
+  byte_size: number;
+  page_count: number;
+  block_count: number;
+  error_message: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * One extracted run of text. `block_index` is the document order and the
+ * stable half of an anchor; `page` is 1 for Markdown and text, where it means
+ * nothing, and the real page for a PDF.
+ */
+export interface DocumentBlock {
+  id: string;
+  document_id: string;
+  page: number;
+  block_index: number;
+  text: string;
+  created_at: string;
+}
+
 // ── API request / response types ──────────────────────────────────────────
 
 export interface CreateActivityPayload {
@@ -74,6 +107,30 @@ export interface UpdateActivityPayload extends Partial<CreateActivityPayload> {}
 
 export interface DenyActivityPayload {
   admin_comment: string;
+}
+
+export interface CreateDocumentPayload {
+  title: string;
+  kind: DocumentKind;
+}
+
+/**
+ * What `POST /api/documents` hands back. The browser PUTs the file to
+ * `upload_url` itself — the bytes never pass through Next — and then calls
+ * the ingest route, so it needs the signed URL and the row in one response.
+ */
+export interface CreateDocumentResult {
+  document: Document;
+  upload_url: string;
+  upload_token: string;
+  content_type: string;
+}
+
+export interface DocumentWithBlocks {
+  document: Document;
+  blocks: DocumentBlock[];
+  /** Short-lived, minted per request; only present once the file is readable. */
+  file_url: string | null;
 }
 
 export interface RegisterPayload {
@@ -111,6 +168,37 @@ export const AI_PROVIDER_LABELS: Record<AiProvider, string> = {
   anthropic: "Anthropic (Claude)",
   openai: "OpenAI (ChatGPT)",
   google: "Google (Gemini)",
+};
+
+export const DOCUMENT_KIND_LABELS: Record<DocumentKind, string> = {
+  pdf: "PDF",
+  markdown: "Markdown",
+  text: "Tekst",
+};
+
+export const DOCUMENT_STATUS_LABELS: Record<DocumentStatus, string> = {
+  uploading: "Učitavanje",
+  extracting: "Obrada",
+  ready: "Spremno",
+  failed: "Neuspjelo",
+};
+
+/**
+ * The content type the browser sends with the signed upload. It is derived
+ * from the kind we already validated rather than read off the `File`, because
+ * the bucket matches on this exact string and browsers disagree about
+ * Markdown — some send `text/markdown`, some `text/x-markdown`, some nothing.
+ */
+export const DOCUMENT_KIND_MIME: Record<DocumentKind, string> = {
+  pdf: "application/pdf",
+  markdown: "text/markdown",
+  text: "text/plain",
+};
+
+export const DOCUMENT_KIND_EXTENSIONS: Record<DocumentKind, string> = {
+  pdf: "pdf",
+  markdown: "md",
+  text: "txt",
 };
 
 /** Where a member goes to create a key, linked from the settings page. */

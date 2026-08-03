@@ -1,4 +1,4 @@
-import type { ActivityStatus, ActivityType } from "@/types";
+import type { ActivityStatus, ActivityType, DocumentKind } from "@/types";
 import type { AiProvider } from "@/lib/ai/types";
 
 /**
@@ -46,6 +46,39 @@ export function isAiProvider(value: unknown): value is AiProvider {
  * what we are willing to seal, so a large body cannot be smuggled in as a key.
  */
 export const MAX_API_KEY_LENGTH = 512;
+
+// ── Documents ──────────────────────────────────────────────────────────────
+
+const DOCUMENT_KINDS: DocumentKind[] = ["pdf", "markdown", "text"];
+
+/**
+ * The kind decides which extractor runs and which extension the object is
+ * stored under, so it is checked before either — same reason `status` is
+ * checked before it reaches a PostgREST filter.
+ */
+export function isDocumentKind(value: unknown): value is DocumentKind {
+  return DOCUMENT_KINDS.includes(value as DocumentKind);
+}
+
+export const MAX_DOCUMENT_TITLE_LENGTH = 200;
+
+/**
+ * Mirrors `file_size_limit` on the `documents` bucket. The bucket is what
+ * actually enforces this — the browser uploads straight to Storage — so this
+ * copy exists only to fail fast with a Croatian message instead of letting
+ * the member wait through a doomed upload.
+ */
+export const MAX_DOCUMENT_BYTES = 26_214_400; // 25 MiB
+
+/**
+ * A ceiling on extraction, not on what a member may upload. A pathological
+ * PDF can hold tens of thousands of tiny text runs, and every one of them
+ * would become a row and a rendered element.
+ */
+export const MAX_DOCUMENT_BLOCKS = 20_000;
+
+/** Extraction runs inline in a route handler, so it has to end. */
+export const MAX_DOCUMENT_PAGES = 500;
 
 /** Columns a client is allowed to write. Everything else is server-owned. */
 export const ACTIVITY_WRITABLE_FIELDS = [

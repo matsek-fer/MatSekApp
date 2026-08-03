@@ -273,3 +273,199 @@ CREATE TRIGGER restrict_email_domain_trigger
 -- ============================================================================
 -- Run after the first admin registers:
 -- UPDATE public.profiles SET role = 'admin' WHERE email = 'admin@fer.hr';
+
+-- ============================================================================
+-- 9. AI DOCUMENT ASSISTANT — documents and extracted blocks
+-- ============================================================================
+-- Added after the initial deploy.  On a database that already has sections
+-- 1-8, run ONLY this section; on a fresh database the whole file applies top
+-- to bottom.  Unlike the sections above, this one is going to be pasted into
+-- the SQL Editor of a live database rather than applied once to an empty one,
+-- so everything below is re-runnable — except the two CREATE TYPEs in 9.1.
+
+-- ---------------------------------------------------------------------------
+-- 9.1 ENUMS
+-- ---------------------------------------------------------------------------
+-- CREATE TYPE has no IF NOT EXISTS, and the DO-block guard that would stand
+-- in for one is what the dashboard's SQL runner refuses to parse.  So these
+-- two are the section's one non-re-runnable spot: on a re-run they fail with
+-- "already exists" — delete them and run the rest.
+
+CREATE TYPE document_kind AS ENUM ('pdf', 'markdown', 'text');
+
+-- The upload is a three-step handshake — create the row, PUT the bytes to
+-- Storage, then ask the server to extract — so a document is observable in
+-- between.  'uploading' means the row exists but the bytes may not; a row
+-- stuck there is an abandoned upload and is safe to sweep.
+CREATE TYPE document_status AS ENUM (
+  'uploading',
+  'extracting',
+  'ready',
+  'failed'
+);
+
+-- ---------------------------------------------------------------------------
+-- 9.2 DOCUMENTS TABLE
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.documents (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  owner_id      UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  title         TEXT NOT NULL,
+  kind          document_kind NOT NULL,
+  status        document_status NOT NULL DEFAULT 'uploading',
+  storage_path  TEXT NOT NULL,
+  byte_size     INTEGER NOT NULL DEFAULT 0,
+  page_count    INTEGER NOT NULL DEFAULT 0,
+  block_count   INTEGER NOT NULL DEFAULT 0,
+  error_message TEXT NOT NULL DEFAULT '',   -- filled when status = 'failed'
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+DROP TRIGGER IF EXISTS documents_updated_at ON public.documents;
+CREATE TRIGGER documents_updated_at
+  BEFORE UPDATE ON public.documents
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- The library page lists one member's documents, newest first
+CREATE INDEX IF NOT EXISTS idx_documents_owner
+  ON public.documents(owner_id, created_at DESC);
+
+-- ---------------------------------------------------------------------------
+-- 9.3 DOCUMENT BLOCKS TABLE
+-- ---------------------------------------------------------------------------
+-- Extracted text, one row per paragraph (Markdown/text) or per grouped line
+-- run (PDF).  These are both the render unit and the anchor target: the
+-- reader draws the SERVER's blocks rather than parsing the file itself, which
+-- is what lets the chat route resolve a quoted excerpt from ids and offsets
+-- instead of trusting text the browser sends it.
+CREATE TABLE IF NOT EXISTS public.document_blocks (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  document_id UUID NOT NULL REFERENCES public.documents(id) ON DELETE CASCADE,
+  page        INTEGER NOT NULL DEFAULT 1,
+  block_index INTEGER NOT NULL,
+  text        TEXT NOT NULL DEFAULT '',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  CONSTRAINT chk_block_index_order CHECK (block_index >= 0)
+);
+
+-- Blocks are always read in document order, and re-ingestion must not be able
+-- to leave two blocks claiming the same position.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_document_blocks_position
+  ON public.document_blocks(document_id, block_index);
+
+-- ---------------------------------------------------------------------------
+-- 9.4 ROW LEVEL SECURITY
+-- ---------------------------------------------------------------------------
+ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.document_blocks ENABLE ROW LEVEL SECURITY;
+
+-- Members upload their own study material, so unlike activities there is no
+-- public or admin read here at all.  ADMINS DELIBERATELY GET NO VISIBILITY:
+-- private means private, including from the section's admins.
+
+DROP POLICY IF EXISTS "Users can view own documents" ON public.documents;
+CREATE POLICY "Users can view own documents"
+  ON public.documents FOR SELECT
+  USING (auth.uid() = owner_id);
+
+DROP POLICY IF EXISTS "Users can create own documents" ON public.documents;
+CREATE POLICY "Users can create own documents"
+  ON public.documents FOR INSERT
+  WITH CHECK (auth.uid() = owner_id);
+
+DROP POLICY IF EXISTS "Users can update own documents" ON public.documents;
+CREATE POLICY "Users can update own documents"
+  ON public.documents FOR UPDATE
+  USING (auth.uid() = owner_id)
+  WITH CHECK (auth.uid() = owner_id);
+
+DROP POLICY IF EXISTS "Users can delete own documents" ON public.documents;
+CREATE POLICY "Users can delete own documents"
+  ON public.documents FOR DELETE
+  USING (auth.uid() = owner_id);
+
+-- Blocks carry no owner of their own; ownership is TESTED THROUGH THE PARENT
+-- so there is exactly one place that decides who may read a document.
+
+DROP POLICY IF EXISTS "Users can view own document blocks" ON public.document_blocks;
+CREATE POLICY "Users can view own document blocks"
+  ON public.document_blocks FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.documents d
+      WHERE d.id = document_id AND d.owner_id = auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can create own document blocks" ON public.document_blocks;
+CREATE POLICY "Users can create own document blocks"
+  ON public.document_blocks FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.documents d
+      WHERE d.id = document_id AND d.owner_id = auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can delete own document blocks" ON public.document_blocks;
+CREATE POLICY "Users can delete own document blocks"
+  ON public.document_blocks FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.documents d
+      WHERE d.id = document_id AND d.owner_id = auth.uid()
+    )
+  );
+
+-- ---------------------------------------------------------------------------
+-- 9.5 STORAGE BUCKET
+-- ---------------------------------------------------------------------------
+-- Private bucket.  Files are never served directly — the reader gets a
+-- short-lived signed URL minted server-side, and the ingest route downloads
+-- through the service client.
+--
+-- The size and MIME limits live HERE rather than in a route handler because
+-- the browser PUTs its bytes straight to Storage on a signed URL; no Next
+-- process sees the upload, so the bucket is the only thing in a position to
+-- refuse it.
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'documents',
+  'documents',
+  false,
+  26214400,                                 -- 25 MiB
+  ARRAY['application/pdf', 'text/markdown', 'text/plain']
+)
+ON CONFLICT (id) DO UPDATE SET
+  public             = EXCLUDED.public,
+  file_size_limit    = EXCLUDED.file_size_limit,
+  allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+-- Objects are keyed {owner_id}/{document_id}/original.{ext}, so the owner
+-- test is a prefix test on the first path segment.
+
+DROP POLICY IF EXISTS "Users can read own document files" ON storage.objects;
+CREATE POLICY "Users can read own document files"
+  ON storage.objects FOR SELECT
+  USING (
+    bucket_id = 'documents'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+DROP POLICY IF EXISTS "Users can upload own document files" ON storage.objects;
+CREATE POLICY "Users can upload own document files"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'documents'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+DROP POLICY IF EXISTS "Users can delete own document files" ON storage.objects;
+CREATE POLICY "Users can delete own document files"
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id = 'documents'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
