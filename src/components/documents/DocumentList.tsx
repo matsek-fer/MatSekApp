@@ -28,11 +28,23 @@ export default function DocumentList({ documents }: { documents: Document[] }) {
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  async function handleRetry(id: string) {
+  async function handleRetry(id: string, force = false) {
+    if (
+      force &&
+      !window.confirm(
+        "Ponovna obrada može poboljšati raspored teksta, ali postojeći citati u razgovorima mogu zastarjeti. Nastaviti?"
+      )
+    ) {
+      return;
+    }
+
     setError("");
     setBusyId(id);
     try {
-      const res = await fetch(`/api/documents/${id}/ingest`, { method: "POST" });
+      const res = await fetch(
+        `/api/documents/${id}/ingest${force ? "?force=1" : ""}`,
+        { method: "POST" }
+      );
       const json = await res.json();
       if (!json.success) setError(json.error || "Obrada nije uspjela.");
       router.refresh();
@@ -132,6 +144,18 @@ export default function DocumentList({ documents }: { documents: Document[] }) {
                   disabled={busyId !== null}
                 >
                   {busyId === document.id ? "Obrađujem…" : "Pokušaj ponovno"}
+                </Button>
+              )}
+              {/* Re-extraction with the current algorithm — for documents
+                  ingested before a grouping improvement (two-column papers). */}
+              {document.status === "ready" && document.kind === "pdf" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleRetry(document.id, true)}
+                  disabled={busyId !== null}
+                >
+                  {busyId === document.id ? "Obrađujem…" : "Ponovno obradi"}
                 </Button>
               )}
               <Button

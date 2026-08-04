@@ -57,9 +57,8 @@ export async function POST(
       );
     }
 
-    // 'extracting' means another request is already inside this route; 'ready'
-    // means there is nothing to do. Re-ingesting either would race a second
-    // set of blocks against the first.
+    // 'extracting' means another request is already inside this route;
+    // re-ingesting would race a second set of blocks against the first.
     if (document.status === "extracting") {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Dokument se već obrađuje." },
@@ -67,7 +66,12 @@ export async function POST(
       );
     }
 
-    if (document.status === "ready") {
+    // 'ready' normally means nothing to do — except when the extraction
+    // algorithm has improved since this document went through it. ?force=1
+    // re-extracts in place. Block ids change, so saved citations go stale;
+    // that is what their quoteHash exists to notice.
+    const force = request.nextUrl.searchParams.get("force") === "1";
+    if (document.status === "ready" && !force) {
       return NextResponse.json<ApiResponse<Document>>(
         { success: true, data: document },
         { status: 200 }
