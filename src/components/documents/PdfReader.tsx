@@ -5,8 +5,8 @@ import { groupIntoLines } from "@/lib/documents/lines";
 import type { DocumentBlock } from "@/types";
 
 /**
- * The PDF reading view: a canvas per page, with a transparent text layer on
- * top so the browser's own selection works over faithfully rendered pages.
+ * The PDF reading view: a canvas per page, with pdf.js's own TextLayer on
+ * top so the browser's selection works over faithfully rendered pages.
  *
  * Why not render the extracted text as paragraphs instead? Because this is a
  * mathematics section. Text extraction loses layout, reflows multi-column
@@ -18,21 +18,21 @@ import type { DocumentBlock } from "@/types";
  * glyph sequence. No library recovers `\int_0^\infty` from a file that never
  * embedded it. Rendering is faithful; extraction is approximate.
  *
- * ── The text layer, and why it is ours rather than pdf.js's ────────────────
+ * ── The text layer ─────────────────────────────────────────────────────────
  *
- * pdf.js ships a TextLayer that positions one span per text item. We build
- * one span per LINE instead, because a line is what the server stored as a
- * block, and a span that is exactly one block is what lets a DOM Range become
- * an anchor by reading `data-block-id` off the nearest ancestor and using the
- * offset within it unchanged.
+ * The selection surface is pdf.js's TextLayer — one span per glyph run, the
+ * right font, a per-span horizontal scale — the same machinery Firefox's
+ * viewer uses. A first version of this file hand-rolled one stretched span
+ * per line in the site's font instead, and the result was selection
+ * highlights visibly larger than the glyphs and formulas that could not be
+ * selected at all. Its CSS lives in globals.css under `.textLayer`.
  *
- * The cost is that a line's glyph positions are approximated by stretching
- * one span across the line's measured width rather than placing each run
- * individually, so a selection highlight can sit a pixel or two off the
- * glyphs under it on a line that changes font mid-way. The alternative —
- * per-item spans — buys that precision back and pays for it by making every
- * anchor a text-matching problem. Correct citations are worth more than
- * perfectly aligned highlights.
+ * The anchor system rides on top: `TextLayer.textDivs` aligns 1:1 with the
+ * raw text items, and the shared grouping in lib/documents/lines.ts records
+ * each piece's raw item index, so after render every span is stamped with
+ * the id of the server block its line belongs to. PDF spans carry NO
+ * data-block-offset — that absence is what tells the selection code to snap
+ * the anchor to whole lines, which is the granularity the chat sends anyway.
  */
 
 interface PdfReaderProps {
@@ -164,15 +164,6 @@ interface PdfPageProps {
   blocks: DocumentBlock[];
 }
 
-interface LineBox {
-  blockId: string;
-  text: string;
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-}
-
 /**
  * One page. Nothing is drawn until it comes near the viewport — a 300-page
  * PDF rendered eagerly would allocate 300 canvases the size of the window.
@@ -180,9 +171,10 @@ interface LineBox {
 function PdfPage({ pdfjs, doc, pageNumber, scale, blocks }: PdfPageProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const textLayerRef = useRef<HTMLDivElement>(null);
+  const layerRef = useRef<InstanceType<PdfjsModule["TextLayer"]> | null>(null);
   const [visible, setVisible] = useState(false);
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
-  const [lines, setLines] = useState<LineBox[]>([]);
 
   useEffect(() => {
     const node = containerRef.current;
@@ -201,7 +193,8 @@ function PdfPage({ pdfjs, doc, pageNumber, scale, blocks }: PdfPageProps) {
 
   const render = useCallback(async () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const textLayerHost = textLayerRef.current;
+    if (!canvas || !textLayerHost) return;
 
     const page = await doc.getPage(pageNumber);
     const viewport = page.getViewport({ scale });
@@ -223,7 +216,20 @@ function PdfPage({ pdfjs, doc, pageNumber, scale, blocks }: PdfPageProps) {
     }).promise;
 
     const content = await page.getTextContent();
-    setLines(buildLineBoxes(pdfjs, content.items, viewport, blocks));
+
+    // A zoom change re-renders; the previous layer must not survive it.
+    layerRef.current?.cancel();
+    textLayerHost.replaceChildren();
+
+    const layer = new pdfjs.TextLayer({
+      textContentSource: content,
+      container: textLayerHost,
+      viewport,
+    });
+    layerRef.current = layer;
+    await layer.render();
+
+    stampBlockIds(layer.textDivs, content.items, blocks, pageNumber);
     page.cleanup();
   }, [pdfjs, doc, pageNumber, scale, blocks]);
 
@@ -235,6 +241,7 @@ function PdfPage({ pdfjs, doc, pageNumber, scale, blocks }: PdfPageProps) {
     });
     return () => {
       cancelled = true;
+      layerRef.current?.cancel();
     };
   }, [visible, render, pageNumber]);
 
@@ -242,7 +249,14 @@ function PdfPage({ pdfjs, doc, pageNumber, scale, blocks }: PdfPageProps) {
     <div
       ref={containerRef}
       className="relative mx-auto w-fit border border-border bg-white shadow-sm"
-      style={size ? { width: size.width, height: size.height } : undefined}
+      style={
+        {
+          ...(size ? { width: size.width, height: size.height } : {}),
+          // TextLayer sizes itself and its font metrics from this variable;
+          // the full pdf.js viewer sets it on the page div, so we do too.
+          "--total-scale-factor": String(scale),
+        } as React.CSSProperties
+      }
       data-page={pageNumber}
     >
       <canvas
@@ -251,74 +265,42 @@ function PdfPage({ pdfjs, doc, pageNumber, scale, blocks }: PdfPageProps) {
         style={size ? { width: size.width, height: size.height } : undefined}
       />
 
-      {/* The selectable layer. Transparent text, real glyph metrics. */}
-      <div className="absolute inset-0 select-text" aria-hidden={false}>
-        {lines.map((line) => (
-          <span
-            key={line.blockId}
-            data-block-id={line.blockId}
-            data-block-offset={0}
-            className="absolute origin-top-left whitespace-pre text-transparent"
-            style={{
-              left: `${line.left}px`,
-              top: `${line.top}px`,
-              fontSize: `${line.height}px`,
-              // Stretched to the measured width of the line, the same trick
-              // pdf.js uses per item, so selection tracks the drawn glyphs.
-              width: `${line.width}px`,
-            }}
-          >
-            {line.text}
-          </span>
-        ))}
-      </div>
+      {/* pdf.js positions its spans in here; styling under .textLayer in
+          globals.css. */}
+      <div ref={textLayerRef} className="textLayer" />
     </div>
   );
 }
 
 /**
- * Positions each of the server's blocks over the page it was extracted from.
+ * Writes each server block's id onto the TextLayer spans of its line.
  *
- * The pairing is by ORDER, not by text: the browser groups the same items
- * with the same function the server used, so line n here is block n there.
- * When the counts disagree — a document ingested before a change to the
- * grouping — the extra lines are dropped rather than stamped with the wrong
- * block id, which would silently mis-attribute a quote.
+ * `textDivs` is index-aligned with the RAW items array, and every piece the
+ * shared grouping produced remembers its raw index — so the pairing is
+ * arithmetic, no text matching. Lines and blocks pair by ORDER (line n of
+ * this page is block n of this page); when the counts disagree — a document
+ * ingested before a grouping change — the extra lines stay unstamped rather
+ * than mis-attributed, and selecting them simply offers no anchor.
  */
-function buildLineBoxes(
-  pdfjs: PdfjsModule,
+function stampBlockIds(
+  textDivs: HTMLElement[],
   items: unknown[],
-  viewport: { transform: number[]; height: number },
-  blocks: DocumentBlock[]
-): LineBox[] {
+  blocks: DocumentBlock[],
+  pageNumber: number
+) {
   const lines = groupIntoLines(items);
-  const boxes: LineBox[] = [];
 
-  for (let i = 0; i < Math.min(lines.length, blocks.length); i++) {
-    const line = lines[i];
-    const block = blocks[i];
-    const first = line.pieces[0];
-    const last = line.pieces[line.pieces.length - 1];
-
-    const start = pdfjs.Util.transform(viewport.transform, first.transform);
-    const end = pdfjs.Util.transform(viewport.transform, last.transform);
-
-    // The vertical scale of the composed matrix is the rendered font height.
-    const height = Math.hypot(start[2], start[3]);
-    const scale = height / (first.height || height || 1);
-    const width = Math.max(end[4] - start[4] + last.width * scale, 1);
-
-    boxes.push({
-      blockId: block.id,
-      // The server's text, not the browser's: the two agree by construction,
-      // and if they ever drift the stored one is what an anchor resolves to.
-      text: block.text,
-      left: start[4],
-      top: start[5] - height,
-      width,
-      height,
-    });
+  if (lines.length !== blocks.length) {
+    console.warn(
+      `PDF page ${pageNumber}: ${lines.length} lines vs ${blocks.length} blocks — stale ingest? Re-run obrada.`
+    );
   }
 
-  return boxes;
+  const count = Math.min(lines.length, blocks.length);
+  for (let i = 0; i < count; i++) {
+    for (const piece of lines[i].pieces) {
+      const span = textDivs[piece.itemIndex];
+      if (span) span.dataset.blockId = blocks[i].id;
+    }
+  }
 }

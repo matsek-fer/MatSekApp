@@ -39,6 +39,13 @@ export interface TextPiece {
   width: number;
   height: number;
   hasEOL: boolean;
+  /**
+   * The piece's index in the RAW getTextContent().items array, before
+   * filtering and sorting. pdf.js's TextLayer renders one element per raw
+   * item in that same order, so this is how the reader finds the span that
+   * belongs to a piece and stamps the block id on it.
+   */
+  itemIndex: number;
 }
 
 export interface TextLine {
@@ -88,11 +95,11 @@ export function lineText(pieces: TextPiece[]): string {
 export function groupIntoLines(items: unknown[]): TextLine[] {
   const pieces: TextPiece[] = [];
 
-  for (const item of items) {
+  items.forEach((item, itemIndex) => {
     // Marked-content entries have no `str`; they are structure, not text.
     const candidate = item as Partial<TextPiece>;
-    if (typeof candidate.str !== "string" || !candidate.transform) continue;
-    if (!candidate.str.trim()) continue;
+    if (typeof candidate.str !== "string" || !candidate.transform) return;
+    if (!candidate.str.trim()) return;
 
     pieces.push({
       str: candidate.str,
@@ -100,8 +107,9 @@ export function groupIntoLines(items: unknown[]): TextLine[] {
       width: candidate.width ?? 0,
       height: candidate.height ?? 0,
       hasEOL: candidate.hasEOL ?? false,
+      itemIndex,
     });
-  }
+  });
 
   // Top to bottom, then left to right. PDF y grows upward, hence the negation.
   pieces.sort(

@@ -80,6 +80,15 @@ export default function ReaderShell({
   );
   const selectionTimer = useRef<ReturnType<typeof setTimeout>>();
 
+  // What a snapped (PDF) endpoint resolves against: the server's block text
+  // lengths, which the browser's spans do not carry.
+  const blockLengths = useRef<Map<string, number>>(new Map());
+  if (blockLengths.current.size === 0 && blocks.length > 0) {
+    for (const block of blocks) {
+      blockLengths.current.set(block.id, block.text.length);
+    }
+  }
+
   useLayoutEffect(() => {
     const navbar = window.document.getElementById("app-navbar");
     if (!navbar) return;
@@ -136,7 +145,11 @@ export default function ReaderShell({
         if (!container) return;
 
         const selection = window.getSelection();
-        const anchor = anchorFromSelection(selection, container);
+        const anchor = anchorFromSelection(
+          selection,
+          container,
+          blockLengths.current
+        );
 
         if (!anchor) {
           setPopover(null);
