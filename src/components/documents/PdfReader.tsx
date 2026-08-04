@@ -74,18 +74,18 @@ export default function PdfReader({ fileUrl, blocks }: PdfReaderProps) {
 
     (async () => {
       try {
-        const module = await import("pdfjs-dist");
+        const pdfjsModule = await import("pdfjs-dist");
 
         // Served as a static file rather than imported: the worker is an ES
         // module and Next's compiler will not parse `import.meta` inside the
         // bundle. scripts/copy-pdf-worker.mjs puts it here on every dev and
         // build, from the same node_modules this library came from.
-        module.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        pdfjsModule.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
         if (cancelled) return;
-        setPdfjs(module);
+        setPdfjs(pdfjsModule);
 
-        const loaded = await module.getDocument({ url: fileUrl }).promise;
+        const loaded = await pdfjsModule.getDocument({ url: fileUrl }).promise;
         if (cancelled) {
           await loaded.cleanup();
           return;
