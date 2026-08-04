@@ -4,6 +4,7 @@ import { getAdapter } from "@/lib/ai";
 import { sealApiKey } from "@/lib/ai/crypto";
 import { AiError, redactError } from "@/lib/ai/errors";
 import { keyCookieName, keyCookieOptions, loadUserKeySuffix } from "@/lib/ai/keys";
+import { checkThrottle, THROTTLES } from "@/lib/ai/throttle";
 import { isAiProvider, MAX_API_KEY_LENGTH } from "@/lib/validation";
 import { AI_PROVIDERS } from "@/lib/ai";
 import type { AiKeyInfo } from "@/lib/ai/types";
@@ -74,6 +75,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Nisi prijavljen/a." },
         { status: 401 }
+      );
+    }
+
+    // Throttled BEFORE anything reads the body: each validation makes a real
+    // authenticated call to a provider, so an unthrottled version of this
+    // route is a free oracle for testing stolen keys. Five an hour is ample
+    // for a member correcting a typo.
+    const refused = await checkThrottle(supabase, THROTTLES.keyVerify);
+    if (refused) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: refused },
+        { status: 429 }
       );
     }
 

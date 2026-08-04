@@ -49,6 +49,7 @@ export default function ChatPanel({
   onAnchorConsumed,
 }: ChatPanelProps) {
   const [keys, setKeys] = useState<AiKeyInfo[] | null>(null);
+  const [usage, setUsage] = useState<{ calls: number } | null>(null);
   const [provider, setProvider] = useState<AiProvider | null>(null);
   const [model, setModel] = useState("");
   const [thread, setThread] = useState<ChatThread | null>(null);
@@ -85,6 +86,22 @@ export default function ChatPanel({
       cancelled = true;
     };
   }, []);
+
+  // The meter. Refreshed after every send so a runaway loop shows up here,
+  // in the UI, rather than on the member's provider bill.
+  const refreshUsage = useCallback(async () => {
+    try {
+      const res = await fetch("/api/ai/usage");
+      const json = await res.json();
+      if (json.success) setUsage(json.data);
+    } catch {
+      // The meter is informational; a failed fetch is not worth an alert.
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshUsage();
+  }, [refreshUsage]);
 
   // A selection arriving from the popover belongs in the input's focus.
   useEffect(() => {
@@ -221,6 +238,7 @@ export default function ChatPanel({
     } finally {
       abortRef.current = null;
       setBusy(false);
+      refreshUsage();
     }
   }, [
     question,
@@ -231,6 +249,7 @@ export default function ChatPanel({
     documentId,
     pendingAnchor,
     onAnchorConsumed,
+    refreshUsage,
   ]);
 
   function stop() {
@@ -277,6 +296,7 @@ export default function ChatPanel({
           <p className="truncate text-xs text-fg-muted">
             {PROVIDER_MODELS[thread.provider].find((m) => m.id === thread.model)
               ?.label ?? thread.model}
+            {usage && ` · ${usage.calls}/24 h`}
           </p>
           <Button variant="ghost" size="sm" onClick={startNewThread}>
             Novi razgovor

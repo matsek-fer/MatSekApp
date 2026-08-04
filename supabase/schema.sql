@@ -615,3 +615,171 @@ CREATE POLICY "Users can delete own messages"
       WHERE t.id = thread_id AND t.owner_id = auth.uid()
     )
   );
+
+-- ============================================================================
+-- 11. AI DOCUMENT ASSISTANT — rate limiting and usage
+-- ============================================================================
+-- Re-runnable like sections 9 and 10.  The functions here use $$ bodies the
+-- way set_updated_at in section 3 already does; if the SQL Editor's
+-- statement splitter ever rejects them, run this section through psql.
+--
+-- Throttling is ONE atomic statement per check — INSERT .. ON CONFLICT ..
+-- RETURNING — because a read-then-write throttle has a race exactly where it
+-- matters: under concurrent requests from the same abuser.  PostgREST cannot
+-- express that statement, hence the functions; the routes call them by rpc.
+
+-- ---------------------------------------------------------------------------
+-- 11.1 RATE BUCKETS TABLE
+-- ---------------------------------------------------------------------------
+-- One row per user, scope and time window.  `touched_at` exists for the
+-- stream scope, whose "window" is the epoch: it is how a slot leaked by a
+-- crashed request is recognised as stale rather than blocking its owner
+-- forever.
+CREATE TABLE IF NOT EXISTS public.ai_rate_buckets (
+  user_id      UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  scope        TEXT NOT NULL,
+  window_start TIMESTAMPTZ NOT NULL,
+  hits         INTEGER NOT NULL DEFAULT 0,
+  touched_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  PRIMARY KEY (user_id, scope, window_start)
+);
+
+-- ---------------------------------------------------------------------------
+-- 11.2 USAGE EVENTS TABLE
+-- ---------------------------------------------------------------------------
+-- One row per chat call, kept so a member can SEE their own consumption in
+-- the panel instead of discovering a runaway loop on a provider bill.
+-- Character counts, not tokens: they are what the server actually knows
+-- without trusting provider-reported numbers, and they are proportional
+-- enough to make a spike obvious.
+CREATE TABLE IF NOT EXISTS public.ai_usage_events (
+  id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id        UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  document_id    UUID REFERENCES public.documents(id) ON DELETE SET NULL,
+  provider       TEXT NOT NULL,
+  model          TEXT NOT NULL,
+  question_chars INTEGER NOT NULL DEFAULT 0,
+  answer_chars   INTEGER NOT NULL DEFAULT 0,
+  ended_in_error BOOLEAN NOT NULL DEFAULT false,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- The panel asks "how much today", newest window first
+CREATE INDEX IF NOT EXISTS idx_ai_usage_events_user
+  ON public.ai_usage_events(user_id, created_at DESC);
+
+-- ---------------------------------------------------------------------------
+-- 11.3 THROTTLE FUNCTIONS
+-- ---------------------------------------------------------------------------
+-- All three run as SECURITY DEFINER and take the caller from auth.uid(), so
+-- a member can only ever spend their own budget.  They are what the routes
+-- call; nothing else writes these tables.
+
+-- Counts a hit against the caller's (scope, window) bucket and returns the
+-- new total.  The route compares against its limit and refuses at 429.
+-- Opportunistically sweeps that scope's expired windows so the table does
+-- not grow one row per user per minute forever.
+CREATE OR REPLACE FUNCTION public.bump_rate_bucket(
+  p_scope TEXT,
+  p_window_seconds INTEGER
+)
+RETURNS INTEGER AS $$
+DECLARE
+  v_user UUID := auth.uid();
+  v_window TIMESTAMPTZ;
+  v_hits INTEGER;
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'not authenticated';
+  END IF;
+
+  v_window := to_timestamp(
+    floor(extract(epoch FROM now()) / p_window_seconds) * p_window_seconds
+  );
+
+  DELETE FROM public.ai_rate_buckets
+  WHERE user_id = v_user AND scope = p_scope AND window_start < v_window;
+
+  INSERT INTO public.ai_rate_buckets (user_id, scope, window_start, hits)
+  VALUES (v_user, p_scope, v_window, 1)
+  ON CONFLICT (user_id, scope, window_start)
+  DO UPDATE SET hits = public.ai_rate_buckets.hits + 1, touched_at = now()
+  RETURNING hits INTO v_hits;
+
+  RETURN v_hits;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- One active stream per user.  Returns true if the slot was taken.  A slot
+-- whose touched_at is older than five minutes belongs to a request that
+-- died without releasing; it is reclaimed rather than honoured, so a crash
+-- cannot lock its owner out of the assistant.
+CREATE OR REPLACE FUNCTION public.acquire_stream_slot()
+RETURNS BOOLEAN AS $$
+DECLARE
+  v_user UUID := auth.uid();
+  v_hits INTEGER;
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'not authenticated';
+  END IF;
+
+  INSERT INTO public.ai_rate_buckets (user_id, scope, window_start, hits)
+  VALUES (v_user, 'stream', 'epoch'::timestamptz, 1)
+  ON CONFLICT (user_id, scope, window_start)
+  DO UPDATE SET
+    hits = CASE
+      WHEN public.ai_rate_buckets.touched_at < now() - interval '5 minutes'
+        THEN 1
+      ELSE public.ai_rate_buckets.hits + 1
+    END,
+    touched_at = now()
+  RETURNING hits INTO v_hits;
+
+  IF v_hits > 1 THEN
+    -- Give back the hit we just took; the caller is refused.
+    UPDATE public.ai_rate_buckets
+    SET hits = greatest(hits - 1, 0)
+    WHERE user_id = v_user AND scope = 'stream'
+      AND window_start = 'epoch'::timestamptz;
+    RETURN false;
+  END IF;
+
+  RETURN true;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.release_stream_slot()
+RETURNS VOID AS $$
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'not authenticated';
+  END IF;
+
+  UPDATE public.ai_rate_buckets
+  SET hits = greatest(hits - 1, 0), touched_at = now()
+  WHERE user_id = auth.uid() AND scope = 'stream'
+    AND window_start = 'epoch'::timestamptz;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ---------------------------------------------------------------------------
+-- 11.4 ROW LEVEL SECURITY
+-- ---------------------------------------------------------------------------
+ALTER TABLE public.ai_rate_buckets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ai_usage_events ENABLE ROW LEVEL SECURITY;
+
+-- Buckets are written ONLY through the definer functions above; no policy
+-- means no direct path, and a policy added here by mistake would reopen one.
+
+-- A member watches their own meter; nobody reads anyone else's.
+DROP POLICY IF EXISTS "Users can view own usage" ON public.ai_usage_events;
+CREATE POLICY "Users can view own usage"
+  ON public.ai_usage_events FOR SELECT
+  USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can record own usage" ON public.ai_usage_events;
+CREATE POLICY "Users can record own usage"
+  ON public.ai_usage_events FOR INSERT
+  WITH CHECK (auth.uid() = user_id);

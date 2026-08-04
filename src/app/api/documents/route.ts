@@ -2,6 +2,11 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
 import { randomUUID } from "node:crypto";
 import {
+  checkThrottle,
+  MAX_DOCUMENTS_PER_USER,
+  THROTTLES,
+} from "@/lib/ai/throttle";
+import {
   isDocumentKind,
   MAX_DOCUMENT_TITLE_LENGTH,
 } from "@/lib/validation";
@@ -84,6 +89,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Nisi prijavljen/a." },
         { status: 401 }
+      );
+    }
+
+    const refused = await checkThrottle(supabase, THROTTLES.upload);
+    if (refused) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: refused },
+        { status: 429 }
+      );
+    }
+
+    // A cap on the library, not the hour: Storage is finite and 50 documents
+    // is a heavy semester. RLS scopes the count to the member.
+    const { count } = await supabase
+      .from("documents")
+      .select("id", { count: "exact", head: true });
+
+    if ((count ?? 0) >= MAX_DOCUMENTS_PER_USER) {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          error: `Dosegnut je najveći broj dokumenata (${MAX_DOCUMENTS_PER_USER}). Obriši neki stari.`,
+        },
+        { status: 409 }
       );
     }
 

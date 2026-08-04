@@ -15,6 +15,13 @@ import {
   resolveExcerpt,
   type DocumentAnchor,
 } from "@/lib/documents/anchors";
+import {
+  acquireStreamSlot,
+  checkThrottle,
+  releaseStreamSlot,
+  STREAM_BUSY_MESSAGE,
+  THROTTLES,
+} from "@/lib/ai/throttle";
 import { MAX_EXCERPT_LENGTH, MAX_QUESTION_LENGTH } from "@/lib/validation";
 import type { AiEvent, ChatTurn } from "@/lib/ai/types";
 import type { ApiResponse, ChatMessage, DocumentBlock } from "@/types";
@@ -71,6 +78,19 @@ export async function POST(
         { success: false, error: "Nisi prijavljen/a." },
         { status: 401 }
       );
+    }
+
+    // Throttles come first — they are the cheapest check and the one that is
+    // a control rather than a courtesy. Both windows count attempts, not
+    // successes: a failing request spends budget too.
+    for (const rule of [THROTTLES.chatMinute, THROTTLES.chatDay]) {
+      const refused = await checkThrottle(supabase, rule);
+      if (refused) {
+        return NextResponse.json<ApiResponse>(
+          { success: false, error: refused },
+          { status: 429 }
+        );
+      }
     }
 
     const body = (await request.json()) as Record<string, unknown>;
@@ -228,6 +248,15 @@ export async function POST(
 
     turns.push({ role: "user", content: userTurn.content });
 
+    // One stream per member. Acquired before the question is persisted so a
+    // refusal leaves no dangling turn, and released in the stream's finally.
+    if (!(await acquireStreamSlot(supabase))) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: STREAM_BUSY_MESSAGE },
+        { status: 409 }
+      );
+    }
+
     // The member's turn is written before the stream opens: if the provider
     // dies mid-answer the question still exists, and a retry can see it.
     const { error: insertError } = await supabase.from("chat_messages").insert({
@@ -239,6 +268,7 @@ export async function POST(
 
     if (insertError) {
       console.error("POST /api/documents/[id]/chat insert error:", insertError);
+      await releaseStreamSlot(supabase);
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Poruku nije moguće spremiti." },
         { status: 500 }
@@ -290,6 +320,21 @@ export async function POST(
             controller.enqueue(frame({ type: "error", error: errorNote }));
           }
         } finally {
+          await releaseStreamSlot(supabase);
+
+          // The meter row. Character counts are what the server knows
+          // without trusting provider-reported numbers, and they make a
+          // runaway loop visible in the panel rather than on a bill.
+          await supabase.from("ai_usage_events").insert({
+            user_id: session.user.id,
+            document_id: params.id,
+            provider: thread.provider,
+            model: thread.model,
+            question_chars: trimmedQuestion.length,
+            answer_chars: accumulated.length,
+            ended_in_error: errorNote.length > 0,
+          });
+
           // Persisted whatever happened: a full answer, a partial one cut
           // off by a disconnect, or an empty row carrying the error note.
           const { data: saved } = await supabase
