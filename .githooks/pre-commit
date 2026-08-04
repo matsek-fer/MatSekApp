@@ -80,7 +80,7 @@ for file in $staged; do
   # cannot revoke them for them, so a leak is their problem to clean up — which
   # is exactly why it must not happen here. Developers handle real keys while
   # working on the reading assistant, so the prefixes are worth catching.
-  #   sk-ant-  Anthropic      sk-proj- / sk-  OpenAI      AIza  Google
+  #   sk-ant-  Anthropic   sk-proj- / sk-  OpenAI   AIza  Google   sk-  DeepSeek
   if scan "$file" 'sk-ant-[A-Za-z0-9_-]\{16,\}'; then
     fail "Anthropic API key found in: $file
 
@@ -92,6 +92,16 @@ for file in $staged; do
     fail "OpenAI API key found in: $file
 
   Remove it, then revoke the key at platform.openai.com."
+  fi
+
+  # DeepSeek and legacy OpenAI keys are a bare sk- prefix over one long
+  # alphanumeric run. The 24-character floor keeps ordinary identifiers that
+  # happen to start with sk- out of the net; both vendors' keys clear it.
+  if scan "$file" 'sk-[A-Za-z0-9]\{24,\}'; then
+    fail "DeepSeek or OpenAI API key found in: $file
+
+  Remove it, then revoke the key at platform.deepseek.com or
+  platform.openai.com."
   fi
 
   if scan "$file" 'AIza[A-Za-z0-9_-]\{30,\}'; then

@@ -30,7 +30,12 @@ export function isActivityType(value: unknown): value is ActivityType {
 
 // ── AI assistant ───────────────────────────────────────────────────────────
 
-const AI_PROVIDER_VALUES: AiProvider[] = ["anthropic", "openai", "google"];
+const AI_PROVIDER_VALUES: AiProvider[] = [
+  "anthropic",
+  "openai",
+  "google",
+  "deepseek",
+];
 
 /**
  * The provider arrives in a route path and picks which cookie is read and

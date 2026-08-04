@@ -6,7 +6,7 @@
  * Adding a provider means adding an adapter file; nothing above it changes.
  */
 
-export type AiProvider = "anthropic" | "openai" | "google";
+export type AiProvider = "anthropic" | "openai" | "google" | "deepseek";
 
 export interface AiModel {
   id: string;

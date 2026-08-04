@@ -497,8 +497,16 @@ CREATE TABLE IF NOT EXISTS public.chat_threads (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
 
   CONSTRAINT chk_thread_provider
-    CHECK (provider IN ('anthropic', 'openai', 'google'))
+    CHECK (provider IN ('anthropic', 'openai', 'google', 'deepseek'))
 );
+
+-- The provider allowlist grows over time, and CREATE TABLE IF NOT EXISTS is
+-- a no-op on a live database — so the constraint is re-stated here and this
+-- pair is what actually updates an existing install.  Keep the list above
+-- and the list below identical.
+ALTER TABLE public.chat_threads DROP CONSTRAINT IF EXISTS chk_thread_provider;
+ALTER TABLE public.chat_threads ADD CONSTRAINT chk_thread_provider
+  CHECK (provider IN ('anthropic', 'openai', 'google', 'deepseek'));
 
 DROP TRIGGER IF EXISTS chat_threads_updated_at ON public.chat_threads;
 CREATE TRIGGER chat_threads_updated_at

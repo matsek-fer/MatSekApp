@@ -27,6 +27,12 @@ export const PROVIDER_MODELS: Record<AiProvider, readonly AiModel[]> = {
     { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash", isDefault: true },
     { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro", isDefault: false },
   ],
+  // Aliases, not pinned versions — DeepSeek points them at its current
+  // generation. Chat is the default; Reasoner thinks longer and costs more.
+  deepseek: [
+    { id: "deepseek-chat", label: "DeepSeek Chat", isDefault: true },
+    { id: "deepseek-reasoner", label: "DeepSeek Reasoner", isDefault: false },
+  ],
 };
 
 export function defaultModelFor(provider: AiProvider): string {

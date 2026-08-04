@@ -202,6 +202,7 @@ export const AI_PROVIDER_LABELS: Record<AiProvider, string> = {
   anthropic: "Anthropic (Claude)",
   openai: "OpenAI (ChatGPT)",
   google: "Google (Gemini)",
+  deepseek: "DeepSeek",
 };
 
 export const DOCUMENT_KIND_LABELS: Record<DocumentKind, string> = {
@@ -240,4 +241,5 @@ export const AI_PROVIDER_CONSOLE_URLS: Record<AiProvider, string> = {
   anthropic: "https://platform.claude.com/settings/keys",
   openai: "https://platform.openai.com/api-keys",
   google: "https://aistudio.google.com/apikey",
+  deepseek: "https://platform.deepseek.com/api_keys",
 };

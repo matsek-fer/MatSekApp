@@ -7,6 +7,7 @@
  */
 
 import { anthropicAdapter } from "@/lib/ai/anthropic";
+import { deepseekAdapter } from "@/lib/ai/deepseek";
 import { googleAdapter } from "@/lib/ai/google";
 import { openaiAdapter } from "@/lib/ai/openai";
 import type { AiAdapter, AiModel, AiProvider } from "@/lib/ai/types";
@@ -20,6 +21,7 @@ function getRegistry(): Record<AiProvider, AiAdapter> {
     anthropic: anthropicAdapter,
     openai: openaiAdapter,
     google: googleAdapter,
+    deepseek: deepseekAdapter,
   };
 
   return registry;
@@ -46,4 +48,9 @@ export function defaultModel(provider: AiProvider): string {
   return (models.find((m) => m.isDefault) ?? models[0]).id;
 }
 
-export const AI_PROVIDERS: readonly AiProvider[] = ["anthropic", "openai", "google"];
+export const AI_PROVIDERS: readonly AiProvider[] = [
+  "anthropic",
+  "openai",
+  "google",
+  "deepseek",
+];
