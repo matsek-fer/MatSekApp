@@ -80,6 +80,18 @@ export const MAX_DOCUMENT_BLOCKS = 20_000;
 /** Extraction runs inline in a route handler, so it has to end. */
 export const MAX_DOCUMENT_PAGES = 500;
 
+// ── Chat ───────────────────────────────────────────────────────────────────
+
+/** Bound on the <zadatak> slot — a question, not an essay. */
+export const MAX_QUESTION_LENGTH = 2_000;
+
+/**
+ * Bound on the resolved excerpt in UTF-16 code units. Excerpts are resolved
+ * server-side from anchors, so this caps what a sweep-everything selection
+ * can push into a prompt — and into the member's own bill.
+ */
+export const MAX_EXCERPT_LENGTH = 8_000;
+
 /** Columns a client is allowed to write. Everything else is server-owned. */
 export const ACTIVITY_WRITABLE_FIELDS = [
   "title",

@@ -8,16 +8,12 @@
 
 import OpenAI from "openai";
 import { toAiError } from "@/lib/ai/errors";
-import type { AiAdapter, AiEvent, AiModel, AiStreamRequest } from "@/lib/ai/types";
-
-const MODELS: readonly AiModel[] = [
-  { id: "gpt-5.5", label: "GPT-5.5", isDefault: true },
-  { id: "gpt-5", label: "GPT-5", isDefault: false },
-];
+import { PROVIDER_MODELS } from "@/lib/ai/models";
+import type { AiAdapter, AiEvent, AiStreamRequest } from "@/lib/ai/types";
 
 export const openaiAdapter: AiAdapter = {
   provider: "openai",
-  models: MODELS,
+  models: PROVIDER_MODELS.openai,
 
   async validateKey(apiKey: string): Promise<void> {
     try {

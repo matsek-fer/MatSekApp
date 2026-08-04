@@ -469,3 +469,141 @@ CREATE POLICY "Users can delete own document files"
     bucket_id = 'documents'
     AND (storage.foldername(name))[1] = auth.uid()::text
   );
+
+-- ============================================================================
+-- 10. AI DOCUMENT ASSISTANT — chat threads and messages
+-- ============================================================================
+-- Same deal as section 9: pasted into the SQL Editor of a live database, so
+-- everything here is re-runnable.  The two role/provider columns are TEXT
+-- with named CHECKs rather than enums — CREATE TYPE is the one statement
+-- that cannot be guarded without the DO blocks the dashboard's runner
+-- refuses to parse, and a two-value CHECK carries the same guarantee.
+
+-- ---------------------------------------------------------------------------
+-- 10.1 CHAT THREADS TABLE
+-- ---------------------------------------------------------------------------
+-- One conversation about one document.  The provider and model live on the
+-- thread, not the message: a thread is one conversation with one assistant,
+-- and switching models mid-conversation would silently hand one provider's
+-- transcript to another.
+CREATE TABLE IF NOT EXISTS public.chat_threads (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  document_id UUID NOT NULL REFERENCES public.documents(id) ON DELETE CASCADE,
+  owner_id    UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  title       TEXT NOT NULL DEFAULT '',
+  provider    TEXT NOT NULL,
+  model       TEXT NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  CONSTRAINT chk_thread_provider
+    CHECK (provider IN ('anthropic', 'openai', 'google'))
+);
+
+DROP TRIGGER IF EXISTS chat_threads_updated_at ON public.chat_threads;
+CREATE TRIGGER chat_threads_updated_at
+  BEFORE UPDATE ON public.chat_threads
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- The panel lists a document's threads, newest first
+CREATE INDEX IF NOT EXISTS idx_chat_threads_document
+  ON public.chat_threads(document_id, created_at DESC);
+
+-- ---------------------------------------------------------------------------
+-- 10.2 CHAT MESSAGES TABLE
+-- ---------------------------------------------------------------------------
+-- `anchor` is JSONB rather than block foreign keys so a saved turn survives
+-- re-ingestion of its document: the ids inside may go stale, but the quoted
+-- text and its hash remain the durable record of what was asked about.
+-- `stopped_early` marks an answer cut off by the member or a dropped
+-- connection; `error_note` carries the Croatian reason when a turn ended in
+-- a refusal or a provider failure instead of an answer.
+CREATE TABLE IF NOT EXISTS public.chat_messages (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  thread_id     UUID NOT NULL REFERENCES public.chat_threads(id) ON DELETE CASCADE,
+  role          TEXT NOT NULL,
+  body          TEXT NOT NULL DEFAULT '',
+  anchor        JSONB,
+  stopped_early BOOLEAN NOT NULL DEFAULT false,
+  error_note    TEXT NOT NULL DEFAULT '',
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  CONSTRAINT chk_message_role CHECK (role IN ('user', 'assistant'))
+);
+
+-- Messages are always read as one thread's transcript, in order
+CREATE INDEX IF NOT EXISTS idx_chat_messages_thread
+  ON public.chat_messages(thread_id, created_at);
+
+-- ---------------------------------------------------------------------------
+-- 10.3 ROW LEVEL SECURITY
+-- ---------------------------------------------------------------------------
+ALTER TABLE public.chat_threads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+
+-- Conversations inherit the privacy of the document they are about: OWNER
+-- ONLY, no admin read.  INSERT additionally proves the document is the
+-- member's own, so a thread cannot be attached to someone else's document
+-- even with a guessed id.
+
+DROP POLICY IF EXISTS "Users can view own threads" ON public.chat_threads;
+CREATE POLICY "Users can view own threads"
+  ON public.chat_threads FOR SELECT
+  USING (auth.uid() = owner_id);
+
+DROP POLICY IF EXISTS "Users can create own threads" ON public.chat_threads;
+CREATE POLICY "Users can create own threads"
+  ON public.chat_threads FOR INSERT
+  WITH CHECK (
+    auth.uid() = owner_id
+    AND EXISTS (
+      SELECT 1 FROM public.documents d
+      WHERE d.id = document_id AND d.owner_id = auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can update own threads" ON public.chat_threads;
+CREATE POLICY "Users can update own threads"
+  ON public.chat_threads FOR UPDATE
+  USING (auth.uid() = owner_id)
+  WITH CHECK (auth.uid() = owner_id);
+
+DROP POLICY IF EXISTS "Users can delete own threads" ON public.chat_threads;
+CREATE POLICY "Users can delete own threads"
+  ON public.chat_threads FOR DELETE
+  USING (auth.uid() = owner_id);
+
+-- Messages are TESTED THROUGH THE THREAD, one place deciding who may read a
+-- conversation.  No UPDATE policy at all: a transcript is a record, and the
+-- server's own writes go through the RLS-holding client only for the
+-- member's own rows.
+
+DROP POLICY IF EXISTS "Users can view own messages" ON public.chat_messages;
+CREATE POLICY "Users can view own messages"
+  ON public.chat_messages FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.chat_threads t
+      WHERE t.id = thread_id AND t.owner_id = auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can create own messages" ON public.chat_messages;
+CREATE POLICY "Users can create own messages"
+  ON public.chat_messages FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.chat_threads t
+      WHERE t.id = thread_id AND t.owner_id = auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can delete own messages" ON public.chat_messages;
+CREATE POLICY "Users can delete own messages"
+  ON public.chat_messages FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.chat_threads t
+      WHERE t.id = thread_id AND t.owner_id = auth.uid()
+    )
+  );

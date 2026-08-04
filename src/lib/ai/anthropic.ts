@@ -8,17 +8,12 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { toAiError } from "@/lib/ai/errors";
-import type { AiAdapter, AiEvent, AiModel, AiStreamRequest } from "@/lib/ai/types";
-
-const MODELS: readonly AiModel[] = [
-  { id: "claude-opus-5", label: "Claude Opus 5", isDefault: true },
-  { id: "claude-sonnet-5", label: "Claude Sonnet 5", isDefault: false },
-  { id: "claude-haiku-4-5", label: "Claude Haiku 4.5", isDefault: false },
-];
+import { PROVIDER_MODELS } from "@/lib/ai/models";
+import type { AiAdapter, AiEvent, AiStreamRequest } from "@/lib/ai/types";
 
 export const anthropicAdapter: AiAdapter = {
   provider: "anthropic",
-  models: MODELS,
+  models: PROVIDER_MODELS.anthropic,
 
   async validateKey(apiKey: string): Promise<void> {
     try {

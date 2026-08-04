@@ -90,6 +90,35 @@ export interface DocumentBlock {
   created_at: string;
 }
 
+/**
+ * One conversation about one document. Provider and model live here, not on
+ * the message — a thread is one conversation with one assistant.
+ */
+export interface ChatThread {
+  id: string;
+  document_id: string;
+  owner_id: string;
+  title: string;
+  provider: AiProvider;
+  model: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ChatRole = "user" | "assistant";
+
+export interface ChatMessage {
+  id: string;
+  thread_id: string;
+  role: ChatRole;
+  body: string;
+  /** DocumentAnchor as stored; null on follow-ups without a selection. */
+  anchor: unknown | null;
+  stopped_early: boolean;
+  error_note: string;
+  created_at: string;
+}
+
 // ── API request / response types ──────────────────────────────────────────
 
 export interface CreateActivityPayload {
@@ -131,6 +160,11 @@ export interface DocumentWithBlocks {
   blocks: DocumentBlock[];
   /** Short-lived, minted per request; only present once the file is readable. */
   file_url: string | null;
+}
+
+export interface CreateThreadPayload {
+  provider: AiProvider;
+  model: string;
 }
 
 export interface RegisterPayload {

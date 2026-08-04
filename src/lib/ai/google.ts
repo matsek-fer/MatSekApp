@@ -9,16 +9,12 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { toAiError } from "@/lib/ai/errors";
-import type { AiAdapter, AiEvent, AiModel, AiStreamRequest } from "@/lib/ai/types";
-
-const MODELS: readonly AiModel[] = [
-  { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro", isDefault: true },
-  { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash", isDefault: false },
-];
+import { PROVIDER_MODELS } from "@/lib/ai/models";
+import type { AiAdapter, AiEvent, AiStreamRequest } from "@/lib/ai/types";
 
 export const googleAdapter: AiAdapter = {
   provider: "google",
-  models: MODELS,
+  models: PROVIDER_MODELS.google,
 
   async validateKey(apiKey: string): Promise<void> {
     try {

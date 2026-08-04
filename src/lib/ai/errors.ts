@@ -31,6 +31,8 @@ const RATE_LIMITED =
 const NO_CREDIT = "Račun kod pružatelja nema dostupnih sredstava.";
 const TOO_LONG =
   "Odabrani ulomak je prevelik za odabrani model. Odaberi kraći dio.";
+const MODEL_UNAVAILABLE =
+  "Odabrani model nije dostupan uz tvoj ključ. Osvježi stranicu i odaberi drugi model — besplatni Google ključ ima pristup Flash modelima.";
 const REJECTED = "Zahtjev nije prihvaćen. Pokušaj s kraćim odabirom.";
 const UNAVAILABLE =
   "Pružatelj usluge trenutno ne odgovara. Pokušaj ponovno za koji trenutak.";
@@ -64,6 +66,21 @@ function isAbort(err: unknown): boolean {
   );
 }
 
+/**
+ * Google does not speak in HTTP statuses the way the other two do: an invalid
+ * key is a 400 INVALID_ARGUMENT, not a 401, and the real cause sits in a
+ * google.rpc.ErrorInfo `reason` token double-encoded inside the message. The
+ * regex is deliberate — the payload is JSON wrapped in JSON, and the reason
+ * token itself is the stable part of the contract.
+ */
+function googleReason(err: unknown): string | undefined {
+  const message = (err as { message?: unknown })?.message;
+  if (typeof message !== "string") return undefined;
+  // The quotes around the inner layer arrive escaped (\"reason\"), hence the
+  // optional backslashes — the token is one JSON-encoding level down.
+  return /\\?"reason\\?":\s*\\?"([A-Z_]+)/.exec(message)?.[1];
+}
+
 /** Converts anything a provider SDK threw into an AiError. */
 export function toAiError(provider: AiProvider, err: unknown): AiError {
   if (err instanceof AiError) return err;
@@ -73,12 +90,27 @@ export function toAiError(provider: AiProvider, err: unknown): AiError {
 
   const status = statusOf(err);
 
+  if (provider === "google") {
+    const reason = googleReason(err);
+    if (reason === "API_KEY_INVALID" || reason === "API_KEY_SERVICE_BLOCKED") {
+      return new AiError(INVALID_KEY, 400, err);
+    }
+    if (reason === "RATE_LIMIT_EXCEEDED" || reason === "RESOURCE_EXHAUSTED") {
+      return new AiError(RATE_LIMITED, 429, err);
+    }
+  }
+
   switch (status) {
     case 401:
     case 403:
       return new AiError(INVALID_KEY, 400, err);
     case 402:
       return new AiError(NO_CREDIT, 400, err);
+    case 404:
+      // The model, not the route: a key without access to the requested
+      // model gets a 404 from Google and Anthropic alike. Free Gemini keys
+      // asking for Pro land exactly here.
+      return new AiError(MODEL_UNAVAILABLE, 400, err);
     case 413:
       return new AiError(TOO_LONG, 400, err);
     case 429:
