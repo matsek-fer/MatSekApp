@@ -41,6 +41,8 @@ interface ChatPanelProps {
 interface DraftAssistant {
   text: string;
   streaming: boolean;
+  /** "Pretražujem dokument…" while a mid-answer search runs; token clears it. */
+  status?: string;
 }
 
 export default function ChatPanel({
@@ -216,6 +218,14 @@ export default function ChatPanel({
           if (payload.type === "token") {
             answer += payload.text;
             setDraft({ text: answer, streaming: true });
+          } else if (payload.type === "tool") {
+            setDraft({
+              text: answer,
+              streaming: true,
+              status: payload.query
+                ? `Pretražujem dokument: „${payload.query}”`
+                : "Pretražujem dokument",
+            });
           } else if (payload.type === "error") {
             setError(payload.error);
             setDraft(null);
@@ -353,8 +363,13 @@ export default function ChatPanel({
           <div className="rounded-lg border border-border bg-surface p-3">
             {draft.text ? (
               <AssistantText text={draft.text} />
-            ) : (
+            ) : !draft.status ? (
               <p className="text-sm text-fg-muted">Razmišljam…</p>
+            ) : null}
+            {draft.status && (
+              <p className="mt-2 animate-pulse text-xs text-fg-muted">
+                {draft.status}…
+              </p>
             )}
             {!draft.streaming && (
               <p className="mt-2 text-xs text-fg-subtle">Zaustavljeno.</p>

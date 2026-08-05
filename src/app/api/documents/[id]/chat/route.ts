@@ -25,7 +25,7 @@ import {
   THROTTLES,
 } from "@/lib/ai/throttle";
 import { MAX_EXCERPT_LENGTH, MAX_QUESTION_LENGTH } from "@/lib/validation";
-import type { AiEvent, ChatTurn } from "@/lib/ai/types";
+import type { AiEvent, AiTool, ChatTurn } from "@/lib/ai/types";
 import type { ApiResponse, ChatMessage, DocumentBlock } from "@/types";
 
 /**
@@ -88,7 +88,7 @@ async function retrievePassages(
   documentId: string,
   queryText: string,
   selectionRange: { from: number; to: number } | null
-): Promise<RetrievedPassage[]> {
+): Promise<(RetrievedPassage & { id: string })[]> {
   try {
     // The embedder reads ~500 tokens; more input than that only dilutes the
     // query vector.
@@ -131,7 +131,7 @@ async function retrievePassages(
 
     return matches
       .slice(0, 7)
-      .map((chunk) => ({ page: chunk.page, text: chunk.text }));
+      .map((chunk) => ({ id: chunk.id, page: chunk.page, text: chunk.text }));
   } catch (err) {
     console.error("retrieval error:", err);
     return [];
@@ -317,12 +317,76 @@ export async function POST(
     // passages of this document ride along, page-tagged, so the model reads
     // the excerpt in the paper's own terms. A retrieval failure downgrades
     // to the pre-retrieval behaviour rather than blocking the question.
-    const retrieved = await retrievePassages(
+    const retrievedChunks = await retrievePassages(
       supabase,
       params.id,
       excerpt ? `${trimmedQuestion}\n${excerpt}` : trimmedQuestion,
       selectionRange
     );
+    const retrieved: RetrievedPassage[] = retrievedChunks.map(
+      ({ page, text }) => ({ page, text })
+    );
+
+    // What the model has already seen; tool searches skip these so each
+    // search can only ADD context, never repeat it.
+    const seenChunkIds = new Set(retrievedChunks.map((chunk) => chunk.id));
+
+    // The model's own way back into the document, mid-answer. One tool, an
+    // allowlist of one: it runs on this server, against this member's own
+    // chunks under RLS, and its result returns into this same conversation —
+    // no external channel exists. The input is model-generated text and is
+    // treated as untrusted: length-capped, never interpolated into SQL
+    // (RPC params only), never logged raw.
+    const MAX_TOOL_SEARCHES = 3;
+    let searchCount = 0;
+    const searchTool: AiTool = {
+      name: "pretrazi_dokument",
+      description:
+        "Pretraži ostatak otvorenog dokumenta semantičkim upitom i dobij najbliže ulomke s brojevima stranica. Koristi kad priloženi ulomci ne pokrivaju pitanje.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          upit: {
+            type: "string",
+            description:
+              "Kratki upit — pojam, tvrdnja ili pitanje koje tražiš u dokumentu.",
+          },
+        },
+        required: ["upit"],
+        additionalProperties: false,
+      },
+      async execute(input) {
+        try {
+          searchCount += 1;
+          if (searchCount > MAX_TOOL_SEARCHES) {
+            return "Dosegnut je limit pretraživanja za ovu poruku. Odgovori iz dostupnih ulomaka.";
+          }
+
+          const upit =
+            typeof input.upit === "string" ? input.upit.slice(0, 500).trim() : "";
+          if (!upit) return "Upit je prazan.";
+
+          const found = await retrievePassages(supabase, params.id, upit, selectionRange);
+          const fresh = found
+            .filter((chunk) => !seenChunkIds.has(chunk.id))
+            .slice(0, 4);
+
+          if (fresh.length === 0) {
+            return "Ništa novo nije pronađeno za taj upit.";
+          }
+
+          for (const chunk of fresh) seenChunkIds.add(chunk.id);
+          return fresh
+            .map((chunk) =>
+              chunk.page > 0 ? `[str. ${chunk.page}] ${chunk.text}` : chunk.text
+            )
+            .join("\n---\n");
+        } catch (err) {
+          console.error("pretrazi_dokument error:", redactError(err));
+          return "Pretraživanje trenutno nije dostupno.";
+        }
+      },
+    };
 
     let userTurn;
     if (excerpt !== null && storedAnchor) {
@@ -392,6 +456,7 @@ export async function POST(
             system: systemPrompt(),
             turns,
             maxTokens: MAX_ANSWER_TOKENS,
+            tool: searchTool,
             // The route's own signal: fires when the member hits "Zaustavi"
             // or their connection drops, and aborts the provider call so
             // their tokens stop burning server-side too.
@@ -402,6 +467,10 @@ export async function POST(
             if (event.type === "text") {
               accumulated += event.text;
               controller.enqueue(frame({ type: "token", text: event.text }));
+            } else if (event.type === "tool") {
+              // Mid-answer searches take seconds; the frame keeps the wait
+              // from reading as a stall.
+              controller.enqueue(frame({ type: "tool", query: event.query }));
             } else if (event.type === "refusal") {
               // The provider disowned the answer: whatever text already
               // streamed is not persisted as one.

@@ -20,12 +20,29 @@ export interface ChatTurn {
   content: string;
 }
 
+/**
+ * The one tool a model may be offered — an allowlist of one, by design.
+ * `execute` runs on OUR server against RLS-scoped data and its result goes
+ * back into the same conversation; that is why this is not the exfiltration
+ * surface provider-side tools would be.
+ */
+export interface AiTool {
+  name: string;
+  description: string;
+  /** JSON Schema for the tool input (an object schema). */
+  inputSchema: Record<string, unknown>;
+  /** Model-generated input — treat as untrusted. Returns the tool result. */
+  execute(input: Record<string, unknown>): Promise<string>;
+}
+
 export interface AiStreamRequest {
   apiKey: string;
   model: string;
   system: string;
   turns: ChatTurn[];
   maxTokens: number;
+  /** Offered to the model when present; execution stays server-side. */
+  tool?: AiTool;
   /** Aborted when the member cancels or their connection drops. */
   signal: AbortSignal;
 }
@@ -37,6 +54,8 @@ export interface AiStreamRequest {
  */
 export type AiEvent =
   | { type: "text"; text: string }
+  /** The model called the tool; `query` is what it searched for. */
+  | { type: "tool"; query: string }
   | { type: "refusal"; category: string }
   | { type: "done" };
 
