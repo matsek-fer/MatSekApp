@@ -105,14 +105,32 @@ async function retrievePassages(
       return [];
     }
 
-    return (data as MatchedChunk[])
-      .filter(
-        (chunk) =>
-          !selectionRange ||
-          chunk.to_block_index < selectionRange.from ||
-          chunk.from_block_index > selectionRange.to
-      )
-      .slice(0, 6)
+    const matches = (data as MatchedChunk[]).filter(
+      (chunk) =>
+        !selectionRange ||
+        chunk.to_block_index < selectionRange.from ||
+        chunk.from_block_index > selectionRange.to
+    );
+
+    // The opening chunk — title, abstract, introduction — rides along even
+    // when similarity does not surface it. It is what lets the model answer
+    // whole-paper questions ("o čemu se radi?") that embed to nothing, and
+    // it anchors every answer to the right paper.
+    if (!matches.some((chunk) => chunk.chunk_index === 0)) {
+      const { data: opening } = await supabase
+        .from("document_chunks")
+        .select("id, chunk_index, page, from_block_index, to_block_index, text")
+        .eq("document_id", documentId)
+        .eq("chunk_index", 0)
+        .single();
+
+      if (opening) {
+        matches.unshift({ ...(opening as MatchedChunk), similarity: 0 });
+      }
+    }
+
+    return matches
+      .slice(0, 7)
       .map((chunk) => ({ page: chunk.page, text: chunk.text }));
   } catch (err) {
     console.error("retrieval error:", err);
@@ -327,7 +345,7 @@ export async function POST(
         retrieved
       );
     } else {
-      userTurn = assembleFollowUpTurn(trimmedQuestion, retrieved);
+      userTurn = assembleFollowUpTurn(trimmedQuestion, document.title, retrieved);
     }
 
     turns.push({ role: "user", content: userTurn.content });
