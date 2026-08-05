@@ -50,3 +50,6 @@ copilot-instructions
 
 # agent-local state (worktrees carry their own .env.local — never commit)
 /.claude/
+
+# local embedding model cache (downloaded on first ingest; see lib/ai/embeddings.ts)
+/.model-cache/

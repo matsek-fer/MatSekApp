@@ -7,6 +7,7 @@ import {
   assembleFollowUpTurn,
   assembleUserTurn,
   systemPrompt,
+  type RetrievedPassage,
 } from "@/lib/ai/prompt";
 import {
   hashQuote,
@@ -15,6 +16,7 @@ import {
   resolveExcerpt,
   type DocumentAnchor,
 } from "@/lib/documents/anchors";
+import { embedQuery } from "@/lib/ai/embeddings";
 import {
   acquireStreamSlot,
   checkThrottle,
@@ -61,6 +63,61 @@ const encoder = new TextEncoder();
 
 function frame(payload: Record<string, unknown>): Uint8Array {
   return encoder.encode(`data: ${JSON.stringify(payload)}\n\n`);
+}
+
+interface MatchedChunk {
+  id: string;
+  chunk_index: number;
+  page: number;
+  from_block_index: number;
+  to_block_index: number;
+  text: string;
+  similarity: number;
+}
+
+/**
+ * The automatic retrieval pass. Embeds the query on this server (free, no
+ * provider) and asks pgvector for this document's closest passages, skipping
+ * ones the prompt already carries as the selection and its context. Fails
+ * SOFT: no chunks, no extension, or a dead model all mean "no retrieved
+ * context", which is exactly the assistant's behaviour before retrieval
+ * existed — never a blocked question.
+ */
+async function retrievePassages(
+  supabase: ReturnType<typeof createServerClient>,
+  documentId: string,
+  queryText: string,
+  selectionRange: { from: number; to: number } | null
+): Promise<RetrievedPassage[]> {
+  try {
+    // The embedder reads ~500 tokens; more input than that only dilutes the
+    // query vector.
+    const embedding = await embedQuery(queryText.slice(0, 2_000));
+
+    const { data, error } = await supabase.rpc("match_document_chunks", {
+      p_document_id: documentId,
+      p_query_embedding: JSON.stringify(embedding),
+      p_limit: 8,
+    });
+
+    if (error || !data) {
+      if (error) console.error("retrieval rpc error:", error);
+      return [];
+    }
+
+    return (data as MatchedChunk[])
+      .filter(
+        (chunk) =>
+          !selectionRange ||
+          chunk.to_block_index < selectionRange.from ||
+          chunk.from_block_index > selectionRange.to
+      )
+      .slice(0, 6)
+      .map((chunk) => ({ page: chunk.page, text: chunk.text }));
+  } catch (err) {
+    console.error("retrieval error:", err);
+    return [];
+  }
 }
 
 export async function POST(
@@ -177,6 +234,7 @@ export async function POST(
     let context: { before: string[]; after: string[] } = { before: [], after: [] };
     let storedAnchor: DocumentAnchor | null = null;
     let anchorPage = 0;
+    let selectionRange: { from: number; to: number } | null = null;
 
     if (anchor) {
       const { data: blocks } = await supabase
@@ -212,6 +270,15 @@ export async function POST(
         anchorPage =
           blockRows.find((b) => b.id === anchor.fromBlockId)?.page ?? 0;
       }
+
+      // The selection's block-index span, padded by the context blocks that
+      // already ride along — retrieval skips chunks the prompt carries anyway.
+      const fromIndex =
+        blockRows.find((b) => b.id === anchor.fromBlockId)?.block_index ?? 0;
+      const toIndex =
+        blockRows.find((b) => b.id === anchor.toBlockId)?.block_index ??
+        fromIndex;
+      selectionRange = { from: fromIndex - 1, to: toIndex + 1 };
     }
 
     // Earlier turns, replayed. Rows that carry no text (refusals, failures)
@@ -227,6 +294,18 @@ export async function POST(
       .slice(-MAX_HISTORY_TURNS)
       .map((m) => ({ role: m.role, content: m.body }));
 
+    // Automatic retrieval: the question (and selection, when there is one)
+    // is embedded LOCALLY — no provider, no key, no cost — and the closest
+    // passages of this document ride along, page-tagged, so the model reads
+    // the excerpt in the paper's own terms. A retrieval failure downgrades
+    // to the pre-retrieval behaviour rather than blocking the question.
+    const retrieved = await retrievePassages(
+      supabase,
+      params.id,
+      excerpt ? `${trimmedQuestion}\n${excerpt}` : trimmedQuestion,
+      selectionRange
+    );
+
     let userTurn;
     if (excerpt !== null && storedAnchor) {
       // One block either side rides along: a selected formula alone is often
@@ -238,12 +317,17 @@ export async function POST(
         ...context.after,
       ].join("\n");
 
-      userTurn = assembleUserTurn(trimmedQuestion, contextedExcerpt, {
-        documentTitle: document.title,
-        page: anchorPage,
-      });
+      userTurn = assembleUserTurn(
+        trimmedQuestion,
+        contextedExcerpt,
+        {
+          documentTitle: document.title,
+          page: anchorPage,
+        },
+        retrieved
+      );
     } else {
-      userTurn = assembleFollowUpTurn(trimmedQuestion);
+      userTurn = assembleFollowUpTurn(trimmedQuestion, retrieved);
     }
 
     turns.push({ role: "user", content: userTurn.content });

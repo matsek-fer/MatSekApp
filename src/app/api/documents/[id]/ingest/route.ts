@@ -1,6 +1,8 @@
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
-import { extractDocument } from "@/lib/documents/extract";
+import { embedPassages } from "@/lib/ai/embeddings";
+import { chunkBlocks } from "@/lib/documents/chunks";
+import { extractDocument, type ExtractedBlock } from "@/lib/documents/extract";
 import { MAX_DOCUMENT_BYTES } from "@/lib/validation";
 import type { ApiResponse, Document } from "@/types";
 
@@ -131,6 +133,7 @@ export async function POST(
     // (document_id, block_index) would reject them anyway; this makes the
     // reason explicit rather than surfacing as a 23505.
     await supabase.from("document_blocks").delete().eq("document_id", id);
+    await supabase.from("document_chunks").delete().eq("document_id", id);
 
     const rows = extracted.blocks.map((block, index) => ({
       document_id: id,
@@ -154,6 +157,19 @@ export async function POST(
       }
     }
 
+    // Retrieval passages. A failure here does NOT fail the ingest: the
+    // document is fully readable and askable without chunks — the assistant
+    // just answers from the selection alone, as it did before retrieval
+    // existed. The note on the row says so.
+    let embeddingNote = "";
+    try {
+      await embedAndStoreChunks(supabase, id, extracted.blocks);
+    } catch (err) {
+      console.error("POST /api/documents/[id]/ingest embed error:", err);
+      embeddingNote =
+        "Pretraživanje dokumenta nije dostupno; asistent vidi samo odabrani dio. Pokušaj ponovnu obradu.";
+    }
+
     const { data: updated, error: updateError } = await supabase
       .from("documents")
       .update({
@@ -163,7 +179,7 @@ export async function POST(
         byte_size: byteSize,
         error_message: extracted.truncated
           ? "Dokument je predug pa je pročitan samo njegov početak."
-          : "",
+          : embeddingNote,
       })
       .eq("id", id)
       .select()
@@ -194,6 +210,41 @@ export async function POST(
       { success: false, error: "Internal server error" },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Chunks the blocks and embeds them locally, in batches — ~100 chunks for a
+ * 30-page paper, single-digit milliseconds each once the model is warm. The
+ * first call of a process pays the model load (~1 s from cache, ~25 s on the
+ * very first ingest ever while it downloads).
+ */
+async function embedAndStoreChunks(
+  supabase: ReturnType<typeof createServerClient>,
+  documentId: string,
+  blocks: ExtractedBlock[]
+) {
+  const drafts = chunkBlocks(blocks);
+  if (drafts.length === 0) return;
+
+  const EMBED_BATCH = 32;
+  for (let i = 0; i < drafts.length; i += EMBED_BATCH) {
+    const batch = drafts.slice(i, i + EMBED_BATCH);
+    const vectors = await embedPassages(batch.map((d) => d.text));
+
+    const { error } = await supabase.from("document_chunks").insert(
+      batch.map((draft, j) => ({
+        document_id: documentId,
+        chunk_index: draft.chunkIndex,
+        page: draft.page,
+        from_block_index: draft.fromBlockIndex,
+        to_block_index: draft.toBlockIndex,
+        text: draft.text,
+        // pgvector accepts the JSON array form through PostgREST.
+        embedding: JSON.stringify(vectors[j]),
+      }))
+    );
+    if (error) throw error;
   }
 }
 

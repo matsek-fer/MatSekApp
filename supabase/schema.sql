@@ -783,3 +783,113 @@ DROP POLICY IF EXISTS "Users can record own usage" ON public.ai_usage_events;
 CREATE POLICY "Users can record own usage"
   ON public.ai_usage_events FOR INSERT
   WITH CHECK (auth.uid() = user_id);
+
+-- ============================================================================
+-- 12. AI DOCUMENT ASSISTANT — retrieval (pgvector)
+-- ============================================================================
+-- Re-runnable like sections 9-11.  Chunks are embedded ON OUR SERVER by an
+-- open-source model (multilingual-e5-small, 384 dims) — no provider API is
+-- involved, which is what keeps retrieval working for members whose provider
+-- has no embeddings endpoint at all (Anthropic, DeepSeek).
+
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- ---------------------------------------------------------------------------
+-- 12.1 DOCUMENT CHUNKS TABLE
+-- ---------------------------------------------------------------------------
+-- A chunk is a retrieval passage: a run of consecutive blocks from one page,
+-- ~700 characters, one block of overlap between neighbours.  Blocks stay the
+-- render/anchor unit; chunks exist only to be searched.  The block-index
+-- range is kept so a retrieved passage can point back at its place in the
+-- reader later.
+CREATE TABLE IF NOT EXISTS public.document_chunks (
+  id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  document_id      UUID NOT NULL REFERENCES public.documents(id) ON DELETE CASCADE,
+  chunk_index      INTEGER NOT NULL,
+  page             INTEGER NOT NULL DEFAULT 1,
+  from_block_index INTEGER NOT NULL,
+  to_block_index   INTEGER NOT NULL,
+  text             TEXT NOT NULL,
+  embedding        vector(384) NOT NULL,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_document_chunks_position
+  ON public.document_chunks(document_id, chunk_index);
+
+-- No ANN index on purpose: retrieval is always scoped to ONE document, and a
+-- document holds hundreds of chunks, not millions.  An exact scan of a few
+-- hundred rows beats maintaining an HNSW graph nobody needs; revisit only if
+-- cross-document search ever arrives.
+
+-- ---------------------------------------------------------------------------
+-- 12.2 ROW LEVEL SECURITY
+-- ---------------------------------------------------------------------------
+ALTER TABLE public.document_chunks ENABLE ROW LEVEL SECURITY;
+
+-- Same shape as document_blocks: ownership TESTED THROUGH THE PARENT.
+
+DROP POLICY IF EXISTS "Users can view own document chunks" ON public.document_chunks;
+CREATE POLICY "Users can view own document chunks"
+  ON public.document_chunks FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.documents d
+      WHERE d.id = document_id AND d.owner_id = auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can create own document chunks" ON public.document_chunks;
+CREATE POLICY "Users can create own document chunks"
+  ON public.document_chunks FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.documents d
+      WHERE d.id = document_id AND d.owner_id = auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can delete own document chunks" ON public.document_chunks;
+CREATE POLICY "Users can delete own document chunks"
+  ON public.document_chunks FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.documents d
+      WHERE d.id = document_id AND d.owner_id = auth.uid()
+    )
+  );
+
+-- ---------------------------------------------------------------------------
+-- 12.3 MATCH FUNCTION
+-- ---------------------------------------------------------------------------
+-- SECURITY INVOKER on purpose — the opposite of the throttle functions.  RLS
+-- is the access check: a member calling this against someone else's document
+-- gets zero rows, not an error, exactly like every other read in the app.
+-- PostgREST cannot ORDER BY the <=> operator, hence the function.
+CREATE OR REPLACE FUNCTION public.match_document_chunks(
+  p_document_id UUID,
+  p_query_embedding vector(384),
+  p_limit INTEGER DEFAULT 6
+)
+RETURNS TABLE (
+  id UUID,
+  chunk_index INTEGER,
+  page INTEGER,
+  from_block_index INTEGER,
+  to_block_index INTEGER,
+  text TEXT,
+  similarity DOUBLE PRECISION
+) AS $$
+  SELECT
+    c.id,
+    c.chunk_index,
+    c.page,
+    c.from_block_index,
+    c.to_block_index,
+    c.text,
+    1 - (c.embedding <=> p_query_embedding) AS similarity
+  FROM public.document_chunks c
+  WHERE c.document_id = p_document_id
+  ORDER BY c.embedding <=> p_query_embedding
+  LIMIT least(greatest(p_limit, 1), 20);
+$$ LANGUAGE sql STABLE SECURITY INVOKER;
