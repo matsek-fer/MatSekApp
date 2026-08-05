@@ -229,7 +229,7 @@ function PdfPage({ pdfjs, doc, pageNumber, scale, blocks }: PdfPageProps) {
     layerRef.current = layer;
     await layer.render();
 
-    stampBlockIds(layer.textDivs, content.items, blocks, pageNumber);
+    stampAndOrderSpans(textLayerHost, layer.textDivs, content.items, blocks, pageNumber);
     page.cleanup();
   }, [pdfjs, doc, pageNumber, scale, blocks]);
 
@@ -273,7 +273,8 @@ function PdfPage({ pdfjs, doc, pageNumber, scale, blocks }: PdfPageProps) {
 }
 
 /**
- * Writes each server block's id onto the TextLayer spans of its line.
+ * Writes each server block's id onto the TextLayer spans of its line, then
+ * re-appends the spans in READING order.
  *
  * `textDivs` is index-aligned with the RAW items array, and every piece the
  * shared grouping produced remembers its raw index — so the pairing is
@@ -281,8 +282,18 @@ function PdfPage({ pdfjs, doc, pageNumber, scale, blocks }: PdfPageProps) {
  * this page is block n of this page); when the counts disagree — a document
  * ingested before a grouping change — the extra lines stay unstamped rather
  * than mis-attributed, and selecting them simply offers no anchor.
+ *
+ * The reorder is the part selection lives or dies by. pdf.js appends spans
+ * in the order the PDF EMITS text, which in real papers is scrambled —
+ * columns interleaved, headers out of band — and browser selection is a DOM
+ * interval: dragging highlights everything between the endpoints in DOM
+ * order, so a scrambled DOM makes the highlight land on visually random
+ * spans. Every span is absolutely positioned, so re-appending them in
+ * reading order changes NOTHING visually; it only makes the DOM interval —
+ * and with it the highlight, and the anchor endpoints — follow the text.
  */
-function stampBlockIds(
+function stampAndOrderSpans(
+  container: HTMLElement,
   textDivs: HTMLElement[],
   items: unknown[],
   blocks: DocumentBlock[],
@@ -302,5 +313,31 @@ function stampBlockIds(
       const span = textDivs[piece.itemIndex];
       if (span) span.dataset.blockId = blocks[i].id;
     }
+  }
+
+  // pdf.js follows a hasEOL span with a presentational <br>; keep each pair
+  // together through the move, captured before any span is displaced.
+  const brOf = new Map<HTMLElement, Element>();
+  for (const span of textDivs) {
+    const next = span?.nextElementSibling;
+    if (next?.tagName === "BR") brOf.set(span, next);
+  }
+
+  const placed = new Set<HTMLElement>();
+  for (const line of lines) {
+    for (const piece of line.pieces) {
+      const span = textDivs[piece.itemIndex];
+      if (!span) continue;
+      container.appendChild(span);
+      placed.add(span);
+      const br = brOf.get(span);
+      if (br) container.appendChild(br);
+    }
+  }
+
+  // Whitespace-only spans belong to no line; they carry nothing selectable,
+  // but they must remain in the DOM for pdf.js's own accounting. Last.
+  for (const span of textDivs) {
+    if (span && !placed.has(span)) container.appendChild(span);
   }
 }
