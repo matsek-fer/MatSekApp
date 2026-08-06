@@ -3,16 +3,19 @@
 import { useLayoutEffect, useRef } from "react";
 import katex from "katex";
 import "katex/dist/katex.min.css";
+import {
+  parseBlocks,
+  parseInline,
+  type Inline,
+} from "@/lib/documents/assistant-markup";
 
 /**
  * Assistant output, rendered under constraint.
  *
  * Prompt rules lower the odds of an injection steering the model; this
  * renderer lowers the consequence to zero, and it is the control the feature
- * actually relies on. It is a hand-written tokenizer, not a Markdown library
- * with a sanitiser — an allowlist you can misconfigure — and it supports
- * exactly: paragraphs, **bold**, *italic*, `code`, fenced blocks, "- " list
- * items, and $ / $$ mathematics.
+ * actually relies on. The tokenizer lives in lib/documents/assistant-markup
+ * (pure, testable headless); this file only turns its output into elements.
  *
  * Deliberately absent, not sanitised — absent:
  *   - Links. A URL renders as literal text the member can copy. This kills
@@ -28,71 +31,6 @@ import "katex/dist/katex.min.css";
  * source, but the convention in this feature is that no JSX injects HTML,
  * and conventions survive better without exceptions.
  */
-
-// ── Inline parsing ─────────────────────────────────────────────────────────
-
-type Inline =
-  | { kind: "text"; text: string }
-  | { kind: "bold"; text: string }
-  | { kind: "italic"; text: string }
-  | { kind: "code"; text: string }
-  | { kind: "math"; tex: string; display: boolean };
-
-/**
- * First match wins, earliest position wins. Code before math before bold
- * before italic, so `**` inside a code span stays literal and `*` inside
- * math stays TeX.
- */
-const INLINE_PATTERNS: { kind: Inline["kind"]; re: RegExp }[] = [
-  { kind: "code", re: /`([^`\n]+)`/ },
-  { kind: "math", re: /\$\$([^$]+)\$\$|\$([^$\n]+)\$/ },
-  { kind: "bold", re: /\*\*([^*\n]+)\*\*/ },
-  { kind: "italic", re: /\*([^*\n]+)\*/ },
-];
-
-function parseInline(text: string): Inline[] {
-  const out: Inline[] = [];
-  let rest = text;
-
-  while (rest.length > 0) {
-    let firstIndex = -1;
-    let firstMatch: RegExpExecArray | null = null;
-    let firstKind: Inline["kind"] = "text";
-
-    for (const { kind, re } of INLINE_PATTERNS) {
-      const match = re.exec(rest);
-      if (match && (firstIndex === -1 || match.index < firstIndex)) {
-        firstIndex = match.index;
-        firstMatch = match;
-        firstKind = kind;
-      }
-    }
-
-    if (!firstMatch) {
-      out.push({ kind: "text", text: rest });
-      break;
-    }
-
-    if (firstMatch.index > 0) {
-      out.push({ kind: "text", text: rest.slice(0, firstMatch.index) });
-    }
-
-    if (firstKind === "math") {
-      const display = firstMatch[1] !== undefined;
-      out.push({
-        kind: "math",
-        tex: firstMatch[1] ?? firstMatch[2],
-        display,
-      });
-    } else {
-      out.push({ kind: firstKind, text: firstMatch[1] } as Inline);
-    }
-
-    rest = rest.slice(firstMatch.index + firstMatch[0].length);
-  }
-
-  return out;
-}
 
 /** KaTeX renders into a ref — see the header for why not innerHTML in JSX. */
 function Math({ tex, display }: { tex: string; display: boolean }) {
@@ -116,10 +54,22 @@ function InlineRun({ parts }: { parts: Inline[] }) {
     <>
       {parts.map((part, i) => {
         switch (part.kind) {
+          // Emphasis content is re-parsed: models routinely bold a heading
+          // that contains math, and emitting it as plain text was exactly
+          // how raw $\delta_i$ reached the screen. Recursion terminates
+          // because the emphasis patterns exclude their own markers.
           case "bold":
-            return <strong key={i}>{part.text}</strong>;
+            return (
+              <strong key={i}>
+                <InlineRun parts={parseInline(part.text)} />
+              </strong>
+            );
           case "italic":
-            return <em key={i}>{part.text}</em>;
+            return (
+              <em key={i}>
+                <InlineRun parts={parseInline(part.text)} />
+              </em>
+            );
           case "code":
             return (
               <code
@@ -137,46 +87,6 @@ function InlineRun({ parts }: { parts: Inline[] }) {
       })}
     </>
   );
-}
-
-// ── Block parsing ──────────────────────────────────────────────────────────
-
-type Block =
-  | { kind: "paragraph"; text: string }
-  | { kind: "list"; items: string[] }
-  | { kind: "fence"; code: string };
-
-function parseBlocks(text: string): Block[] {
-  const blocks: Block[] = [];
-  // Fences first, so nothing inside one is mistaken for structure.
-  const segments = text.split(/```[^\n]*\n?/);
-
-  segments.forEach((segment, index) => {
-    // Odd segments are inside a fence. A stream can end mid-fence; the open
-    // segment still renders as code rather than flashing to prose.
-    if (index % 2 === 1) {
-      const code = segment.replace(/\n$/, "");
-      if (code) blocks.push({ kind: "fence", code });
-      return;
-    }
-
-    for (const paragraph of segment.split(/\n[ \t]*\n/)) {
-      const trimmed = paragraph.trim();
-      if (!trimmed) continue;
-
-      const lines = trimmed.split("\n");
-      if (lines.every((line) => /^\s*-\s+/.test(line))) {
-        blocks.push({
-          kind: "list",
-          items: lines.map((line) => line.replace(/^\s*-\s+/, "")),
-        });
-      } else {
-        blocks.push({ kind: "paragraph", text: trimmed });
-      }
-    }
-  });
-
-  return blocks;
 }
 
 export default function AssistantText({ text }: { text: string }) {
