@@ -340,50 +340,52 @@ export async function POST(
     const MAX_TOOL_SEARCHES = 3;
     let searchCount = 0;
     const searchTool: AiTool = {
-      name: "pretrazi_dokument",
+      name: "search_document",
       description:
-        "Pretraži ostatak otvorenog dokumenta semantičkim upitom i dobij najbliže ulomke s brojevima stranica. Koristi kad priloženi ulomci ne pokrivaju pitanje.",
+        "Search the rest of the open document with a semantic query and get back the closest passages with their page numbers. Use it when the passages already provided do not cover the question. The document may be in Croatian; query it in the language it is written in.",
       inputSchema: {
         type: "object",
         properties: {
-          upit: {
+          query: {
             type: "string",
             description:
-              "Kratki upit — pojam, tvrdnja ili pitanje koje tražiš u dokumentu.",
+              "A short query — the term, claim or question you are looking for in the document.",
           },
         },
-        required: ["upit"],
+        required: ["query"],
         additionalProperties: false,
       },
       async execute(input) {
         try {
           searchCount += 1;
           if (searchCount > MAX_TOOL_SEARCHES) {
-            return "Dosegnut je limit pretraživanja za ovu poruku. Odgovori iz dostupnih ulomaka.";
+            return "Search limit for this message reached. Answer from the passages you already have.";
           }
 
-          const upit =
-            typeof input.upit === "string" ? input.upit.slice(0, 500).trim() : "";
-          if (!upit) return "Upit je prazan.";
+          const query =
+            typeof input.query === "string"
+              ? input.query.slice(0, 500).trim()
+              : "";
+          if (!query) return "The query was empty.";
 
-          const found = await retrievePassages(supabase, params.id, upit, selectionRange);
+          const found = await retrievePassages(supabase, params.id, query, selectionRange);
           const fresh = found
             .filter((chunk) => !seenChunkIds.has(chunk.id))
             .slice(0, 4);
 
           if (fresh.length === 0) {
-            return "Ništa novo nije pronađeno za taj upit.";
+            return "Nothing new was found for that query.";
           }
 
           for (const chunk of fresh) seenChunkIds.add(chunk.id);
           return fresh
             .map((chunk) =>
-              chunk.page > 0 ? `[str. ${chunk.page}] ${chunk.text}` : chunk.text
+              chunk.page > 0 ? `[p. ${chunk.page}] ${chunk.text}` : chunk.text
             )
             .join("\n---\n");
         } catch (err) {
-          console.error("pretrazi_dokument error:", redactError(err));
-          return "Pretraživanje trenutno nije dostupno.";
+          console.error("search_document error:", redactError(err));
+          return "Search is unavailable right now.";
         }
       },
     };

@@ -86,7 +86,7 @@ export const googleAdapter: AiAdapter = {
           const responses: Part[] = [];
           for (const call of calls) {
             const args = (call.args ?? {}) as Record<string, unknown>;
-            yield { type: "tool", query: String(args.upit ?? "") };
+            yield { type: "tool", query: String(args.query ?? "") };
             responses.push({
               functionResponse: {
                 id: call.id,

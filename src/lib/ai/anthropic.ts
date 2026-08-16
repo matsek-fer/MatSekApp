@@ -94,7 +94,7 @@ export const anthropicAdapter: AiAdapter = {
           for (const block of final.content) {
             if (block.type !== "tool_use") continue;
             const input = (block.input ?? {}) as Record<string, unknown>;
-            yield { type: "tool", query: String(input.upit ?? "") };
+            yield { type: "tool", query: String(input.query ?? "") };
             results.push({
               type: "tool_result",
               tool_use_id: block.id,

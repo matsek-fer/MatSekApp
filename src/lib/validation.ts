@@ -87,7 +87,7 @@ export const MAX_DOCUMENT_PAGES = 500;
 
 // ── Chat ───────────────────────────────────────────────────────────────────
 
-/** Bound on the <zadatak> slot — a question, not an essay. */
+/** Bound on the <task> slot — a question, not an essay. */
 export const MAX_QUESTION_LENGTH = 2_000;
 
 /**

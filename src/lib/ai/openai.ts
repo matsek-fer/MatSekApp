@@ -84,10 +84,10 @@ export const openaiAdapter: AiAdapter = {
             try {
               parsed = JSON.parse(call.arguments || "{}");
             } catch {
-              // Left empty; execute reports the empty query in Croatian.
+              // Left empty; execute reports the empty query to the model.
             }
 
-            yield { type: "tool", query: String(parsed.upit ?? "") };
+            yield { type: "tool", query: String(parsed.query ?? "") };
             input.push({
               type: "function_call_output",
               call_id: call.call_id,

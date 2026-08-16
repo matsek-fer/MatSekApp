@@ -118,10 +118,10 @@ export const deepseekAdapter: AiAdapter = {
             try {
               parsed = JSON.parse(call.arguments || "{}");
             } catch {
-              // Left empty; execute reports the empty query in Croatian.
+              // Left empty; execute reports the empty query to the model.
             }
 
-            yield { type: "tool", query: String(parsed.upit ?? "") };
+            yield { type: "tool", query: String(parsed.query ?? "") };
             messages.push({
               role: "tool",
               tool_call_id: call.id,
