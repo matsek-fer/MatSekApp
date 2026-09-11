@@ -6,6 +6,9 @@ import LogoutButton from "@/components/auth/LogoutButton";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { ButtonLink } from "@/components/ui/Button";
 import Logo from "@/components/ui/Logo";
+import LanguageToggle from "@/components/ui/LanguageToggle";
+import { getLang } from "@/lib/i18n/server";
+import { CHROME } from "@/lib/i18n/chrome";
 
 export default async function DashboardLayout({
   children,
@@ -29,6 +32,8 @@ export default async function DashboardLayout({
   }
 
   const isAdmin = profile?.role === "admin";
+  const lang = getLang();
+  const t = CHROME[lang];
 
   return (
     <div className="min-h-screen bg-bg">
@@ -47,33 +52,39 @@ export default async function DashboardLayout({
               <Link
                 href="/"
                 className="shrink-0 rounded-lg"
-                aria-label="Početna stranica"
+                aria-label={t.home}
               >
                 <Logo width={112} />
               </Link>
 
               <div className="hidden gap-1 self-stretch md:flex">
-                <VoronoiNavbarLink href="/calendar">Kalendar</VoronoiNavbarLink>
+                <VoronoiNavbarLink href="/calendar">{t.calendar}</VoronoiNavbarLink>
+                <VoronoiNavbarLink href="/tools">{t.tools}</VoronoiNavbarLink>
                 {session && (
                   <VoronoiNavbarLink href="/activities/new">
-                    Predloži aktivnost
+                    {t.propose}
                   </VoronoiNavbarLink>
                 )}
                 {session && (
                   <VoronoiNavbarLink href="/documents">
-                    Dokumenti
+                    {t.documents}
                   </VoronoiNavbarLink>
                 )}
                 {isAdmin && (
                   <VoronoiNavbarLink href="/admin" className="text-brand">
-                    Admin panel
+                    {t.admin}
                   </VoronoiNavbarLink>
                 )}
               </div>
             </div>
 
             <div className="flex items-center gap-1 self-stretch sm:gap-2">
-              <ThemeToggle />
+              {/* Under md the toggle moves to the end of the collapsed nav row —
+                  the signed-out bar has no room for another control. */}
+              <div className="hidden md:block">
+                <LanguageToggle lang={lang} label={t.toggleLang} />
+              </div>
+              <ThemeToggle label={t.toggleTheme} />
               {session ? (
                 <>
                   <NotificationBell />
@@ -83,14 +94,14 @@ export default async function DashboardLayout({
                   >
                     {profile?.full_name || session.user.email}
                   </VoronoiNavbarLink>
-                  <LogoutButton />
+                  <LogoutButton label={t.logout} pendingLabel={t.loggingOut} />
                 </>
               ) : (
                 <>
                   <VoronoiNavbarLink href="/login" className="self-stretch">
-                    Prijavi se
+                    {t.login}
                   </VoronoiNavbarLink>
-                  <ButtonLink href="/register">Registriraj se</ButtonLink>
+                  <ButtonLink href="/register">{t.register}</ButtonLink>
                 </>
               )}
             </div>
@@ -99,28 +110,34 @@ export default async function DashboardLayout({
           {/* Primary nav collapses under the bar on small screens. */}
           <div className="flex gap-1 overflow-x-auto pb-1 md:hidden">
             <VoronoiNavbarLink href="/calendar" className="!py-2">
-              Kalendar
+              {t.calendar}
+            </VoronoiNavbarLink>
+            <VoronoiNavbarLink href="/tools" className="!py-2">
+              {t.tools}
             </VoronoiNavbarLink>
             {session && (
               <VoronoiNavbarLink href="/activities/new" className="!py-2">
-                Predloži
+                {t.proposeShort}
               </VoronoiNavbarLink>
             )}
             {session && (
               <VoronoiNavbarLink href="/documents" className="!py-2">
-                Dokumenti
+                {t.documents}
               </VoronoiNavbarLink>
             )}
             {session && (
               <VoronoiNavbarLink href="/profile" className="!py-2">
-                Profil
+                {t.profile}
               </VoronoiNavbarLink>
             )}
             {isAdmin && (
               <VoronoiNavbarLink href="/admin" className="!py-2 text-brand">
-                Admin
+                {t.adminShort}
               </VoronoiNavbarLink>
             )}
+            <div className="ml-auto self-center">
+              <LanguageToggle lang={lang} label={t.toggleLang} />
+            </div>
           </div>
         </div>
       </nav>

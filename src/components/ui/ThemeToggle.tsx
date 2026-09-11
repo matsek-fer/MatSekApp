@@ -6,15 +6,19 @@ import { toggleTheme } from "@/lib/theme";
  * Both icons are always rendered and swapped with CSS, so the button is correct
  * on the very first paint — no theme state in React, no hydration mismatch.
  */
-export default function ThemeToggle() {
+export default function ThemeToggle({
+  label = "Promijeni temu",
+}: {
+  label?: string;
+}) {
   return (
     <button
       type="button"
       onClick={toggleTheme}
       className="rounded-lg p-2 text-fg-muted transition-colors
                  hover:bg-surface-hover hover:text-fg"
-      aria-label="Promijeni temu"
-      title="Promijeni temu"
+      aria-label={label}
+      title={label}
     >
       <MoonIcon className="dark:hidden" />
       <SunIcon className="hidden dark:block" />

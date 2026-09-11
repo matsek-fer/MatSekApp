@@ -3,7 +3,13 @@
 import { useLogout } from "@/hooks/useLogout";
 import Button from "@/components/ui/Button";
 
-export default function LogoutButton() {
+export default function LogoutButton({
+  label = "Odjavi se",
+  pendingLabel = "Odjava…",
+}: {
+  label?: string;
+  pendingLabel?: string;
+}) {
   const { logout, loading } = useLogout();
 
   return (
@@ -13,9 +19,9 @@ export default function LogoutButton() {
       onClick={logout}
       disabled={loading}
       className="hover:bg-danger/10 hover:text-danger"
-      title="Odjavi se"
+      title={label}
     >
-      {loading ? "Odjava…" : "Odjavi se"}
+      {loading ? pendingLabel : label}
     </Button>
   );
 }

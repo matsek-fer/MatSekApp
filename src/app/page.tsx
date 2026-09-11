@@ -5,6 +5,9 @@ import ThemeToggle from "@/components/ui/ThemeToggle";
 import Logo from "@/components/ui/Logo";
 import { ButtonLink } from "@/components/ui/Button";
 import { randomSeed } from "@/lib/ascii-tree";
+import LanguageToggle from "@/components/ui/LanguageToggle";
+import { getLang } from "@/lib/i18n/server";
+import { CHROME } from "@/lib/i18n/chrome";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +20,8 @@ export default async function HomePage({
   const {
     data: { session },
   } = await supabase.auth.getSession();
+  const lang = getLang();
+  const t = CHROME[lang];
 
   // ?seed=123 pins the first tree, so a particular one can be looked at again
   // — otherwise checking a change to one species means reloading until it comes
@@ -33,8 +38,9 @@ export default async function HomePage({
   return (
     <main className="flex h-[100dvh] flex-col items-center overflow-hidden bg-bg">
       <div className="relative flex w-full shrink-0 flex-col items-center px-4 pb-2 pt-3 sm:pt-5">
-        <div className="absolute right-4 top-4">
-          <ThemeToggle />
+        <div className="absolute right-4 top-4 flex items-center gap-1">
+          <LanguageToggle lang={lang} label={t.toggleLang} />
+          <ThemeToggle label={t.toggleTheme} />
         </div>
 
         {/* The dark-mode logo variant carries its own contrast — no backlight
@@ -46,17 +52,23 @@ export default async function HomePage({
           {session ? (
             <>
               <ButtonLink href="/calendar" size="lg">
-                Kalendar
+                {t.calendar}
               </ButtonLink>
-              <LogoutButton />
+              <ButtonLink href="/tools" size="lg" variant="secondary">
+                {t.tools}
+              </ButtonLink>
+              <LogoutButton label={t.logout} pendingLabel={t.loggingOut} />
             </>
           ) : (
             <>
               <ButtonLink href="/register" size="lg">
-                Registriraj se
+                {t.register}
               </ButtonLink>
               <ButtonLink href="/login" size="lg" variant="secondary">
-                Prijavi se
+                {t.login}
+              </ButtonLink>
+              <ButtonLink href="/tools" size="lg" variant="ghost">
+                {t.tools}
               </ButtonLink>
             </>
           )}
