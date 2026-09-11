@@ -18,6 +18,8 @@ export async function middleware(request: NextRequest) {
     (pathname.startsWith("/api") ||
       pathname === "/" ||
       pathname === "/calendar" ||
+      // The tools guide is documentation — readable before anyone registers.
+      pathname === "/tools" ||
       pathname.startsWith("/activities") ||
       pathname.startsWith("/login") ||
       pathname.startsWith("/register") ||
@@ -32,7 +34,7 @@ export async function middleware(request: NextRequest) {
       // nothing of anyone's in it, and redirecting it to /login breaks the
       // reader for a member who is in fact signed in.
       pathname === "/pdf.worker.min.mjs" ||
-      /\.(png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|eot)$/.test(pathname))
+      /\.(png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|eot|mp4|webm)$/.test(pathname))
   ) {
     return NextResponse.next();
   }
