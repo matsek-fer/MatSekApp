@@ -31,6 +31,7 @@ export const toc: TocEntry[] = [
   { id: "vision", label: "1 · The vision" },
   { id: "usage", label: "2 · How to use it" },
   { id: "forest", label: "Forest — digest, ask, grow", depth: 2 },
+  { id: "bridge", label: "Ask from the browser", depth: 2 },
   { id: "tutor", label: "Tutor", depth: 2 },
   { id: "blog-writer", label: "Blog writer", depth: 2 },
   { id: "also", label: "Also in the box", depth: 2 },
@@ -38,6 +39,7 @@ export const toc: TocEntry[] = [
   { id: "technical", label: "3 · Under the hood" },
   { id: "copyright", label: "Copyright", depth: 2 },
   { id: "no-server", label: "No server", depth: 2 },
+  { id: "no-model", label: "Why the browser never talks to a model", depth: 2 },
   { id: "formats", label: "Formats", depth: 2 },
   { id: "data-loop", label: "The data loop", depth: 2 },
   { id: "repos", label: "Repositories & status" },
@@ -177,7 +179,7 @@ export default function Content() {
               </strong>{" "}
               a question while you study. The answer comes from <em>your</em>{" "}
               trees first, citing their ids, and only then from the model&apos;s
-              general knowledge, clearly labelled. If the answer is worth
+              general knowledge, clearly labelled (<em>izvan šume:</em>). If the answer is worth
               keeping, the tool offers to grow it into a new tree in your vault.
             </li>
             <li>
@@ -213,6 +215,53 @@ export default function Content() {
             is a member&apos;s own terminal session, so it has to be recorded by
             hand.
           </VideoSlot>
+        </Sub>
+
+        <Sub id="bridge" title="Ask from the browser — the bridge">
+          <P>
+            You do not have to leave the forest view to ask.{" "}
+            <Code>/ask --watch</Code> turns your Claude Code session into the
+            model half of a reader:
+          </P>
+          <Ol>
+            <li>
+              <Code>node scripts/build-views.mjs &lt;vault&gt;</Code> if the view
+              is stale.
+            </li>
+            <li>
+              <Code>node scripts/serve-vault.mjs &lt;vault&gt; --open</Code> —
+              serves your <Code>forest.html</Code> from <Code>127.0.0.1</Code>;
+              the printed URL carries a one-launch token, so don&apos;t share
+              it.
+            </li>
+            <li>
+              In a second terminal, inside the vault: <Code>claude</Code>, then{" "}
+              <Code>/ask --watch</Code>.
+            </li>
+          </Ol>
+          <P>
+            Each tree&apos;s panel now has an ask box. Highlight a passage{" "}
+            <em>inside the panel</em>, type a question, <em>Pitaj</em>. The page
+            writes the request as a file into the vault&apos;s{" "}
+            <Code>.ask/</Code> folder; your Claude Code picks it up, answers the
+            way <Code>/ask</Code> always does — your trees first, ids clickable
+            — and the answer streams back onto the page with the maths
+            rendered. A corner pill shows whether Claude Code is connected. If
+            the answer had to go beyond the vault it ends with an offer (
+            <Code>Ponuda:</Code>) the page turns into a button, and your click
+            is the consent to grow that tree; a second button hands the tree to{" "}
+            <Code>/tutor</Code>. You end the mode by interrupting Claude Code.
+          </P>
+          <Figure
+            name="bridge-flow"
+            lang={lang}
+            alt="The bridge: the browser page, a loopback file-relay server and the member's own Claude Code session, with .ask/ request, status and answer files as the only interface between them."
+          />
+          <Video
+            name="bridge"
+            label="Screen recording of the bridge: highlight, ask, answer"
+            caption="Highlight, ask, and the answer arrives from your own Claude Code — grounded in the trees it cites."
+          />
         </Sub>
 
         <Sub id="tutor" title="2.2 · Tutor — /tutor">
@@ -386,6 +435,23 @@ export default function Content() {
           </P>
         </Sub>
 
+        <Sub id="no-model" title="Why the browser never talks to a model">
+          <P>
+            The Claude Agent SDK is API-key-only and cannot run on a claude.ai
+            subscription login, so a page cannot own the model without a key on
+            some server — which the whole design refuses. Instead the
+            member&apos;s ordinary Claude Code session <em>is</em> the model, its
+            permission prompts are the sandbox, and{" "}
+            <Code>serve-vault.mjs</Code> is a dumb file relay: loopback only, a
+            per-launch token checked on every call together with the
+            browser&apos;s origin, request bodies capped, tree ids validated
+            against the vault. The member sees every tool call in their own
+            terminal. <Code>.ask/</Code> is runtime state — gitignored, ignored
+            by the validator, never part of the vault format or of any export —
+            and digested tree bodies are treated as untrusted text throughout.
+          </P>
+        </Sub>
+
         <Sub id="formats" title="Formats">
           <P>Two on-disk contracts, both plain Markdown with a YAML header:</P>
           <Ul>
@@ -443,8 +509,8 @@ export default function Content() {
           </li>
           <li>
             <A href="https://github.com/matsek-fer/reader">reader</A> — the
-            Forest: <Code>/digest</Code>, <Code>/ask</Code>, <Code>/grow</Code>,
-            the vault format, the browser view.
+            Forest: <Code>/digest</Code>, <Code>/ask</Code> (and the browser
+            bridge), <Code>/grow</Code>, the vault format, the browser view.
           </li>
           <li>
             <A href="https://github.com/matsek-fer/AI_instructor">AI_instructor</A>{" "}
@@ -478,12 +544,12 @@ export default function Content() {
           labels={{ live: "live", planned: "planned" }}
           rows={[
             { what: "Forest: digest, ask, grow, browser view, global forest on the site", state: "live" },
+            { what: "Highlight-and-ask from the browser view — the bridge (/ask --watch)", state: "live" },
             { what: "Tutor: probe → plan → teach, sessions inside vaults", state: "live" },
             { what: "Blog writer with tutor stubs; problemset; experience submission", state: "live" },
             { what: "Digest routing to an existing digestion of the same work", state: "planned" },
             { what: "Tutor pulling problems from the global forest; explore mode", state: "planned" },
             { what: "Blogs as native trees (transcluding the forest)", state: "planned" },
-            { what: "Highlight-and-ask reader UI over the forest", state: "planned" },
           ]}
         />
         <P>

@@ -31,6 +31,7 @@ export const toc: TocEntry[] = [
   { id: "vision", label: "1 · Vizija" },
   { id: "usage", label: "2 · Kako se koristi" },
   { id: "forest", label: "Šuma — digest, ask, grow", depth: 2 },
+  { id: "bridge", label: "Pitaj iz preglednika", depth: 2 },
   { id: "tutor", label: "Tutor", depth: 2 },
   { id: "blog-writer", label: "Pisač blogova", depth: 2 },
   { id: "also", label: "Još u paketu", depth: 2 },
@@ -38,6 +39,7 @@ export const toc: TocEntry[] = [
   { id: "technical", label: "3 · Ispod haube" },
   { id: "copyright", label: "Autorska prava", depth: 2 },
   { id: "no-server", label: "Bez servera", depth: 2 },
+  { id: "no-model", label: "Zašto preglednik ne zove model", depth: 2 },
   { id: "formats", label: "Formati", depth: 2 },
   { id: "data-loop", label: "Petlja podataka", depth: 2 },
   { id: "repos", label: "Repozitoriji i stanje" },
@@ -174,7 +176,7 @@ export default function Content() {
               </strong>{" "}
               — pitanje dok učiš. Odgovor dolazi prvo iz <em>tvojih</em> stabala,
               s njihovim id-jevima, a tek onda iz općeg znanja modela, jasno
-              označeno. Ako odgovor vrijedi zadržati, alat nudi da ga uzgoji u
+              označeno (<em>izvan šume:</em>). Ako odgovor vrijedi zadržati, alat nudi da ga uzgoji u
               novo stablo u tvom trezoru.
             </li>
             <li>
@@ -208,6 +210,51 @@ export default function Content() {
             Snimka zaslona <Code>/digest</Code> sesije stiže — to je članova
             vlastita sesija u terminalu, pa se mora snimiti ručno.
           </VideoSlot>
+        </Sub>
+
+        <Sub id="bridge" title="Pitaj iz preglednika — most">
+          <P>
+            Ne moraš napustiti prikaz šume da bi pitao.{" "}
+            <Code>/ask --watch</Code> pretvara tvoju Claude Code sesiju u
+            modelsku polovicu čitača:
+          </P>
+          <Ol>
+            <li>
+              <Code>node scripts/build-views.mjs &lt;trezor&gt;</Code> ako je
+              prikaz zastario.
+            </li>
+            <li>
+              <Code>node scripts/serve-vault.mjs &lt;trezor&gt; --open</Code> —
+              poslužuje tvoj <Code>forest.html</Code> s <Code>127.0.0.1</Code>;
+              ispisani URL nosi token za ovo pokretanje, pa ga ne dijeli.
+            </li>
+            <li>
+              U drugom terminalu, unutar trezora: <Code>claude</Code>, zatim{" "}
+              <Code>/ask --watch</Code>.
+            </li>
+          </Ol>
+          <P>
+            Panel svakog stabla sad ima okvir za pitanje. Označi odlomak{" "}
+            <em>unutar panela</em>, upiši pitanje, <em>Pitaj</em>. Stranica
+            zapiše zahtjev kao datoteku u mapu <Code>.ask/</Code> trezora; tvoj
+            Claude Code ga preuzme, odgovori kako <Code>/ask</Code> uvijek
+            odgovara — prvo iz tvojih stabala, id-jevi klikabilni — i odgovor se
+            vrati na stranicu s renderiranim formulama. Pilula u kutu pokazuje
+            je li Claude Code spojen. Ako je odgovor morao izvan šume, završava
+            ponudom (<Code>Ponuda:</Code>) koju stranica pretvori u gumb, a tvoj
+            klik je pristanak da se to stablo uzgoji; drugi gumb predaje stablo{" "}
+            <Code>/tutor</Code>u. Način rada završavaš prekidom Claude Codea.
+          </P>
+          <Figure
+            name="bridge-flow"
+            lang={lang}
+            alt="Most: stranica u pregledniku, lokalni poslužitelj koji samo prosljeđuje datoteke i članova vlastita Claude Code sesija; datoteke request, status i answer u .ask/ jedino su sučelje među njima."
+          />
+          <Video
+            name="bridge"
+            label="Snimka zaslona mosta: označi, pitaj, odgovor"
+            caption="Označi, pitaj — i odgovor stigne iz tvog vlastitog Claude Codea, utemeljen u stablima koja citira."
+          />
         </Sub>
 
         <Sub id="tutor" title="2.2 · Tutor — /tutor">
@@ -374,6 +421,23 @@ export default function Content() {
           </P>
         </Sub>
 
+        <Sub id="no-model" title="Zašto preglednik ne zove model">
+          <P>
+            Claude Agent SDK radi samo s API ključem i ne može se pokrenuti s
+            claude.ai pretplatom, pa stranica ne može biti vlasnik modela bez
+            ključa na nekom serveru — što cijeli dizajn odbija. Umjesto toga
+            članova obična Claude Code sesija <em>jest</em> model, njezini upiti
+            za dopuštenje su sandbox, a <Code>serve-vault.mjs</Code> je glupi
+            prijenosnik datoteka: samo loopback, token po pokretanju provjeren
+            na svakom pozivu zajedno s podrijetlom (origin) preglednika, tijela
+            zahtjeva ograničena, id-jevi stabala provjereni u trezoru. Član vidi
+            svaki poziv alata u vlastitom terminalu. <Code>.ask/</Code> je radno
+            stanje — gitignored, validator ga ignorira, nikad nije dio formata
+            trezora ni izvoza — a tijela probavljenih stabala tretiraju se kao
+            nepouzdan tekst od početka do kraja.
+          </P>
+        </Sub>
+
         <Sub id="formats" title="Formati">
           <P>Dva ugovora na disku, oba običan Markdown s YAML zaglavljem:</P>
           <Ul>
@@ -430,8 +494,8 @@ export default function Content() {
           </li>
           <li>
             <A href="https://github.com/matsek-fer/reader">reader</A> — Šuma:{" "}
-            <Code>/digest</Code>, <Code>/ask</Code>, <Code>/grow</Code>, format
-            trezora, prikaz u pregledniku.
+            <Code>/digest</Code>, <Code>/ask</Code> (i most iz preglednika),{" "}
+            <Code>/grow</Code>, format trezora, prikaz u pregledniku.
           </li>
           <li>
             <A href="https://github.com/matsek-fer/AI_instructor">AI_instructor</A>{" "}
@@ -465,12 +529,12 @@ export default function Content() {
           labels={{ live: "radi", planned: "u planu" }}
           rows={[
             { what: "Šuma: digest, ask, grow, prikaz u pregledniku, globalna šuma na stranici", state: "live" },
+            { what: "Označi-i-pitaj iz prikaza u pregledniku — most (/ask --watch)", state: "live" },
             { what: "Tutor: ispitivanje → plan → učenje, sesije unutar trezora", state: "live" },
             { what: "Pisač blogova s tutor stubovima; zbirka zadataka; slanje iskustava", state: "live" },
             { what: "Preusmjeravanje probave na postojeću probavu istog djela", state: "planned" },
             { what: "Tutor dohvaća zadatke iz globalne šume; način istraživanja", state: "planned" },
             { what: "Blogovi kao izvorna stabla (transkluzija šume)", state: "planned" },
-            { what: "Sučelje označi-i-pitaj nad šumom", state: "planned" },
           ]}
         />
         <P>
