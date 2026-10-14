@@ -111,7 +111,7 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - ◐ `algebra-intro` — Introduction to algebra (groups, rings, fields)
 - ◐ `logic-sets` — Formal systems, set theory, logic
 - ◐ `topology` — Metric spaces & topology (club script PDF pending)
-- ☐ `cs-foundations` — CS: DSA, distributed systems, applied math, complexity
+- ◐ `cs-foundations` — CS: DSA, distributed systems, applied math, complexity
 
 ### 02-language
 - ☐ `category-theory-intro` — Category theory: motivation and first concepts
