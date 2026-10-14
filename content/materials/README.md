@@ -110,7 +110,7 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - ◐ `dynamical-systems` — Dynamical systems & differential equations
 - ◐ `algebra-intro` — Introduction to algebra (groups, rings, fields)
 - ◐ `logic-sets` — Formal systems, set theory, logic
-- ☐ `topology` — Metric spaces & topology
+- ◐ `topology` — Metric spaces & topology (club script PDF pending)
 - ☐ `cs-foundations` — CS: DSA, distributed systems, applied math, complexity
 
 ### 02-language
