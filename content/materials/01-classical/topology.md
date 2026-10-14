@@ -32,16 +32,22 @@ and topology is where it was born and where it is easiest to see.
    you cannot — and his proof uses no distances, no angles, no shapes, only
    what is connected to what. It was the first topological argument, and the
    same reasoning now routes your network traffic.
-2. **A mug is a doughnut.** You can deform a coffee mug into a doughnut
-   (torus) without cutting or gluing. You cannot do that to a sphere. Everyone
-   believes the second claim; nobody can prove it by trying deformations,
-   because there are infinitely many. You need to find *something you can
-   count* that deformation never changes. Finding it is the subject.
-3. **The hairy ball.** Cover a sphere in hairs and try to comb them all flat;
-   there is always a cowlick. Do the same on a doughnut and you succeed. One
-   consequence: at any moment, somewhere on Earth the horizontal wind speed is
-   exactly zero. Why does the shape of the surface force this, with no
-   physics involved?
+2. **Same weather on opposite sides of the Earth.** At this moment there are
+   two points exactly opposite each other on the Earth's surface with the
+   same temperature *and* the same air pressure. Not approximately — exactly.
+   Start with the easy version: walk around the equator and show there are
+   two opposite points with the same temperature (think about the difference
+   between a point and its opposite as you walk halfway round). Then ask why
+   adding pressure — a second quantity to match — still works on a sphere but
+   would fail on a circle. The answer uses no meteorology, only the shape of
+   the sphere.
+3. **Cutting a Möbius strip.** Take a paper strip, give it a half twist and
+   tape the ends. Predict, then cut along the centre line: you do not get two
+   strips but one long one with two twists. Now cut a fresh strip one third
+   of the way from the edge: two linked loops of different lengths. Predict
+   what happens with a full twist, with three half twists, with cutting the
+   result again. Every prediction is a theorem about one-sided surfaces, and
+   you can check each with scissors.
 
 ## Prerequisites
 
@@ -94,8 +100,8 @@ and topology is where it was born and where it is easiest to see.
 - **Strengths:** Topology taught geometrically: starts with Euler's theorem
   on polyhedra and the classification of surfaces as the goal, does enough
   point-set theory to get there, then the fundamental group, triangulations,
-  simplicial homology and knots. The book that makes pitch problems 2 and 3
-  into theorems you can follow.
+  simplicial homology and knots. The book that turns the Möbius strip of
+  pitch problem 3 into the classification of surfaces.
 - **Weaknesses:** Point-set chapters are brisk; some proofs are
   pictures-plus-handwaving; dated typesetting.
 
@@ -153,11 +159,15 @@ part.
 
 - **Königsberg to graphs** — Euler's argument, then what "topological"
   means. Resolves pitch problem 1; joint with `combinatorics`.
-- **Why a sphere is not a torus** — Euler characteristic by triangulation,
-  invariance sketched, classification of surfaces stated. Resolves pitch
+- **Same weather, opposite points** — the equator version by the
+  intermediate value theorem, then Borsuk–Ulam on the sphere via the
+  winding number, with the ham-sandwich theorem as dessert. Resolves pitch
   problem 2.
-- **Hairy ball and the wind** — vector fields, degree, Brouwer; the Earth
-  consequence. Resolves pitch problem 3.
+- **Scissors night** — Möbius strips, Klein bottles from paper, Euler
+  characteristic by counting, orientability, the classification of surfaces
+  stated. Resolves pitch problem 3.
+- **Why a sphere is not a torus** — Euler characteristic by triangulation
+  and why it is invariant.
 - **Compactness across topics** — the same concept in `real-analysis`,
   here, and in `advanced-analysis`; five equivalent forms and when each is
   used.
