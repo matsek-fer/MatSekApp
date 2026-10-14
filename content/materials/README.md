@@ -109,7 +109,7 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - ◐ `probability` — Probability (with measure)
 - ◐ `dynamical-systems` — Dynamical systems & differential equations
 - ◐ `algebra-intro` — Introduction to algebra (groups, rings, fields)
-- ☐ `logic-sets` — Formal systems, set theory, logic
+- ◐ `logic-sets` — Formal systems, set theory, logic
 - ☐ `topology` — Metric spaces & topology
 - ☐ `cs-foundations` — CS: DSA, distributed systems, applied math, complexity
 
