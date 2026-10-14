@@ -64,6 +64,13 @@ of the plane to itself, and many theorems are things you can see.
 
 - **Napkin** — Part on complex analysis: holomorphic functions, Cauchy's
   theorem, Laurent series and residues, with a tour of Riemann surfaces.
+- **Mathemaniac** — complex analysis series: the geometry of complex
+  differentiation, Cauchy's theorem and residues, visually.
+- **3Blue1Brown** — videos on Euler's formula, the Riemann zeta function
+  and winding numbers.
+- **Princeton Companion** — essays "Holomorphic functions", "The Riemann
+  mapping theorem", "The Riemann zeta function".
+- **Real Not Complex** — Complex Analysis page.
 
 ## Materials
 

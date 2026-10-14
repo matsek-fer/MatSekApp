@@ -58,6 +58,18 @@ horizon.
 - Computational calculus and a nodding acquaintance with Newtonian mechanics
   for motivation.
 
+## From the general materials
+
+- **3Blue1Brown** — *Differential equations* series: the pendulum, phase
+  space, the heat equation (listed again below as the recommended first
+  watch).
+- **Michael Penn** — Differential Equations playlist: a computational first
+  course on video.
+- **Princeton Companion** — essays "Dynamics", "Chaos", "The Lorenz
+  equations".
+- **Real Not Complex** — Differential Equations page.
+- The Napkin has no dynamics part.
+
 ## Materials
 
 ### Steven Strogatz — Nonlinear Dynamics and Chaos (+ Cornell lectures)

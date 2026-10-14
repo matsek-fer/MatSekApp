@@ -64,6 +64,11 @@ and topology is where it was born and where it is easiest to see.
 - **Napkin** — Part on topology: metric spaces, topological spaces,
   compactness, then the fundamental group, covering spaces and a tour of
   homology.
+- **Mathemaniac** — videos on the fundamental group, the classification of
+  surfaces and the Euler characteristic.
+- **Princeton Companion** — essays "Topological spaces", "Compactness",
+  "Algebraic topology", "Differential topology".
+- **Real Not Complex** — Topology page.
 
 ## Materials
 

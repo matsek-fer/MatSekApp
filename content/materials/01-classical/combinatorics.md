@@ -51,6 +51,16 @@ algebra and geometry speak combinatorics.
 - For generating functions: comfort with manipulating power series as formal
   objects (Wilf teaches this from scratch).
 
+## From the general materials
+
+- **Princeton Companion** — essays "Enumerative and algebraic
+  combinatorics", "Extremal and probabilistic combinatorics", "Ramsey
+  theory".
+- **Michael Penn** — many single-problem videos on counting, binomial sums
+  and recurrences.
+- **Real Not Complex** — Combinatorics page.
+- The Napkin has no combinatorics part.
+
 ## Materials
 
 ### Graham, Knuth & Patashnik — Concrete Mathematics

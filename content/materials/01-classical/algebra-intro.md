@@ -60,8 +60,14 @@ apply the habit to algebra itself.
 ## From the general materials
 
 - **Napkin** — Parts on groups (group actions, Sylow theorems), rings and
-  ideals, and fields and Galois theory, each in the "what is this really"
-  style with the categorical viewpoint already present.
+  ideals, and fields and Galois theory, with the categorical viewpoint
+  already present.
+- **Mathemaniac** — group theory series: symmetry, cosets, quotients and
+  the classification of finite simple groups, visually.
+- **Michael Penn** — Abstract Algebra playlist: a full lecture course.
+- **Princeton Companion** — essays "Groups", "Rings, ideals and modules",
+  "Fields", "Galois theory".
+- **Real Not Complex** — Abstract Algebra page.
 
 ## Materials
 
