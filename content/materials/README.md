@@ -12,6 +12,7 @@ it without a database.
 ```
 content/materials/
   README.md                       # this file: schema + master topic list
+  general.md                      # atlases & channels referenced from many topics
   01-classical/<topic>.md         # introductions to classical fields
   02-language/<topic>.md          # category theory, type theory, "better language"
   03-advanced/<topic>.md          # advanced / specialized / cross-field
@@ -38,7 +39,15 @@ Three problems a newcomer can *understand* (not necessarily solve).
 ## Prerequisites
 Prose version of the frontmatter list + what exactly is needed from each.
 
+## From the general materials
+Bullets pointing at the parts of `general.md` relevant to this topic
+(e.g. "Napkin, chapters on …"). Keeps topic lists short.
+
 ## Materials
+Keep it short: a handful of core items. Where a core item is paid, name a
+free alternative. Optional subsections (`## Problem books`, `## Lectures`)
+may follow; every entry uses the same fields.
+
 ### <Material name>
 - **Link:** <url>
 - **Type:** book | notes | video | course | paper | blog | repo | site | problems
@@ -89,8 +98,12 @@ and categorification of physics.
 
 Status: ☐ not started · ◐ draft · ● reviewed
 
+### general
+- ◐ `general` — General materials (atlases, indices, YouTube channels)
+
 ### 01-classical
-- ◐ `analysis` — Analysis
+- ◐ `real-analysis` — Real analysis
+- ☐ `complex-analysis` — Complex analysis
 - ☐ `linear-algebra` — Linear algebra
 - ☐ `combinatorics` — Combinatorics
 - ☐ `probability` — Probability (with measure)
@@ -126,4 +139,6 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - Links were collected without live verification from the authoring
   environment. Run a link check before the page ships.
 - Prefer free, legally available sources; mark paid books honestly.
+- Lists are deliberately short. Breadth lives in `general.md` (Real Not
+  Complex, the Napkin, the Princeton Companion), not in topic files.
 - Strengths/weaknesses are opinions — sign heavy edits in the git log.
