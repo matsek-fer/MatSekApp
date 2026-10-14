@@ -40,8 +40,8 @@ Three problems a newcomer can *understand* (not necessarily solve).
 Prose version of the frontmatter list + what exactly is needed from each.
 
 ## From the general materials
-Bullets pointing at the parts of `general.md` relevant to this topic
-(e.g. "Napkin, chapters on …"). Keeps topic lists short.
+Only the Napkin chapter(s) covering this topic. The other general materials
+are not repeated per topic.
 
 ## Materials
 Keep it short: a handful of core items. Where a core item is paid, name a
@@ -104,7 +104,7 @@ Status: ☐ not started · ◐ draft · ● reviewed
 ### 01-classical
 - ◐ `real-analysis` — Real analysis
 - ☐ `complex-analysis` — Complex analysis
-- ☐ `linear-algebra` — Linear algebra
+- ◐ `linear-algebra` — Linear algebra
 - ☐ `combinatorics` — Combinatorics
 - ☐ `probability` — Probability (with measure)
 - ☐ `dynamical-systems` — Dynamical systems & differential equations

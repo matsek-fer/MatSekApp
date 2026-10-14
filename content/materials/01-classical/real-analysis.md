@@ -57,16 +57,9 @@ mathematics looks the same.
 
 ## From the general materials
 
-- **3Blue1Brown — Essence of Calculus** (diff 1): watch first if calculus is
-  new or only memorised; pure motivation, no proofs.
-- **Michael Penn — Real Analysis playlist** (diff 2): a full lecture course
-  following a standard syllabus; good for seeing proofs done live.
-- **Napkin** (diff 2-3): chapters on metric and topological spaces,
-  compactness, and the measure-theory tour — read for the shape of the
-  subject before or after a course.
-- **Princeton Companion** (diff 2-3): essays "The Riemann integral",
-  "Measures", "Limits", and the "Analysis" branch overview.
-- **Real Not Complex → Analysis**: free alternatives to everything below.
+- **Napkin** — chapters on metric and topological spaces, compactness, and
+  the measure-theory tour: read for the shape of the subject before or after
+  a course.
 
 ## Materials
 
