@@ -106,7 +106,7 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - ☐ `complex-analysis` — Complex analysis
 - ◐ `linear-algebra` — Linear algebra
 - ◐ `combinatorics` — Combinatorics
-- ☐ `probability` — Probability (with measure)
+- ◐ `probability` — Probability (with measure)
 - ☐ `dynamical-systems` — Dynamical systems & differential equations
 - ☐ `algebra-intro` — Introduction to algebra (groups, rings, fields)
 - ☐ `logic-sets` — Formal systems, set theory, logic
