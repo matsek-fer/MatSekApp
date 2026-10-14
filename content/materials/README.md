@@ -105,7 +105,7 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - ◐ `real-analysis` — Real analysis
 - ☐ `complex-analysis` — Complex analysis
 - ◐ `linear-algebra` — Linear algebra
-- ☐ `combinatorics` — Combinatorics
+- ◐ `combinatorics` — Combinatorics
 - ☐ `probability` — Probability (with measure)
 - ☐ `dynamical-systems` — Dynamical systems & differential equations
 - ☐ `algebra-intro` — Introduction to algebra (groups, rings, fields)
