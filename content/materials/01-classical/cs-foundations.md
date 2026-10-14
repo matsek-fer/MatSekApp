@@ -35,11 +35,15 @@ here is what it costs."
    takes about 2·10⁷, fifty thousand times fewer, on the same hardware. Now
    the real question: how can you *prove* that no method, however clever, can
    do fundamentally better than that?
-2. **P vs NP.** Some problems are easy to *check*: hand me a filled-in
-   sudoku and I verify it in seconds. Are all such problems also easy to
-   *solve*? Nobody knows. There is a million-dollar prize. And it turns out
-   sudoku, protein folding, exam timetabling and cracking certain codes are
-   all the *same* problem in disguise: solve one fast and you solve them all.
+2. **Counting a billion visitors in a kilobyte.** A website gets a billion
+   visits and wants to know how many *distinct* people came. The obvious
+   method — remember everyone you have seen — needs gigabytes of memory.
+   There is a method that uses about one kilobyte, is off by only a couple of
+   percent, and rests on a party trick: ask everyone in a room to flip a coin
+   until they get tails and report their longest run of heads; from the
+   longest run in the room you can estimate how many people were flipping.
+   Why does the longest streak know how many people there were — and how do
+   you turn that into an algorithm every large database now runs?
 3. **The two generals.** Two armies on opposite hills must attack at the same
    moment or lose. They can only communicate by messengers who might be
    captured. Can they ever be *certain* they agree? Provably not — no
@@ -103,7 +107,6 @@ here is what it costs."
   regular languages, context-free grammars, Turing machines, decidability,
   reducibility, time and space complexity, P vs NP, NP-completeness. Proofs
   are preceded by "proof ideas"; every chapter is a model of exposition.
-  Resolves pitch problem 2 at its own level.
 - **Weaknesses:** Stops at the classical results; paid; exercises have
   selected solutions only.
 
@@ -187,8 +190,12 @@ Erickson's and Sipser's exercises cover the theory side.
 
 - **Why n log n?** — the comparison-sort lower bound by decision trees.
   Resolves pitch problem 1.
-- **P vs NP in one hour** — the question, reductions, why sudoku is
-  SAT, what a proof would and would not change. Resolves pitch problem 2.
+- **Counting without counting** — from the coin-flip trick to
+  HyperLogLog: hashing, the longest-run estimator, averaging buckets, with
+  a thirty-line implementation. Resolves pitch problem 2; joint with
+  `probability`.
+- **P vs NP in one hour** — the question, reductions, why sudoku is SAT,
+  what a proof would and would not change.
 - **Impossibility results** — two generals, FLP, CAP: statements,
   proof sketches, what engineers do about them. Resolves pitch problem 3.
 - **Algorithms as recursion** — Erickson's method applied to five classic
