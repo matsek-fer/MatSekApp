@@ -103,7 +103,7 @@ Status: ☐ not started · ◐ draft · ● reviewed
 
 ### 01-classical
 - ◐ `real-analysis` — Real analysis
-- ☐ `complex-analysis` — Complex analysis
+- ◐ `complex-analysis` — Complex analysis
 - ◐ `linear-algebra` — Linear algebra
 - ◐ `combinatorics` — Combinatorics
 - ◐ `probability` — Probability (with measure)
