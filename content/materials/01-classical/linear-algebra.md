@@ -51,7 +51,12 @@ the attitude behind it is what you'll reuse in every abstract field after.
 
 - **Napkin** — Part on linear algebra (vector spaces, eigenvalues, dual
   space, trace and determinant via tensors): the "what is this really"
-  version, best read alongside a textbook.
+  version.
+- **3Blue1Brown** — *Essence of Linear Algebra*: the geometric intuition for
+  everything in Axler, in fifteen short videos; watch first.
+- **Princeton Companion** — essays "Vector spaces", "Determinants",
+  "Eigenvalues and eigenvectors", "Duality".
+- **Real Not Complex** — Linear Algebra page.
 
 ## Materials
 

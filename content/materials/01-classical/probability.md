@@ -60,8 +60,13 @@ learning.
 
 - **Napkin** — Part on probability: measure spaces built for probabilists,
   random variables, expectation, the laws of large numbers, characteristic
-  functions and the central limit theorem, in the "what is this really"
-  style.
+  functions and the central limit theorem.
+- **3Blue1Brown** — videos on Bayes' theorem, the binomial distribution and
+  the central limit theorem; good motivation for the first half.
+- **Princeton Companion** — essays "Probability distributions",
+  "Probabilistic models of critical phenomena", "The central limit
+  theorem".
+- **Real Not Complex** — Probability page.
 
 ## Materials
 

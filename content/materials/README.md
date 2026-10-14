@@ -40,8 +40,9 @@ Three problems a newcomer can *understand* (not necessarily solve).
 Prose version of the frontmatter list + what exactly is needed from each.
 
 ## From the general materials
-Only the Napkin chapter(s) covering this topic. The other general materials
-are not repeated per topic.
+Every entry of `general.md` that covers this topic, with the relevant part
+named (e.g. "Napkin — Part on …", "3Blue1Brown — Essence of …"). If the
+Napkin has no part on the topic, say so.
 
 ## Materials
 Keep it short: a handful of core items. Where a core item is paid, name a
@@ -114,7 +115,7 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - ◐ `cs-foundations` — CS: DSA, distributed systems, applied math, complexity
 
 ### 02-language
-- ☐ `category-theory-intro` — Category theory: motivation and first concepts
+- ◐ `category-theory-intro` — Category theory: motivation and first concepts
 - ☐ `type-theory` — Type theory & the Curry–Howard–Lambek correspondence
 - ☐ `compositionality` — Compositionality & what makes the language powerful
 - ☐ `applied-category-theory` — Applied category theory

@@ -54,9 +54,14 @@ None. This is the entry point. Comfort with high-school algebra is enough.
 
 ## From the general materials
 
-- **Napkin** — the set theory part (ZFC axioms, ordinals and cardinals,
-  a taste of forcing) and the introductory remarks on reading and writing
+- **Napkin** — the set theory part (ZFC axioms, ordinals and cardinals, a
+  taste of forcing) and the introductory remarks on reading and writing
   proofs.
+- **The Joy of Abstraction** (Cheng) — the first half is about what a proof
+  is and why abstraction is worth it; a gentle companion to Hammack.
+- **Princeton Companion** — essays "Logic and model theory", "Set theory",
+  "Gödel's theorem", "Countable and uncountable sets".
+- **Real Not Complex** — Logic and Set Theory pages.
 
 ## Materials
 

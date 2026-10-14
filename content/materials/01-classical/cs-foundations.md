@@ -60,6 +60,16 @@ here is what it costs."
   `real-analysis`) for convex optimisation.
 - Working knowledge of one programming language.
 
+## From the general materials
+
+- **Princeton Companion** — essays "Computational complexity",
+  "Algorithms", "Computability", "The P versus NP problem".
+- **3Blue1Brown** — videos on hashing and Bloom filters, Hamming codes, and
+  the Fourier transform; good single-topic motivation.
+- **Real Not Complex** — Computer Science pages (algorithms, theory of
+  computation).
+- The Napkin has no computer science part.
+
 ## Materials
 
 ### Jeff Erickson — Algorithms

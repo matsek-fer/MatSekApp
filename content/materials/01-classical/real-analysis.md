@@ -58,8 +58,14 @@ mathematics looks the same.
 ## From the general materials
 
 - **Napkin** — chapters on metric and topological spaces, compactness, and
-  the measure-theory tour: read for the shape of the subject before or after
-  a course.
+  the measure-theory tour.
+- **3Blue1Brown** — *Essence of Calculus*: watch first if calculus is new or
+  only memorised; motivation, no proofs.
+- **Michael Penn** — Real Analysis playlist: a full lecture course on a
+  standard syllabus, proofs done live.
+- **Princeton Companion** — essays "The Riemann integral", "Measures",
+  "Limits", and the "Analysis" branch overview.
+- **Real Not Complex** — Analysis page: free alternatives to everything below.
 
 ## Materials
 
