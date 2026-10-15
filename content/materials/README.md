@@ -34,7 +34,13 @@ status: draft                     # draft | reviewed
 A few paragraphs. Goal: make a reader who has never heard of the topic want it.
 
 ## Pitch problems
-Three problems a newcomer can *understand* (not necessarily solve).
+Three problems a newcomer can *understand* and start attacking. Rules:
+- No vocabulary from the field itself (no "type", "functor", "measure") —
+  only school mathematics and everyday language.
+- Genuine problems, olympiad-flavoured where possible, not restated
+  definitions or famous open problems nobody will solve.
+- At least one should be attackable with pen and paper (or scissors) before
+  knowing any theory.
 
 ## Prerequisites
 Prose version of the frontmatter list + what exactly is needed from each.
