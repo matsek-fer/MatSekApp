@@ -116,7 +116,7 @@ Status: ☐ not started · ◐ draft · ● reviewed
 
 ### 02-language
 - ◐ `category-theory-intro` — Category theory: motivation and first concepts
-- ☐ `type-theory` — Type theory & the Curry–Howard–Lambek correspondence
+- ◐ `type-theory` — Type theory & the Curry–Howard–Lambek correspondence
 - ☐ `compositionality` — Compositionality & what makes the language powerful
 - ☐ `applied-category-theory` — Applied category theory
 - ☐ `categorical-classical` — Classical fields seen categorically
