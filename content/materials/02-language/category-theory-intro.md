@@ -34,26 +34,28 @@ makes the content shorter, clearer and portable. Everything in parts 02 and
 
 ## Pitch problems
 
-1. **The same proof three times.** "The product of two objects is unique up
-   to isomorphism." Prove it for sets with the cartesian product. Now for
-   groups with the direct product. Now for topological spaces with the
-   product topology. The three proofs are word for word identical — only the
-   nouns differ. Is there a way to write the proof *once* so that all three
-   (and infinitely many others) are special cases?
-2. **Why does `map` always work?** Lists, trees, optional values, promises,
-   functions-from-a-fixed-type: each has a `map` that applies a function to
-   the contents, and in every language, for every one of them,
-   `map(f ∘ g) = map(f) ∘ map(g)` holds — without anyone proving it per type.
-   There is one reason, it has a name (functor), and the same reason explains
-   why "apply a group homomorphism to a kernel" and "apply a continuous map
-   to a fundamental group" behave the same way.
-3. **The most unconstrained thing you can build.** The free group on a set,
-   the vector space with that set as basis, the discrete topology on it:
-   each is "the most unconstrained object you can build from the set" in
-   its own world. Make that phrase precise and you discover it is the mirror
-   image of *forgetting* structure — and that this mirror pairing
-   (adjunction) is exactly what connects "for all" to "there exists" in
-   logic and database queries to their schemas.
+1. **Floors of floors.** For a real number x and a positive integer n,
+   prove that ⌊⌊x⌋/n⌋ = ⌊x/n⌋. A standard olympiad lemma; the usual proof
+   juggles inequalities for half a page. There is a one-line proof: "take the
+   floor" is the right adjoint of "regard an integer as a real", and a
+   composite of adjoints is an adjoint. Understanding why that sentence is a
+   proof is a first encounter with the subject's most useful idea.
+2. **Counting functions two ways.** How many functions are there from A × B
+   to C? Directly, cᵃᵇ. Alternatively: a function of two arguments is a
+   function of the first argument that returns a function of the second, so
+   the count is (cᵇ)ᵃ. The exponent law is not just a numerical coincidence
+   but a *bijection* between two sets of functions. In which other worlds —
+   spaces, groups, logical propositions — does this law hold, and what does
+   having it buy you? (Everything from currying in programming to the
+   λ-calculus.)
+3. **Chinese remainders.** Find every integer x with x ≡ 2 (mod 3),
+   x ≡ 3 (mod 5) and x ≡ 2 (mod 7). You will find exactly one answer modulo
+   105, and the construction ℤ/105 ≅ ℤ/3 × ℤ/5 × ℤ/7 will feel forced — as
+   if there were no other way it could go. There is not: a product is
+   pinned down by how everything else maps into it, so once the maps to the
+   three factors are known the solution has no freedom left. The same
+   "forcedness" explains why the product of sets, groups and spaces are all
+   unique up to a unique isomorphism, by one proof.
 
 ## Prerequisites
 
@@ -175,6 +177,18 @@ makes the content shorter, clearer and portable. Everything in parts 02 and
 - **Weaknesses:** Written for working mathematicians in 1971; motivation
   assumed, examples compressed. A second or third book.
 
+### Bruno Gavranović — Category Theory Resources
+- **Link:** https://github.com/bgavran/Category_Theory_Resources
+- **Type:** repo
+- **Difficulty:** 1-5
+- **Free:** yes
+- **Strengths:** A curated, maintained list of category theory books,
+  lecture series, papers, blogs and software, grouped by level and by
+  application area (machine learning, physics, programming, databases).
+  Where to look for the next thing after the materials above.
+- **Weaknesses:** A list, not a path; the applied sections assume you know
+  what you are looking for.
+
 ## Problems
 
 - **Fong & Spivak** — every exercise is solved in the book; work through
@@ -186,15 +200,17 @@ makes the content shorter, clearer and portable. Everything in parts 02 and
 
 ## Matsek originals (to design)
 
-- **One proof, every category** — the uniqueness of products proved once;
-  then products in Set, Grp, Top, posets and a category where they do not
-  exist. Resolves pitch problem 1.
-- **Functors in your editor** — `map` for five types, the functor laws,
-  and the same laws as "homomorphisms induce maps on kernels / fundamental
-  groups". Resolves pitch problem 2; joint with `cs-foundations`.
-- **Free ⊣ forgetful** — adjunctions through the free group, free vector
-  space and discrete topology; then ∃ ⊣ pullback ⊣ ∀. Resolves pitch
-  problem 3; bridge to `type-theory`.
+- **Adjunctions from floor and ceiling** — Galois connections on posets,
+  the floor lemma in one line, then free ⊣ forgetful for groups and vector
+  spaces, then ∃ ⊣ pullback ⊣ ∀. Resolves pitch problem 1; bridge to
+  `type-theory`.
+- **Exponentials everywhere** — the currying bijection in Set, in
+  propositions (A ∧ B → C iff A → (B → C)), in spaces; cartesian closed
+  categories and why `map` obeys its laws. Resolves pitch problem 2; joint
+  with `cs-foundations`.
+- **One proof, every category** — CRT as a product, the uniqueness of
+  products proved once, then products in Set, Grp, Top, posets, and a
+  category where they do not exist. Resolves pitch problem 3.
 - **Yoneda in an afternoon** — the lemma, the embedding, "an object is
   determined by its relationships", and why it is the first real theorem of
   the subject.
