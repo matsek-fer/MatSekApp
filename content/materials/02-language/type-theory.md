@@ -35,15 +35,18 @@ means "I can hand you one", which changes how you think about proof.
 
 ## Pitch problems
 
-1. **Count the programs.** Consider functions that must work for *every*
-   type A without being allowed to inspect what A is. How many such
-   functions are there of type A → A? One — the identity. Of type
-   A → A → A? Two. Of type (A → A) → A → A? Infinitely many, and you can
-   list them exactly: apply the given function 0 times, 1 time, 2 times, …
-   so this type *is* the natural numbers. Now the hard part: prove that any
-   such function f from lists of A to lists of A satisfies
-   f(map g xs) = map g (f xs) for every function g — a theorem you get for
-   free from the type alone, knowing nothing about how f is defined.
+1. **Recipes that cannot look.** You must write a recipe that takes a list
+   of items and returns a list of items — but you are not told what the
+   items are (numbers, words, anything), so you cannot inspect, compare or
+   invent them. What can such a recipe do? Only rearrange, repeat or drop.
+   Now prove: for *any* such recipe, painting every item red before running
+   it gives the same result as painting them afterwards. Then count: how
+   many recipes take one item and return an item, without looking? One.
+   Take two items, return one? Two. Take a "transformer" of items together
+   with one item, and return an item? Apply the transformer 0, 1, 2, …
+   times — the natural numbers, hiding inside a question about recipes. The
+   discipline that makes "cannot look" precise, and turns these counts into
+   theorems, is the subject.
 2. **Produce the witness.** The classic proof that an irrational to an
    irrational power can be rational: either √2^√2 is rational, and we are
    done, or it is not, in which case (√2^√2)^√2 = 2 is. This proves a pair
