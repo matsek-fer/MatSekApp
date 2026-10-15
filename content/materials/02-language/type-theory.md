@@ -35,34 +35,32 @@ means "I can hand you one", which changes how you think about proof.
 
 ## Pitch problems
 
-1. **Recipes that cannot look.** You must write a recipe that takes a list
-   of items and returns a list of items — but you are not told what the
-   items are (numbers, words, anything), so you cannot inspect, compare or
-   invent them. What can such a recipe do? Only rearrange, repeat or drop.
-   Now prove: for *any* such recipe, painting every item red before running
-   it gives the same result as painting them afterwards. Then count: how
-   many recipes take one item and return an item, without looking? One.
-   Take two items, return one? Two. Take a "transformer" of items together
-   with one item, and return an item? Apply the transformer 0, 1, 2, …
-   times — the natural numbers, hiding inside a question about recipes. The
-   discipline that makes "cannot look" precise, and turns these counts into
-   theorems, is the subject.
-2. **Produce the witness.** The classic proof that an irrational to an
+1. **Numbers as repetition machines.** A number n is handed to you not as a
+   numeral but as a sealed machine: feed it any operation f and a starting
+   value x, and it returns f applied n times to x. You cannot open the
+   machine or count anything. From the machines for n and m, build machines
+   for n + m, n · m and nᵐ. Then build the machine for n − 1. Addition and
+   multiplication take a few minutes; exponentiation is a nice trick; the
+   predecessor stumped Church himself until Kleene found it at the
+   dentist's. This is exactly how numbers exist in the simplest type
+   theories.
+2. **Balls in a bag.** A bag holds finitely many balls, each labelled with a
+   positive integer. A move: take out one ball labelled k and put in *any*
+   finite number of balls, each labelled with a number less than k — ten
+   thousand balls labelled k − 1 if you like. Prove that no matter how the
+   moves are chosen, the bag is eventually empty. Then the hard version: a
+   "hydra" tree where cutting off a head makes the tree regrow copies of a
+   subtree — prove it still always dies. Every procedure that terminates
+   does so for a reason of this shape, and in type theory every proof is
+   such a procedure.
+3. **Produce the witness.** The classic proof that an irrational to an
    irrational power can be rational: either √2^√2 is rational, and we are
    done, or it is not, in which case (√2^√2)^√2 = 2 is. This proves a pair
-   *exists* and gives no idea which pair. Type theory takes "there exists" to
-   mean "here it is". Find explicit irrationals a and b with aᵇ rational,
-   with proof. Then say exactly which step of the first proof fails to
-   compute an answer, and which rule of reasoning you would have to give up
-   to forbid such proofs.
-3. **The game of implications.** You may use only these rules: from A and
-   A → B conclude B; if assuming A lets you derive B, conclude A → B; ¬A
-   abbreviates A → ⊥, where ⊥ is a proposition with no proof. For an
-   arbitrary proposition A, decide which of the following you can prove:
-   A → ¬¬A; ¬¬¬A → ¬A; ¬¬(A ∨ ¬A); A ∨ ¬A; ¬¬A → A. Three are
-   provable (one of them is genuinely tricky) and two are not. For the two
-   you need to argue that *no* proof exists under these rules — and that
-   argument turns out to be a statement about what can be computed.
+   *exists* and gives no idea which pair. Find explicit irrationals a and b
+   with aᵇ rational, with proof. Then say exactly which step of the first
+   proof fails to produce an answer, and which rule of reasoning you would
+   have to give up to forbid such proofs. Type theory is the tradition that
+   gives it up.
 
 ## Prerequisites
 
@@ -108,8 +106,9 @@ means "I can hand you one", which changes how you think about proof.
 - **Strengths:** Learn by doing: a textbook in which every definition and
   theorem is written in Coq and every exercise is a proof the machine
   checks. Inductive types, propositions as types, induction principles,
-  the logic of constructive proof, all built up from nothing. Resolves
-  pitch problem 3 by making you prove the provable ones.
+  the logic of constructive proof, all built up from nothing. The
+  termination arguments of pitch problem 2 are what its induction
+  principles make precise.
 - **Weaknesses:** Coq syntax is a hurdle; the pace is slow for those who
   already know logic; the later volumes turn toward programming languages.
 
@@ -134,8 +133,9 @@ means "I can hand you one", which changes how you think about proof.
 - **Strengths:** The standard textbook on type systems: the untyped and
   simply typed λ-calculus, products and sums, references, subtyping,
   recursive types, polymorphism (System F), with the metatheory —
-  progress, preservation, normalisation — proved in full. Pitch problem 1
-  lives in the chapters on System F and parametricity. Solutions to most
+  progress, preservation, normalisation — proved in full. The repetition
+  machines of pitch problem 1 are the Church numerals of the System F
+  chapter. Solutions to most
   exercises included.
 - **Weaknesses:** Written for programming-language theory, so the logical
   side of Curry–Howard is a remark rather than a theme; no dependent types.
@@ -186,23 +186,23 @@ means "I can hand you one", which changes how you think about proof.
   in full is the best drill available.
 - **Theorem Proving in Lean 4** — exercises per chapter; then try
   formalising a theorem you know from `algebra-intro`.
-- **TAPL** — exercises with solutions; the System F chapter's exercises
-  are pitch problem 1 in instalments.
-- **Pitch problem 3** is itself a good problem set: do the five, then
-  attempt the drinker paradox (in any non-empty pub there is someone such
-  that if they drink, everyone drinks) under the same rules.
+- **TAPL** — exercises with solutions; the λ-calculus and System F
+  chapters' exercises continue pitch problem 1.
+- **Pitch problems 1 and 2** are problem sets in themselves: after the
+  predecessor, build subtraction and "is zero?"; after the hydra, try
+  Goodstein sequences.
 
 ## Matsek originals (to design)
 
-- **Theorems for free** — counting inhabitants of polymorphic types, Church
-  numerals, and Wadler's parametricity theorem for lists. Resolves pitch
-  problem 1.
+- **Numbers without numerals** — Church numerals by hand: plus, times,
+  power, the predecessor trick with pairs, and why this is a number system.
+  Resolves pitch problem 1.
+- **Why does it stop?** — the bag of balls, multiset orderings, the hydra
+  and Goodstein, and termination as the price of "every proof is a
+  procedure". Resolves pitch problem 2; joint with `logic-sets` (ordinals).
 - **Existence means construction** — the √2 proof dissected, explicit
   witnesses, excluded middle as the culprit, and what constructive
-  mathematics gives up and gains. Resolves pitch problem 2.
-- **The implication game** — a session of natural-deduction puzzles ending
-  with ¬¬(A ∨ ¬A) and a Kripke counter-model for excluded middle. Resolves
-  pitch problem 3.
+  mathematics gives up and gains. Resolves pitch problem 3.
 - **Curry–Howard–Lambek in one table** — propositions / types / objects,
   proofs / programs / arrows, ∧ / × / product, → / function / exponential,
   worked example by example; joint with `category-theory-intro`.
