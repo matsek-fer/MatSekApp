@@ -5,9 +5,12 @@ category: language
 tagline: Propositions are types, proofs are programs, and both are arrows in a category — one structure seen three ways.
 prerequisites: [logic-sets, category-theory-intro]
 status: draft
+ai_generated: [pitch, pitch_problems, matsek_materials]
 ---
 
 ## Pitch
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 Set theory says a mathematical object is a set, and asks of any two things
 "is this an element of that?" Type theory says every object comes with a
@@ -34,6 +37,8 @@ machine-check real mathematics. It is also the tradition in which "exists"
 means "I can hand you one", which changes how you think about proof.
 
 ## Pitch problems
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 1. **Numbers as repetition machines.** A number n is handed to you not as a
    numeral but as a sealed machine: feed it any operation f and a starting
@@ -192,7 +197,9 @@ means "I can hand you one", which changes how you think about proof.
   predecessor, build subtraction and "is zero?"; after the hydra, try
   Goodstein sequences.
 
-## Matsek originals (to design)
+## Matsek materials
+
+> _AI-generated TODO recommendations — none of these exist yet. Replace with real MatSek materials as they are produced._
 
 - **Numbers without numerals** — Church numerals by hand: plus, times,
   power, the predecessor trick with pairs, and why this is a number system.

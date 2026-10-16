@@ -5,9 +5,12 @@ category: classical
 tagline: Rules that say how things change, and the surprising question of what they do in the long run.
 prerequisites: [real-analysis, linear-algebra]
 status: draft
+ai_generated: [pitch, pitch_problems, matsek_materials]
 ---
 
 ## Pitch
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 Almost every law in science is a differential equation: it tells you the rate
 of change now, and asks you to work out the whole future. For two centuries
@@ -27,6 +30,8 @@ phenomena: why hearts beat, why populations cycle, why weather forecasts have a
 horizon.
 
 ## Pitch problems
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 1. **The double pendulum.** Two rigid rods, a hinge, gravity: Newton's laws
    give you the exact equations of motion. Start two copies with initial
@@ -171,7 +176,9 @@ horizon.
   bifurcation.
 - **Weaknesses:** No mathematics beyond the explanation paragraph.
 
-## Matsek originals (to design)
+## Matsek materials
+
+> _AI-generated TODO recommendations — none of these exist yet. Replace with real MatSek materials as they are produced._
 
 - **Chaos in one afternoon** — the logistic map by hand and by code:
   cobweb plots, bifurcation diagram, Feigenbaum's constant measured live.

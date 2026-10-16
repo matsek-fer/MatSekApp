@@ -28,9 +28,15 @@ category: classical               # classical | language | advanced
 tagline: one sentence shown on the topic card
 prerequisites: [proofs-logic]     # ids of other topics (may be empty)
 status: draft                     # draft | reviewed
+ai_generated: [pitch, pitch_problems, matsek_materials]
+                                  # sections still AI-drafted; remove an entry
+                                  # once a member has rewritten/signed it off.
+                                  # The UI renders these with a translucent band.
 ---
 
 ## Pitch
+> _AI-generated draft — not yet reviewed by a MatSek member._   ← while flagged
+
 A few paragraphs. Goal: make a reader who has never heard of the topic want it.
 
 ## Pitch problems
@@ -41,6 +47,10 @@ Three problems a newcomer can *understand* and start attacking. Rules:
   definitions or famous open problems nobody will solve.
 - At least one should be attackable with pen and paper (or scissors) before
   knowing any theory.
+- State the problem briefly and never include the solution route in the
+  statement. Put graded hints in collapsible blocks after each problem:
+  `<details><summary>Hint 1</summary> … </details>`, first hint pointing the
+  direction only, later hints more specific.
 
 ## Prerequisites
 Prose version of the frontmatter list + what exactly is needed from each.
@@ -63,8 +73,10 @@ may follow; every entry uses the same fields.
 - **Strengths:** ...
 - **Weaknesses:** ...
 
-## Matsek originals (to design)
-Materials we intend to produce ourselves, one bullet each with a one-line brief.
+## Matsek materials
+Materials produced by MatSek members (scripts, problem sheets, session plans),
+with links once they exist. Until then the section holds AI-generated TODO
+recommendations, marked by the blockquote note.
 ```
 
 ## Difficulty scale
@@ -149,3 +161,8 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - Lists are deliberately short. Breadth lives in `general.md` (Real Not
   Complex, the Napkin, the Princeton Companion), not in topic files.
 - Strengths/weaknesses are opinions — sign heavy edits in the git log.
+
+## TODO
+
+- UI: render sections listed in `ai_generated` with a translucent band and
+  the note; drop the band when the flag is removed.

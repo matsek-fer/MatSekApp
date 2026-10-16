@@ -5,9 +5,12 @@ category: classical
 tagline: Symmetry, arithmetic and equations, abstracted until the same theorem explains all three.
 prerequisites: [logic-sets]
 status: draft
+ai_generated: [pitch, pitch_problems, matsek_materials]
 ---
 
 ## Pitch
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 You have done algebra since school: solving equations, manipulating symbols
 that obey rules. Abstract algebra asks what happens if you take the *rules*
@@ -28,6 +31,8 @@ category theory (`category-theory-intro`), which is what you get when you
 apply the habit to algebra itself.
 
 ## Pitch problems
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 1. **The shuffle that undoes itself.** Take 8 cards, split them into two
    halves and interleave them perfectly, one card from each half in turn. Do
@@ -172,7 +177,9 @@ learning; do them rather than reading past them.
 - **Weaknesses:** Computation, not proof; nothing on abstract groups beyond
   cyclic ones.
 
-## Matsek originals (to design)
+## Matsek materials
+
+> _AI-generated TODO recommendations — none of these exist yet. Replace with real MatSek materials as they are produced._
 
 - **Rubik's cube as a group** — commutators, why a single corner cannot be
   twisted, the order of the cube group, a solving method derived from the

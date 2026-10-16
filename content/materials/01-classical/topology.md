@@ -5,9 +5,12 @@ category: classical
 tagline: Geometry with the distances removed — what stays true when you can stretch and bend but not cut or glue.
 prerequisites: [real-analysis, logic-sets]
 status: draft
+ai_generated: [pitch, pitch_problems, matsek_materials]
 ---
 
 ## Pitch
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 In analysis you learn about open sets, convergence and continuity on the real
 line. Topology notices that every one of those definitions can be phrased
@@ -26,6 +29,8 @@ invariant, is the single most productive idea in 20th-century mathematics,
 and topology is where it was born and where it is easiest to see.
 
 ## Pitch problems
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 1. **The seven bridges of Königsberg.** A river, two islands, seven bridges.
    Can you take a walk that crosses every bridge exactly once? Euler proved
@@ -160,7 +165,9 @@ Exercises in Morris (with hints) and Sutherland (with online solutions) are
 the main problem sets for the point-set part; Armstrong's for the geometric
 part.
 
-## Matsek originals (to design)
+## Matsek materials
+
+> _AI-generated TODO recommendations — none of these exist yet. Replace with real MatSek materials as they are produced._
 
 - **Königsberg to graphs** — Euler's argument, then what "topological"
   means. Resolves pitch problem 1; joint with `combinatorics`.

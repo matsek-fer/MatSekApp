@@ -5,9 +5,12 @@ category: language
 tagline: Understand the parts and how they are wired, and you understand the whole — the principle, when it holds, and the algebra of wiring.
 prerequisites: [category-theory-intro, linear-algebra]
 status: draft
+ai_generated: [pitch, pitch_problems, matsek_materials]
 ---
 
 ## Pitch
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 The reason mathematics, engineering and language work at all is
 *compositionality*: the meaning of a whole is determined by the meanings of
@@ -33,6 +36,8 @@ in language, entanglement) — and what extra structure fixes it. Knowing the
 boundary is what makes the language powerful rather than merely tidy.
 
 ## Pitch problems
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 1. **Border crossings.** A country is a chain of provinces, and each pair of
    neighbouring provinces is joined by k border crossings. Inside each
@@ -190,7 +195,9 @@ boundary is what makes the language powerful rather than merely tidy.
   and to resistor networks (where the record becomes a matrix), path tables
   to transfer matrices, the 0–1 principle to other "monotone" properties.
 
-## Matsek originals (to design)
+## Matsek materials
+
+> _AI-generated TODO recommendations — none of these exist yet. Replace with real MatSek materials as they are produced._
 
 - **Provinces as arrows** — connectivity records, how they compose, Bell
   numbers, then the same picture for resistor networks where the record

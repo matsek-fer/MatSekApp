@@ -5,9 +5,12 @@ category: classical
 tagline: What can be computed, how fast, on how many machines — and the mathematics that answers each question.
 prerequisites: [logic-sets, combinatorics]
 status: draft
+ai_generated: [pitch, pitch_problems, matsek_materials]
 ---
 
 ## Pitch
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 Computer science is the mathematics of *procedure*: not whether an answer
 exists, but whether you can get it, how many steps it takes, and what you can
@@ -29,6 +32,8 @@ a programmer, it is where "it works" becomes "it works, and here is why, and
 here is what it costs."
 
 ## Pitch problems
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 1. **Sorting a million numbers.** The obvious method — repeatedly find the
    smallest and move it to the front — takes about 10¹² steps. A better idea
@@ -196,7 +201,9 @@ here is what it costs."
 
 Erickson's and Sipser's exercises cover the theory side.
 
-## Matsek originals (to design)
+## Matsek materials
+
+> _AI-generated TODO recommendations — none of these exist yet. Replace with real MatSek materials as they are produced._
 
 - **Why n log n?** — the comparison-sort lower bound by decision trees.
   Resolves pitch problem 1.

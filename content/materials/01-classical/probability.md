@@ -5,9 +5,12 @@ category: classical
 tagline: Reasoning precisely about uncertainty — and discovering that "probability" needs measure theory to even be defined.
 prerequisites: [real-analysis, combinatorics]
 status: draft
+ai_generated: [pitch, pitch_problems, matsek_materials]
 ---
 
 ## Pitch
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 Probability is the field where human intuition is most reliably wrong. Monty
 Hall, the birthday paradox, Simpson's paradox: smart people argue about these
@@ -26,6 +29,8 @@ of statistics, statistical physics, information theory, finance and machine
 learning.
 
 ## Pitch problems
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 1. **Monty Hall.** Three doors, one car, two goats. You pick a door; the host,
    who knows where the car is, opens a different door showing a goat and
@@ -184,7 +189,9 @@ textbook exercises above.
 - **Weaknesses:** No editorials until solved; difficulty is unevenly
   labelled.
 
-## Matsek originals (to design)
+## Matsek materials
+
+> _AI-generated TODO recommendations — none of these exist yet. Replace with real MatSek materials as they are produced._
 
 - **Paradox hour** — Monty Hall, two envelopes, Simpson's paradox, the
   birthday problem: each stated, voted on, then resolved. Resolves pitch

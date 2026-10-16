@@ -5,9 +5,12 @@ category: classical
 tagline: The art of counting without counting — and of proving things exist by showing there are too many to avoid.
 prerequisites: [logic-sets]
 status: draft
+ai_generated: [pitch, pitch_problems, matsek_materials]
 ---
 
 ## Pitch
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 Combinatorics asks the questions a child would ask — how many? is it
 possible? — about finite structures, and answers them with tools that are
@@ -26,6 +29,8 @@ mathematics: algorithms, probability, coding theory, and much of modern
 algebra and geometry speak combinatorics.
 
 ## Pitch problems
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 1. **The handshake theorem.** At any party where some people shake hands,
    there are two people who shook exactly the same number of hands. There is
@@ -180,7 +185,9 @@ algebra and geometry speak combinatorics.
 - **Weaknesses:** Olympiad style — clever tricks over general theory; no
   generating functions or asymptotics.
 
-## Matsek originals (to design)
+## Matsek materials
+
+> _AI-generated TODO recommendations — none of these exist yet. Replace with real MatSek materials as they are produced._
 
 - **Double counting & pigeonhole bootcamp** — twelve problems from
   handshakes to Erdős–Szekeres, with the common pattern made explicit.
