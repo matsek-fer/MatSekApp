@@ -40,32 +40,58 @@ means "I can hand you one", which changes how you think about proof.
 
 > _AI-generated draft — not yet reviewed by a MatSek member._
 
-1. **Numbers as repetition machines.** A number n is handed to you not as a
-   numeral but as a sealed machine: feed it any operation f and a starting
-   value x, and it returns f applied n times to x. You cannot open the
-   machine or count anything. From the machines for n and m, build machines
-   for n + m, n · m and nᵐ. Then build the machine for n − 1. Addition and
-   multiplication take a few minutes; exponentiation is a nice trick; the
-   predecessor stumped Church himself until Kleene found it at the
-   dentist's. This is exactly how numbers exist in the simplest type
-   theories.
-2. **Balls in a bag.** A bag holds finitely many balls, each labelled with a
-   positive integer. A move: take out one ball labelled k and put in *any*
-   finite number of balls, each labelled with a number less than k — ten
-   thousand balls labelled k − 1 if you like. Prove that no matter how the
-   moves are chosen, the bag is eventually empty. Then the hard version: a
-   "hydra" tree where cutting off a head makes the tree regrow copies of a
-   subtree — prove it still always dies. Every procedure that terminates
-   does so for a reason of this shape, and in type theory every proof is
-   such a procedure.
-3. **Produce the witness.** The classic proof that an irrational to an
-   irrational power can be rational: either √2^√2 is rational, and we are
-   done, or it is not, in which case (√2^√2)^√2 = 2 is. This proves a pair
-   *exists* and gives no idea which pair. Find explicit irrationals a and b
-   with aᵇ rational, with proof. Then say exactly which step of the first
-   proof fails to produce an answer, and which rule of reasoning you would
-   have to give up to forbid such proofs. Type theory is the tradition that
-   gives it up.
+1. **Balls in a bag.** A bag holds finitely many balls, each labelled with a
+   positive integer. A move removes one ball labelled k and adds any finite
+   number of balls with labels smaller than k. Prove the bag always empties,
+   however the moves are chosen. Harder: prove that the Kirby–Paris hydra
+   always dies.
+
+   <details><summary>Hint 1</summary>
+   Find a quantity that strictly decreases with every move.
+   </details>
+   <details><summary>Hint 2</summary>
+   Compare two bags by their largest label first, then by how many balls
+   carry it, and so on down. Why can this comparison not decrease forever?
+   </details>
+   <details><summary>Hint 3</summary>
+   For the hydra, assign to each tree an ordinal below ε₀ and show every cut
+   lowers it.
+   </details>
+
+2. **Numbers as repetition machines.** A number n is given to you only as a
+   sealed machine: handed any operation f and a starting value x, it returns
+   f applied n times to x. From the machines for n and m, build machines for
+   n + m, n · m and nᵐ — and for n − 1.
+
+   <details><summary>Hint 1</summary>
+   For n + m, feed the result of one machine to the other.
+   </details>
+   <details><summary>Hint 2</summary>
+   The operation you hand to a machine may itself be "run a machine".
+   </details>
+   <details><summary>Hint 3</summary>
+   For n − 1, iterate on pairs: start from (0, 0) and apply
+   (a, b) ↦ (b, b + 1).
+   </details>
+
+3. **Seven trees in one.** A binary tree is either a single leaf, or a node
+   with a left and a right binary tree. Find an explicit bijection between
+   the set of all binary trees and the set of all 7-tuples of binary trees —
+   described by finitely many case distinctions on the shapes involved, not
+   by enumeration. Then explain why the same method cannot produce one for
+   pairs, triples, …, or 6-tuples.
+
+   <details><summary>Hint 1</summary>
+   Pretend T is a number satisfying T = 1 + T². What is T⁷?
+   </details>
+   <details><summary>Hint 2</summary>
+   Each use of T = 1 + T², in either direction, and each regrouping of a
+   product or sum, is a bijection on tuples of trees. You may never cancel
+   or subtract.
+   </details>
+   <details><summary>Hint 3</summary>
+   Solve T² − T + 1 = 0 over ℂ to see why 7 works and 2, …, 6 cannot.
+   </details>
 
 ## Prerequisites
 
@@ -112,7 +138,7 @@ means "I can hand you one", which changes how you think about proof.
   theorem is written in Coq and every exercise is a proof the machine
   checks. Inductive types, propositions as types, induction principles,
   the logic of constructive proof, all built up from nothing. The
-  termination arguments of pitch problem 2 are what its induction
+  termination arguments of pitch problem 1 are what its induction
   principles make precise.
 - **Weaknesses:** Coq syntax is a hurdle; the pace is slow for those who
   already know logic; the later volumes turn toward programming languages.
@@ -139,7 +165,7 @@ means "I can hand you one", which changes how you think about proof.
   simply typed λ-calculus, products and sums, references, subtyping,
   recursive types, polymorphism (System F), with the metatheory —
   progress, preservation, normalisation — proved in full. The repetition
-  machines of pitch problem 1 are the Church numerals of the System F
+  machines of pitch problem 2 are the Church numerals of the System F
   chapter. Solutions to most
   exercises included.
 - **Weaknesses:** Written for programming-language theory, so the logical
@@ -192,24 +218,27 @@ means "I can hand you one", which changes how you think about proof.
 - **Theorem Proving in Lean 4** — exercises per chapter; then try
   formalising a theorem you know from `algebra-intro`.
 - **TAPL** — exercises with solutions; the λ-calculus and System F
-  chapters' exercises continue pitch problem 1.
-- **Pitch problems 1 and 2** are problem sets in themselves: after the
-  predecessor, build subtraction and "is zero?"; after the hydra, try
-  Goodstein sequences.
+  chapters' exercises continue pitch problem 2.
+- **The pitch problems** continue: after the hydra, Goodstein sequences;
+  after the predecessor, subtraction and "is zero?"; after seven trees, the
+  one-hole contexts ("derivative") of a tree type.
 
 ## Matsek materials
 
 > _AI-generated TODO recommendations — none of these exist yet. Replace with real MatSek materials as they are produced._
 
-- **Numbers without numerals** — Church numerals by hand: plus, times,
-  power, the predecessor trick with pairs, and why this is a number system.
-  Resolves pitch problem 1.
 - **Why does it stop?** — the bag of balls, multiset orderings, the hydra
   and Goodstein, and termination as the price of "every proof is a
-  procedure". Resolves pitch problem 2; joint with `logic-sets` (ordinals).
-- **Existence means construction** — the √2 proof dissected, explicit
-  witnesses, excluded middle as the culprit, and what constructive
-  mathematics gives up and gains. Resolves pitch problem 3.
+  procedure". Resolves pitch problem 1; joint with `logic-sets` (ordinals).
+- **Numbers without numerals** — Church numerals by hand: plus, times,
+  power, the predecessor trick with pairs, and why this is a number system.
+  Resolves pitch problem 2.
+- **Seven trees in one** — data types as equations, isomorphisms read off
+  the algebra, Blass's bijection, and Fiore–Leinster's complex-number
+  explanation. Resolves pitch problem 3; joint with `combinatorics`.
+- **Existence means construction** — the irrational-to-an-irrational proof
+  dissected, explicit witnesses, excluded middle as the culprit, and what
+  constructive mathematics gives up and gains.
 - **Curry–Howard–Lambek in one table** — propositions / types / objects,
   proofs / programs / arrows, ∧ / × / product, → / function / exponential,
   worked example by example; joint with `category-theory-intro`.
