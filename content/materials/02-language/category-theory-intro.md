@@ -5,9 +5,12 @@ category: language
 tagline: The language in which the fields you just learned turn out to be saying the same things.
 prerequisites: [algebra-intro, logic-sets]
 status: draft
+ai_generated: [pitch, pitch_problems, matsek_materials]
 ---
 
 ## Pitch
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 Having learned several fields of mathematics, you will have noticed
 repetition. The product of two sets, two groups, two spaces: same
@@ -34,28 +37,54 @@ makes the content shorter, clearer and portable. Everything in parts 02 and
 
 ## Pitch problems
 
-1. **Floors of floors.** For a real number x and a positive integer n,
-   prove that ⌊⌊x⌋/n⌋ = ⌊x/n⌋. A standard olympiad lemma; the usual proof
-   juggles inequalities for half a page. There is a one-line proof: "take the
-   floor" is the right adjoint of "regard an integer as a real", and a
-   composite of adjoints is an adjoint. Understanding why that sentence is a
-   proof is a first encounter with the subject's most useful idea.
-2. **Counting functions two ways.** How many functions are there from A × B
-   to C? Directly, cᵃᵇ. Alternatively: a function of two arguments is a
-   function of the first argument that returns a function of the second, so
-   the count is (cᵇ)ᵃ. The exponent law is not just a numerical coincidence
-   but a *bijection* between two sets of functions. In which other worlds —
-   spaces, groups, logical propositions — does this law hold, and what does
-   having it buy you? (Everything from currying in programming to the
-   λ-calculus.)
-3. **Chinese remainders.** Find every integer x with x ≡ 2 (mod 3),
-   x ≡ 3 (mod 5) and x ≡ 2 (mod 7). You will find exactly one answer modulo
-   105, and the construction ℤ/105 ≅ ℤ/3 × ℤ/5 × ℤ/7 will feel forced — as
-   if there were no other way it could go. There is not: a product is
-   pinned down by how everything else maps into it, so once the maps to the
-   three factors are known the solution has no freedom left. The same
-   "forcedness" explains why the product of sets, groups and spaces are all
-   unique up to a unique isomorphism, by one proof.
+> _AI-generated draft — not yet reviewed by a MatSek member._
+
+1. **Basis-free rules.** To every finite-dimensional real vector space V you
+   assign a linear map t_V : V → V, and the assignment is compatible with
+   every linear map f : V → W, meaning f ∘ t_V = t_W ∘ f. Describe all such
+   assignments. Then do the same for assignments V ⊗ V → V ⊗ V.
+
+   <details><summary>Hint 1</summary>
+   First let f range only over maps V → V. What does commuting with every
+   linear map on V force t_V to be?
+   </details>
+   <details><summary>Hint 2</summary>
+   Two assignments V ⊗ V → V ⊗ V are obvious: the identity and swapping the
+   factors. To rule out anything else, test compatibility against f = c·id
+   and against projections onto a one-dimensional subspace.
+   </details>
+
+2. **The disk has a fixed point.** Prove that every continuous map from a
+   closed disk to itself fixes some point. In one dimension this is the
+   intermediate value theorem; in two, something new is needed.
+
+   <details><summary>Hint 1</summary>
+   Suppose f has no fixed point. For each p, follow the ray from f(p)
+   through p until it hits the boundary circle. What kind of map from the
+   disk to the circle does this give, and why should it be impossible?
+   </details>
+   <details><summary>Hint 2</summary>
+   Attach to every closed loop in the plane that avoids the origin an
+   integer: how many times it winds around. How does this integer behave
+   when the loop is deformed continuously, and when a continuous map is
+   applied to it?
+   </details>
+
+3. **Cancellation.** Let A, B, C be finite groups with A × C ≅ B × C. Prove
+   that A ≅ B. Then show the statement fails for infinite groups.
+
+   <details><summary>Hint 1</summary>
+   For a group X, how many homomorphisms X → A × C are there, in terms of
+   A and C separately?
+   </details>
+   <details><summary>Hint 2</summary>
+   Every homomorphism X → A factors through its kernel. Use this to count
+   the <em>injective</em> homomorphisms X → A by subtraction, inducting on
+   |X|; then take X = A and X = B.
+   </details>
+   <details><summary>Hint 3</summary>
+   For the infinite case, try C an infinite direct sum of copies of ℤ/2.
+   </details>
 
 ## Prerequisites
 
@@ -148,8 +177,8 @@ makes the content shorter, clearer and portable. Everything in parts 02 and
   YouTube)
 - **Strengths:** Categories, functors, natural transformations, adjunctions,
   monads, F-algebras, Kan extensions — every concept paired with Haskell
-  (and C++) code. The place to start if pitch problem 2 is the one that
-  hooked you; the lecture series is friendly and thorough.
+  (and C++) code. The place to start if you come from programming; the
+  lecture series is friendly and thorough.
 - **Weaknesses:** Mathematical rigour is secondary; some analogies strain;
   the Haskell may be a barrier for non-programmers.
 
@@ -198,21 +227,22 @@ makes the content shorter, clearer and portable. Everything in parts 02 and
 - **Riehl** — exercises per section, many of them small theorems used later
   in the text.
 
-## Matsek originals (to design)
+## Matsek materials
 
+> _AI-generated TODO recommendations — none of these exist yet. Replace with real MatSek materials as they are produced._
+
+- **Naturality as a constraint** — solving pitch problem 1 in full: the
+  scalar case, the V ⊗ V case, and what "natural transformation" adds to
+  "basis-independent". Joint with `linear-algebra`.
+- **Functors prove impossibilities** — Brouwer's fixed point theorem via a
+  functor from spaces to groups; the general pattern "transport the
+  problem to where it is arithmetic". Resolves pitch problem 2; joint with
+  `topology`.
+- **Counting maps in** — homomorphism counting, products, Lovász's
+  cancellation theorem, and the Yoneda lemma as what the proof was really
+  using. Resolves pitch problem 3; joint with `algebra-intro`.
 - **Adjunctions from floor and ceiling** — Galois connections on posets,
-  the floor lemma in one line, then free ⊣ forgetful for groups and vector
-  spaces, then ∃ ⊣ pullback ⊣ ∀. Resolves pitch problem 1; bridge to
-  `type-theory`.
-- **Exponentials everywhere** — the currying bijection in Set, in
-  propositions (A ∧ B → C iff A → (B → C)), in spaces; cartesian closed
-  categories and why `map` obeys its laws. Resolves pitch problem 2; joint
-  with `cs-foundations`.
-- **One proof, every category** — CRT as a product, the uniqueness of
-  products proved once, then products in Set, Grp, Top, posets, and a
-  category where they do not exist. Resolves pitch problem 3.
-- **Yoneda in an afternoon** — the lemma, the embedding, "an object is
-  determined by its relationships", and why it is the first real theorem of
-  the subject.
+  then free ⊣ forgetful for groups and vector spaces, then
+  ∃ ⊣ pullback ⊣ ∀. Bridge to `type-theory`.
 - **Reading path** — Cheng → Fong–Spivak or Lawvere–Schanuel → Leinster →
   Riehl, with Milewski as the parallel track for programmers.

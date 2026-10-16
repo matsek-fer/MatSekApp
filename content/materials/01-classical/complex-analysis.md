@@ -5,9 +5,12 @@ category: classical
 tagline: Calculus over the complex numbers, where differentiability is so strong that everything becomes rigid, beautiful and computable.
 prerequisites: [real-analysis]
 status: draft
+ai_generated: [pitch, pitch_problems, matsek_materials]
 ---
 
 ## Pitch
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 Take the ordinary definition of a derivative and apply it to functions of a
 complex variable. Nothing in the definition changes — and yet everything
@@ -30,6 +33,8 @@ It is also the most *visual* of the analysis courses: functions become maps
 of the plane to itself, and many theorems are things you can see.
 
 ## Pitch problems
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 1. **Every polynomial has a root.** x⁵ − x + 1 = 0 has no rational
    solution, and there is no formula for the roots of a quintic. Yet you can
@@ -161,7 +166,9 @@ of the plane to itself, and many theorems are things you can see.
   evaluated by residues (∫ dx/(1+x⁴), ∫ sin x/x, ∑ 1/n²) is in every text
   above; set yourself twenty.
 
-## Matsek originals (to design)
+## Matsek materials
+
+> _AI-generated TODO recommendations — none of these exist yet. Replace with real MatSek materials as they are produced._
 
 - **Fundamental theorem of algebra, three ways** — Liouville, the argument
   principle, and a topological winding-number proof. Resolves pitch

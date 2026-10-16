@@ -5,9 +5,12 @@ category: general
 tagline: Maps of the whole territory — read these to find out what exists before choosing where to dig.
 prerequisites: []
 status: draft
+ai_generated: [pitch]
 ---
 
 ## Pitch
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 Before learning a field it helps to know what fields there are, how they talk
 to each other, and what kind of thinking each one rewards. The materials here

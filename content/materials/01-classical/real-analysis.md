@@ -5,9 +5,12 @@ category: classical
 tagline: The mathematics of limits — what "infinitely close" actually means, and why calculus works.
 prerequisites: [logic-sets]
 status: draft
+ai_generated: [pitch, pitch_problems, matsek_materials]
 ---
 
 ## Pitch
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 You already know calculus works: derivatives give slopes, integrals give areas,
 infinite series give π. Analysis asks the uncomfortable question — *why?* What
@@ -28,6 +31,8 @@ to hold several quantifiers in your head at once. Once that clicks, nothing in
 mathematics looks the same.
 
 ## Pitch problems
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 1. **Is 0.999… really equal to 1?** Most people have an opinion. Few can say
    what an infinite decimal *is*. Analysis gives a definition, and then the
@@ -142,7 +147,9 @@ mathematics looks the same.
 - **Weaknesses:** Mostly computational, not proof-based; answers without
   solutions; dated notation.
 
-## Matsek originals (to design)
+## Matsek materials
+
+> _AI-generated TODO recommendations — none of these exist yet. Replace with real MatSek materials as they are produced._
 
 - **"What is a real number?"** — four constructions (Dedekind cuts, Cauchy
   sequences, decimals, axioms) and why they are "the same". Resolves pitch

@@ -5,9 +5,12 @@ category: classical
 tagline: Vector spaces and the maps between them — the one piece of mathematics everything else is built on top of.
 prerequisites: [logic-sets]
 status: draft
+ai_generated: [pitch, pitch_problems, matsek_materials]
 ---
 
 ## Pitch
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 Linear algebra is the study of the simplest possible kind of function — one
 that respects addition and scaling — and it turns out that almost everything
@@ -25,6 +28,8 @@ canonical form. That classification is what makes the subject computable, and
 the attitude behind it is what you'll reuse in every abstract field after.
 
 ## Pitch problems
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 1. **Why was Google an eigenvector?** Model the web as "a page is important
    if important pages link to it." That sentence is circular — and the
@@ -134,7 +139,9 @@ the attitude behind it is what you'll reuse in every abstract field after.
   course feels too easy.
 - **Weaknesses:** Hard; terse solutions; assumes a full first course.
 
-## Matsek originals (to design)
+## Matsek materials
+
+> _AI-generated TODO recommendations — none of these exist yet. Replace with real MatSek materials as they are produced._
 
 - **"What is a determinant?"** — four answers (volume scaling, alternating
   multilinear form, product of eigenvalues, Leibniz formula) and why they

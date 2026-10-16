@@ -5,9 +5,12 @@ category: classical
 tagline: What a proof is, what a set is, and what happens when mathematics turns around and studies itself.
 prerequisites: []
 status: draft
+ai_generated: [pitch, pitch_problems, matsek_materials]
 ---
 
 ## Pitch
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 Every other topic here assumes you can read and write a proof. This is where
 you learn that — and discover that the question "what counts as a proof?"
@@ -29,6 +32,8 @@ the toolkit for everything else. Conceptually: you will have seen mathematics
 study its own limits, which no other subject gets to do.
 
 ## Pitch problems
+
+> _AI-generated draft — not yet reviewed by a MatSek member._
 
 1. **The barber.** In a village the barber shaves exactly those men who do not
    shave themselves. Who shaves the barber? A joke — until Russell phrased it
@@ -161,7 +166,9 @@ None. This is the entry point. Comfort with high-school algebra is enough.
   benchmark for "I can do induction."
 - **Open Logic Project** — problem sets per chapter, free.
 
-## Matsek originals (to design)
+## Matsek materials
+
+> _AI-generated TODO recommendations — none of these exist yet. Replace with real MatSek materials as they are produced._
 
 - **Proof bootcamp** — a two-session workshop: negating quantifiers, the
   four proof shapes, induction done right, with a dozen graded exercises and
