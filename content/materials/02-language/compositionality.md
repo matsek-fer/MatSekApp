@@ -37,43 +37,81 @@ boundary is what makes the language powerful rather than merely tidy.
 
 ## Pitch problems
 
-> _AI-generated draft — not yet reviewed by a MatSek member._
+> _AI-generated draft — not yet reviewed by a MatSek member. TODO: revisit; these are the best of several attempts and still not final._
 
-1. **Border crossings.** A country is a chain of provinces, and each pair of
-   neighbouring provinces is joined by k border crossings. Inside each
-   province the roads are a tangle you would rather not look at. A traveller
-   enters at some crossing on the far-west border and wants to know which
-   crossings on the far-east border they can reach. Show that for each
-   province you only need to record *which pairs of its border crossings are
-   connected to each other by roads inside that province* — nothing about
-   the cities, nothing about distances — and that two such records combine
-   into a single record for the two provinces together. Prove that no
-   smaller record works. Then count: how many different records can a
-   province with k crossings on each side have?
-2. **Counting paths across a cut.** In a grid city, count the routes from
-   the south-west corner to the north-east corner that only go north or
-   east. Now cut the city along a vertical street that crosses k horizontal
-   streets. Show that the total count is a sum of k products of "left-half
-   counts" and "right-half counts" — so each half is summarised by a table,
-   and the halves are combined by multiplying tables. How big must the
-   tables be if you cut twice, or if the cut is not straight? What is the
-   smallest summary of a half that still lets you recover every count?
-3. **Sorting networks.** A gadget takes two numbers and outputs the smaller
-   on top and the larger below. Wire many gadgets into a fixed network with
-   n inputs and n outputs. Prove: if the network correctly sorts every input
-   consisting only of 0s and 1s, then it sorts *every* input of numbers. So
-   2ⁿ checks replace infinitely many. The proof is a statement about how
-   "replace every value by whether it exceeds t" passes through each gadget
-   unchanged — the whole inherits a property because each part has it.
+1. **Braess's paradox.** 4000 drivers travel from S to E. Road S→A takes
+   T/100 minutes when T drivers use it; A→E takes 45 minutes always; S→B
+   takes 45 minutes; B→E takes T/100. (a) Find the split of drivers at which
+   nobody gains by switching routes, and the travel time. (b) A new road
+   A→B taking 0 minutes is opened. Find the new such split and show that
+   every driver is now slower. (c) Would a central planner assigning routes
+   have been hurt by the new road?
+
+   <details><summary>Hint 1</summary>
+   By symmetry, 2000 drivers each way and 65 minutes.
+   </details>
+   <details><summary>Hint 2</summary>
+   Afterwards every driver takes S→A→B→E and needs 80 minutes; check that
+   no single driver gains by deviating.
+   </details>
+   <details><summary>Hint 3</summary>
+   The behaviour of a network of self-interested parts is not a monotone
+   function of the parts' behaviours. Compositional game theory
+   (`game-theory-compositional`) is the language built to repair this.
+   </details>
+
+2. **The Bell game.** Alice and Bob sit in separate rooms. The referee gives
+   Alice a random bit x and Bob an independent random bit y. Alice answers
+   with a bit a, Bob with a bit b. They win if a ⊕ b = x·y. (a) Prove that
+   no pre-agreed strategy, even with shared random notes, wins more than ¾
+   of the time. (b) Show that sharing the vector (e₀⊗e₀ + e₁⊗e₁)/√2 and
+   measuring in suitably rotated bases wins ≈ 85 %. (c) Design a
+   hypothetical pair of boxes that wins every time, yet lets neither player
+   learn anything about the other's input from their own output.
+
+   <details><summary>Hint 1</summary>
+   With shared notes, a strategy is a mixture of deterministic ones, and a
+   deterministic strategy is four bits. Check them.
+   </details>
+   <details><summary>Hint 2</summary>
+   For that vector, if Alice measures in the basis rotated by θ and Bob by
+   φ, then P(a = b) = cos²(θ − φ). Try θ ∈ {0, π/4} and φ ∈ {π/8, −π/8}.
+   </details>
+   <details><summary>Hint 3</summary>
+   Make a uniformly random and b = a ⊕ x·y (the Popescu–Rohrlich box). The
+   lesson: two boxes side by side can have a joint behaviour that no pair
+   of individual behaviours produces, so "side by side" is not the
+   cartesian product — the starting point of process theories
+   (Coecke–Kissinger).
+   </details>
+
+3. **Teleportation.** Alice holds a unit vector v ∈ ℝ² that she does not
+   know. She and Bob share ψ = (e₀⊗e₀ + e₁⊗e₁)/√2, Alice holding the first
+   factor. Rule: if Alice measures her two factors in an orthonormal basis
+   f₁, …, f₄ of ℝ²⊗ℝ², then writing v⊗ψ = Σₖ fₖ⊗wₖ, outcome k occurs with
+   probability |wₖ|² and Bob is left holding wₖ/|wₖ|. Find a basis
+   f₁, …, f₄ and four rotations or reflections U₁, …, U₄, none depending on
+   v, such that Bob, told only k, can apply Uₖ and hold exactly v.
+
+   <details><summary>Hint 1</summary>
+   Try (e₀⊗e₀ ± e₁⊗e₁)/√2 and (e₀⊗e₁ ± e₁⊗e₀)/√2.
+   </details>
+   <details><summary>Hint 2</summary>
+   Draw ψ as a bent wire joining Alice to Bob; the whole computation is the
+   wire being pulled straight.
+   </details>
+   <details><summary>Hint 3</summary>
+   Coecke & Kissinger do exactly this in pictures in chapter 4.
+   </details>
 
 ## Prerequisites
 
 - **Category theory** (`category-theory-intro`): categories, functors,
   natural transformations; monoidal categories are introduced within the
   materials below.
-- **Linear algebra** (`linear-algebra`): matrices as the first example of
-  composable summaries (pitch problem 2), and for the Rosetta Stone's
-  Hilbert-space column.
+- **Linear algebra** (`linear-algebra`): tensor products and orthonormal
+  bases for pitch problems 2 and 3, and the Rosetta Stone's Hilbert-space
+  column.
 - `cs-foundations` or any programming helps with the "systems" examples but
   is not required.
 
@@ -191,25 +229,24 @@ boundary is what makes the language powerful rather than merely tidy.
   topic's core.
 - **Coecke & Kissinger** — exercises per chapter; the diagrammatic proofs of
   chapter 4 are the drill for string-diagram reasoning.
-- **The three pitch problems** generalise: border records to corelations
-  and to resistor networks (where the record becomes a matrix), path tables
-  to transfer matrices, the 0–1 principle to other "monotone" properties.
+- **The pitch problems** continue: Braess → the price of anarchy; Bell →
+  Tsirelson's bound 2√2; teleportation → entanglement swapping and the
+  ZX-calculus (Coecke–Kissinger ch. 9).
 
 ## Matsek materials
 
 > _AI-generated TODO recommendations — none of these exist yet. Replace with real MatSek materials as they are produced._
 
-- **Provinces as arrows** — connectivity records, how they compose, Bell
-  numbers, then the same picture for resistor networks where the record
-  becomes a matrix. Resolves pitch problem 1; joint with `combinatorics`.
-- **Transfer matrices** — counting paths and tilings by cutting and
-  multiplying tables; the same trick in statistical mechanics. Resolves
-  pitch problem 2; joint with `combinatorics`.
-- **The 0–1 principle and friends** — properties that pass through gadgets;
-  why "the whole inherits from the parts" is a statement about functors.
-  Resolves pitch problem 3; joint with `cs-foundations`.
-- **String diagrams workshop** — the sliding rules, the yanking rule,
-  teleportation as a deformation, with paper and pencil.
-- **When composition fails** — generative effects from Fong–Spivak ch. 1,
-  context in language, entanglement; what structure restores
-  compositionality in each case. Bridge to `language-and-complexity`.
+- **Whole from parts, and when not** — Braess's paradox worked out, then
+  generative effects from Fong–Spivak ch. 1: what "compositional" means
+  and the two ways it fails. Resolves pitch problem 1.
+- **Processes side by side** — the Bell game, the ¾ bound, the quantum
+  strategy, the PR box; why ⊗ is not ×. Resolves pitch problem 2; joint
+  with `linear-algebra` and `probability`.
+- **String diagrams workshop** — wires, boxes, cups and caps, the yanking
+  rule; teleportation as a deformation, with paper and pencil. Resolves
+  pitch problem 3.
+- **Graphical linear algebra** — copy, add, scale and their mirror images;
+  feedback and linear relations; a tour of Sobociński's blog.
+- **The Rosetta Stone in one session** — the same diagram read in Vect, in
+  tangles, in proofs and in programs.
