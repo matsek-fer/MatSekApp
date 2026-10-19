@@ -142,7 +142,7 @@ Status: ☐ not started · ◐ draft · ● reviewed
 
 ### 03-advanced
 - ◐ `advanced-analysis` — Advanced analysis & functional analysis
-- ☐ `advanced-algebra` — Advanced algebra & representation theory
+- ◐ `advanced-algebra` — Advanced algebra & representation theory
 - ☐ `physics-symmetry` — Noether, topological groups, Lie algebras, gauge theory
 - ☐ `advanced-logic` — Gödel, Löb, provability, reverse mathematics
 - ☐ `geometry` — Erlangen program, categorification of geometry
