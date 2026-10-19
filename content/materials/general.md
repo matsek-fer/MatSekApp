@@ -91,6 +91,19 @@ here.
 - **Weaknesses:** Assumes you already know the mathematics being surveyed;
   dated in places (1986); dense.
 
+### nLab
+- **Link:** https://ncatlab.org/
+- **Type:** site
+- **Difficulty:** 3-5
+- **Free:** yes
+- **Strengths:** The collaborative wiki of category theory, higher category
+  theory, homotopy theory and their applications to physics and logic: tens
+  of thousands of cross-linked pages, each with definitions, examples,
+  theorems and references. The reference of record for everything in parts
+  02 and 03 of these materials.
+- **Weaknesses:** Written by and for specialists; entries assume the
+  "nPOV" and are uneven in completeness. A dictionary, not a textbook.
+
 ## YouTube channels
 
 ### 3Blue1Brown
