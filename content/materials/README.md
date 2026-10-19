@@ -166,3 +166,5 @@ Status: ☐ not started · ◐ draft · ● reviewed
 
 - UI: render sections listed in `ai_generated` with a translucent band and
   the note; drop the band when the flag is removed.
+- `compositionality`: pitch problems still not final (several attempts);
+  revisit with a member who knows the field.
