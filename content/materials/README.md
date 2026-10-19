@@ -139,7 +139,7 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - ◐ `applied-category-theory` — Applied category theory
 - ◐ `categorical-classical` — Classical fields seen categorically
 - ◐ `higher-category-theory` — Higher category theory
-- ☐ `language-and-complexity` — Natural vs formal language, complexity of language
+- ◐ `language-and-complexity` — Natural vs formal language, complexity of language
 
 ### 03-advanced
 - ☐ `advanced-analysis` — Advanced analysis & functional analysis
