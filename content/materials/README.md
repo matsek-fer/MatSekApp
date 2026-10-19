@@ -138,7 +138,7 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - ◐ `compositionality` — Compositionality & what makes the language powerful
 - ◐ `applied-category-theory` — Applied category theory
 - ◐ `categorical-classical` — Classical fields seen categorically
-- ☐ `higher-category-theory` — Higher category theory
+- ◐ `higher-category-theory` — Higher category theory
 - ☐ `language-and-complexity` — Natural vs formal language, complexity of language
 
 ### 03-advanced
