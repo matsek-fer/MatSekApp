@@ -142,7 +142,6 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - ◐ `language-and-complexity` — Natural vs formal language, complexity of language
 
 ### 03-advanced
-- ☐ `advanced-analysis` — Advanced analysis & functional analysis
 - ☐ `advanced-algebra` — Advanced algebra & representation theory
 - ☐ `physics-symmetry` — Noether, topological groups, Lie algebras, gauge theory
 - ☐ `advanced-logic` — Gödel, Löb, provability, reverse mathematics
@@ -152,6 +151,10 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - ☐ `geometric-deep-learning` — Geometric & categorical deep learning
 - ☐ `categorical-physics` — Modelling & categorification of physics
 - ☐ `connections` — Bridges between fields
+
+### Deferred
+- `advanced-analysis` — Advanced analysis & functional analysis (removed for
+  now; revisit when the rest of 03 is in place).
 
 ## Maintenance notes
 
