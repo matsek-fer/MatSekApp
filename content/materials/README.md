@@ -144,13 +144,15 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - ◐ `advanced-analysis` — Advanced analysis & functional analysis
 - ◐ `advanced-algebra` — Advanced algebra & representation theory
 - ◐ `physics-symmetry` — Noether, topological groups, Lie algebras, gauge theory
-- ☐ `advanced-logic` — Gödel, Löb, provability, reverse mathematics
-- ☐ `geometry` — Erlangen program, categorification of geometry
-- ☐ `computability` — Computability & complexity, advanced
-- ☐ `game-theory-compositional` — Open-source & compositional game theory
-- ☐ `geometric-deep-learning` — Geometric & categorical deep learning
-- ☐ `categorical-physics` — Modelling & categorification of physics
-- ☐ `connections` — Bridges between fields
+- ◐ `advanced-logic` — Gödel, Löb, provability, reverse mathematics
+- ◐ `geometry` — Erlangen program, categorification of geometry
+- ◐ `computability` — Computability & complexity, advanced
+- ◐ `game-theory-compositional` — Open-source & compositional game theory
+
+### Potential lecture topics (no materials page)
+- Geometric & categorical deep learning
+- Modelling & categorification of physics
+- Bridges between fields
 
 ### Deferred
 - `language-and-complexity` — Natural vs formal language, complexity of
@@ -171,4 +173,8 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - UI: render sections listed in `ai_generated` with a translucent band and
   the note; drop the band when the flag is removed.
 - `compositionality`: pitch problems still not final (several attempts);
-  revisit with a member who knows the field.
+  revisit with a member who knows the field. Its Braess problem now also
+  appears in `game-theory-compositional` (its natural home) — replace one.
+- Review pass still owed on: `advanced-algebra`, `physics-symmetry`,
+  `advanced-logic`, `geometry`, `computability`,
+  `game-theory-compositional` (written without review).
