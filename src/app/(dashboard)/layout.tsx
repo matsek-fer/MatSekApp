@@ -53,6 +53,9 @@ export default async function DashboardLayout({
                 <VoronoiNavbarLink href="/calendar">
                   Kalendar
                 </VoronoiNavbarLink>
+                <VoronoiNavbarLink href="/materials">
+                  Materijali
+                </VoronoiNavbarLink>
                 {session && (
                   <VoronoiNavbarLink href="/activities/new">
                     Predloži aktivnost

@@ -170,8 +170,9 @@ Status: ☐ not started · ◐ draft · ● reviewed
 
 ## TODO
 
-- UI: render sections listed in `ai_generated` with a translucent band and
-  the note; drop the band when the flag is removed.
+- UI (done): `/materials` renders this directory; sections listed in
+  `ai_generated` get a translucent band, `<details>` hints collapse, and
+  `topic-id` code spans link to topics. Loader: `src/lib/materials.ts`.
 - `compositionality`: pitch problems still not final (several attempts);
   revisit with a member who knows the field. Its Braess problem now also
   appears in `game-theory-compositional` (its natural home) — replace one.

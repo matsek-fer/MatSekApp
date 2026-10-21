@@ -59,13 +59,15 @@ export default async function HomePage() {
       {/* ── MIDDLE: Big box ── */}
       <div className="flex-1 w-[70%] max-w-4xl mx-4 mb-6 border border-black rounded-2xl bg-white" />
 
-      {/* ── BOTTOM: Calendar link ── */}
-      <Link
-        href="/calendar"
-        className="text-brand-600 hover:underline pb-6 sm:pb-10"
-      >
-        Pogledaj kalendar aktivnosti →
-      </Link>
+      {/* ── BOTTOM: Calendar and materials links ── */}
+      <div className="flex flex-wrap justify-center gap-6 pb-6 sm:pb-10">
+        <Link href="/calendar" className="text-brand-600 hover:underline">
+          Pogledaj kalendar aktivnosti →
+        </Link>
+        <Link href="/materials" className="text-brand-600 hover:underline">
+          Materijali za učenje →
+        </Link>
+      </div>
     </main>
   );
 }
