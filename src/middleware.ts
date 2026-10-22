@@ -9,19 +9,34 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Routes that need a session even though they sit under a public prefix.
+  const isProtectedException = pathname === "/activities/new";
+
   // Allow public routes and static assets
   if (
-    pathname.startsWith("/api") ||
-    pathname === "/" ||
-    pathname === "/calendar" ||
-    pathname.startsWith("/materials") ||
-    pathname.startsWith("/activities") ||
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/register") ||
-    pathname.startsWith("/verify") ||
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/favicon") ||
-    /\.(png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|eot)$/.test(pathname)
+    !isProtectedException &&
+    (pathname.startsWith("/api") ||
+      pathname === "/" ||
+      pathname === "/calendar" ||
+      // The tools guide is documentation — readable before anyone registers.
+      pathname === "/tools" ||
+      // The materials are a public reading list, the same as the guide.
+      pathname.startsWith("/materials") ||
+      pathname.startsWith("/activities") ||
+      pathname.startsWith("/login") ||
+      pathname.startsWith("/register") ||
+      pathname.startsWith("/verify") ||
+      // Both halves of the password reset have to be reachable signed out —
+      // that is the whole situation the user is in.
+      pathname.startsWith("/forgot-password") ||
+      pathname.startsWith("/reset-password") ||
+      pathname.startsWith("/_next") ||
+      pathname.startsWith("/favicon") ||
+      // pdf.js fetches its worker from the page. It is a library file with
+      // nothing of anyone's in it, and redirecting it to /login breaks the
+      // reader for a member who is in fact signed in.
+      pathname === "/pdf.worker.min.mjs" ||
+      /\.(png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|eot|mp4|webm)$/.test(pathname))
   ) {
     return NextResponse.next();
   }
@@ -31,9 +46,11 @@ export async function middleware(request: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  // Redirect unauthenticated users
+  // Redirect unauthenticated users, remembering where they were headed.
   if (!session) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("next", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   // Admin route protection

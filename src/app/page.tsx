@@ -1,73 +1,88 @@
-import Link from "next/link";
-import Image from "next/image";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import LogoutButton from "@/components/auth/LogoutButton";
+import ContentPanel from "@/components/landing/ContentPanel";
+import ThemeToggle from "@/components/ui/ThemeToggle";
+import Logo from "@/components/ui/Logo";
+import { ButtonLink } from "@/components/ui/Button";
+import { randomSeed } from "@/lib/ascii-tree";
+import LanguageToggle from "@/components/ui/LanguageToggle";
+import { getLang } from "@/lib/i18n/server";
+import { CHROME } from "@/lib/i18n/chrome";
 
-export default async function HomePage() {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: { seed?: string };
+}) {
   const supabase = createServerClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
+  const lang = getLang();
+  const t = CHROME[lang];
 
+  // ?seed=123 pins the first tree, so a particular one can be looked at again
+  // — otherwise checking a change to one species means reloading until it comes
+  // up. Anything that is not a number falls through to a random tree.
+  const pinned = Number(searchParams.seed);
+  const firstSeed = Number.isFinite(pinned) && searchParams.seed
+    ? Math.abs(Math.trunc(pinned))
+    : randomSeed();
+
+  // A fixed height, not a minimum: the tree section below sizes itself to the
+  // room that is left over, so the page is meant to fit on one screen and never
+  // scroll. dvh rather than vh so a phone's collapsing URL bar does not push
+  // the bottom of the page out of view.
   return (
-    <main className="min-h-screen flex flex-col items-center bg-gradient-to-br from-brand-50 to-white">
-      {/* ── TOP: Logo + links ── */}
-      <div className="flex flex-col items-center pt-4 sm:pt-8 pb-4 px-4">
-        <Image
-          src="/logo.png"
-          alt="MATSEK — Matematička sekcija"
-          width={520}
-          height={200}
-          className="h-auto w-full max-w-[500px] sm:max-w-[560px]"
-          priority
-          unoptimized
-        />
+    <main className="flex h-[100dvh] flex-col items-center overflow-hidden bg-bg">
+      <div className="relative flex w-full shrink-0 flex-col items-center px-4 pb-2 pt-3 sm:pt-5">
+        <div className="absolute right-4 top-4 flex items-center gap-1">
+          <LanguageToggle lang={lang} label={t.toggleLang} />
+          <ThemeToggle label={t.toggleTheme} />
+        </div>
 
-        <div className="flex gap-4 justify-center mt-5">
+        {/* The dark-mode logo variant carries its own contrast — no backlight
+            hacks needed behind the artwork. Kept modest on purpose: every pixel
+            the wordmark takes is a pixel of tree. */}
+        <Logo size="lg" width={380} className="w-full max-w-[300px] sm:max-w-[380px]" />
+
+        <div className="mt-4 flex flex-wrap justify-center gap-3">
           {session ? (
             <>
-              <Link
-                href="/calendar"
-                className="px-6 py-3 bg-brand-600 text-white rounded-lg
-                           hover:bg-brand-700 transition-colors font-medium"
-              >
-                Kalendar
-              </Link>
-              <LogoutButton />
+              <ButtonLink href="/calendar" size="lg">
+                {t.calendar}
+              </ButtonLink>
+              <ButtonLink href="/materials" size="lg" variant="secondary">
+                {t.materials}
+              </ButtonLink>
+              <ButtonLink href="/tools" size="lg" variant="secondary">
+                {t.tools}
+              </ButtonLink>
+              <LogoutButton label={t.logout} pendingLabel={t.loggingOut} />
             </>
           ) : (
             <>
-              <Link
-                href="/register"
-                className="px-6 py-3 bg-brand-600 text-white rounded-lg
-                           hover:bg-brand-700 transition-colors font-medium"
-              >
-                Registriraj se
-              </Link>
-              <Link
-                href="/login"
-                className="px-6 py-3 border border-brand-300 text-brand-700
-                           rounded-lg hover:bg-brand-50 transition-colors font-medium"
-              >
-                Prijavi se
-              </Link>
+              <ButtonLink href="/register" size="lg">
+                {t.register}
+              </ButtonLink>
+              <ButtonLink href="/login" size="lg" variant="secondary">
+                {t.login}
+              </ButtonLink>
+              <ButtonLink href="/materials" size="lg" variant="ghost">
+                {t.materials}
+              </ButtonLink>
+              <ButtonLink href="/tools" size="lg" variant="ghost">
+                {t.tools}
+              </ButtonLink>
             </>
           )}
         </div>
       </div>
 
-      {/* ── MIDDLE: Big box ── */}
-      <div className="flex-1 w-[70%] max-w-4xl mx-4 mb-6 border border-black rounded-2xl bg-white" />
-
-      {/* ── BOTTOM: Calendar and materials links ── */}
-      <div className="flex flex-wrap justify-center gap-6 pb-6 sm:pb-10">
-        <Link href="/calendar" className="text-brand-600 hover:underline">
-          Pogledaj kalendar aktivnosti →
-        </Link>
-        <Link href="/materials" className="text-brand-600 hover:underline">
-          Materijali za učenje →
-        </Link>
-      </div>
+      {/* Seeded here so the server render and hydration agree on the first tree. */}
+      <ContentPanel initialSeed={firstSeed} />
     </main>
   );
 }

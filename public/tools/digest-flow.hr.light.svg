@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 300" width="980" height="300" font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" role="img"><defs><marker id="arr-6b7280" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6b7280"/></marker><marker id="arr-ca8a04" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ca8a04"/></marker></defs><rect x="20" y="90" width="150" height="60" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2"/>
+<rect x="20" y="98" width="3" height="44" rx="1.5" fill="#9ca3af"/>
+<text x="34" y="112" font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="14" font-weight="600" fill="#111827" text-anchor="start">Dokument</text>
+<text x="34" y="130" font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="400" fill="#6b7280" text-anchor="start">≤ 50 stranica odjednom</text>
+<rect x="200" y="90" width="200" height="60" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2"/>
+<rect x="200" y="98" width="3" height="44" rx="1.5" fill="#22c55e"/>
+<text x="214" y="112" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" font-weight="600" fill="#111827" text-anchor="start">/digest</text>
+<text x="214" y="130" font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="400" fill="#6b7280" text-anchor="start">opseg → popis → pisanje</text>
+<rect x="430" y="90" width="230" height="60" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2"/>
+<rect x="430" y="98" width="3" height="44" rx="1.5" fill="#22c55e"/>
+<text x="444" y="112" font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="14" font-weight="600" fill="#111827" text-anchor="start">Lokalni trezor</text>
+<text x="444" y="130" font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="400" fill="#6b7280" text-anchor="start">trees/ · index.md · views/forest.html</text>
+<rect x="690" y="90" width="270" height="60" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2"/>
+<rect x="690" y="98" width="3" height="44" rx="1.5" fill="#22c55e"/>
+<text x="704" y="112" font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="14" font-weight="600" fill="#111827" text-anchor="start">Globalna šuma</text>
+<text x="704" y="130" font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="400" fill="#6b7280" text-anchor="start">jedan pull request, pregleda ga čovjek</text>
+<rect x="200" y="210" width="200" height="60" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2"/>
+<rect x="200" y="218" width="3" height="44" rx="1.5" fill="#3b82f6"/>
+<text x="214" y="232" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" font-weight="600" fill="#111827" text-anchor="start">/ask</text>
+<text x="214" y="250" font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="400" fill="#6b7280" text-anchor="start">pitanje → odgovor s id-jevima stabala</text>
+<rect x="430" y="210" width="230" height="60" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2"/>
+<rect x="430" y="218" width="3" height="44" rx="1.5" fill="#3b82f6"/>
+<text x="444" y="232" font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="14" font-weight="600" fill="#111827" text-anchor="start">Čitaj</text>
+<text x="444" y="250" font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="400" fill="#6b7280" text-anchor="start">Obsidian ili forest.html u pregledniku</text>
+<rect x="690" y="210" width="270" height="60" rx="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2"/>
+<rect x="690" y="218" width="3" height="44" rx="1.5" fill="#ec4899"/>
+<text x="704" y="232" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" font-weight="600" fill="#111827" text-anchor="start">/grow</text>
+<text x="704" y="250" font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="400" fill="#6b7280" text-anchor="start">usporedba · firewall · provenijencija</text>
+<path d="M170,120 L200,120" fill="none" stroke="#6b7280" stroke-width="1.4" marker-end="url(#arr-6b7280)"/>
+<path d="M400,120 L430,120" fill="none" stroke="#6b7280" stroke-width="1.4" marker-end="url(#arr-6b7280)"/>
+<path d="M545,150 L545,210" fill="none" stroke="#6b7280" stroke-width="1.4" marker-end="url(#arr-6b7280)"/>
+<path d="M460,150 L330,210" fill="none" stroke="#6b7280" stroke-width="1.4" marker-end="url(#arr-6b7280)"/>
+<path d="M630,150 L760,210" fill="none" stroke="#6b7280" stroke-width="1.4" marker-end="url(#arr-6b7280)"/>
+<path d="M825,210 L825,150" fill="none" stroke="#6b7280" stroke-width="1.4" marker-end="url(#arr-6b7280)"/>
+<path d="M690,100 C640,30 240,30 170,100" fill="none" stroke="#ca8a04" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#arr-ca8a04)"/>
+<rect x="229.70000000000002" y="37" width="400.59999999999997" height="16" rx="4" fill="#ffffff" fill-opacity="0.92"/>
+<text x="430" y="49" font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="11" font-weight="400" fill="#ca8a04" text-anchor="middle">sljedeći član koji probavlja isto djelo dolazi ovamo · u planu</text></svg>

@@ -30,7 +30,7 @@ export default function Markdown({
           href={href}
           target={external ? "_blank" : undefined}
           rel={external ? "noopener noreferrer" : undefined}
-          className="text-brand-600 hover:underline break-words"
+          className="text-brand hover:underline break-words"
         >
           {children}
         </a>
@@ -42,14 +42,14 @@ export default function Markdown({
         return (
           <Link
             href={`/materials/${text}`}
-            className="rounded bg-brand-50 px-1 py-0.5 font-mono text-[0.85em] text-brand-700 hover:bg-brand-100 no-underline"
+            className="rounded bg-brand/10 px-1 py-0.5 font-mono text-[0.85em] text-brand hover:bg-brand/20 no-underline"
           >
             {text}
           </Link>
         );
       }
       return (
-        <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-[0.85em]">
+        <code className="rounded bg-surface-hover px-1 py-0.5 font-mono text-[0.85em]">
           {children}
         </code>
       );
@@ -61,7 +61,7 @@ export default function Markdown({
     <div
       className={cn(
         !inline &&
-          "prose prose-gray max-w-none prose-headings:font-semibold prose-h3:text-base prose-h3:mt-6 prose-li:my-1 prose-p:leading-relaxed",
+          "prose max-w-none prose-code:before:content-none prose-code:after:content-none prose-headings:font-semibold prose-h3:text-base prose-h3:mt-6 prose-li:my-1 prose-p:leading-relaxed",
         className
       )}
     >

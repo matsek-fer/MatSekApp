@@ -18,26 +18,26 @@ export default function TopicCard({
   return (
     <Link
       href={`/materials/${topic.id}`}
-      className={`group flex h-full flex-col rounded-xl border border-gray-200 bg-white p-4
+      className={`group flex h-full flex-col rounded-xl border border-border bg-surface p-4
                   transition-shadow hover:shadow-md ${dim ? "opacity-40" : ""}`}
     >
       <div className="flex items-start justify-between gap-3">
-        <h3 className="font-semibold text-gray-900 group-hover:text-brand-700 leading-snug">
+        <h3 className="font-semibold text-fg group-hover:text-brand leading-snug">
           {topic.title}
         </h3>
         {topic.aiGenerated.length > 0 && (
           <span
-            className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-800"
+            className="shrink-0 rounded-full bg-warning-bg px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-warning-fg"
             title="Uvod i problemi su AI nacrt — još nisu pregledani"
           >
             AI
           </span>
         )}
       </div>
-      <p className="mt-1.5 flex-1 text-sm text-gray-600 leading-relaxed">
+      <p className="mt-1.5 flex-1 text-sm text-fg-muted leading-relaxed">
         {topic.tagline}
       </p>
-      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-fg-muted">
         <DifficultyBar difficulty={topic.difficulty} />
         {topic.difficulty && (
           <span>
@@ -57,13 +57,13 @@ export default function TopicCard({
       </div>
       {topic.prerequisites.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1">
-          <span className="text-[11px] text-gray-400 mr-1 self-center">
+          <span className="text-[11px] text-fg-subtle mr-1 self-center">
             treba:
           </span>
           {topic.prerequisites.map((p) => (
             <span
               key={p}
-              className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-600"
+              className="rounded bg-surface-hover px-1.5 py-0.5 text-[11px] text-fg-muted"
             >
               {titles[p] ?? p}
             </span>

@@ -91,7 +91,7 @@ export default function PrereqMap({
     hover ? e.from === hover || e.to === hover : true;
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white p-2">
+    <div className="overflow-x-auto rounded-xl border border-border bg-surface p-2">
       <svg
         viewBox={`0 0 ${layout.width} ${layout.height}`}
         width="100%"
@@ -118,7 +118,7 @@ export default function PrereqMap({
             key={c}
             x={PAD_X + ci * COL_W}
             y={28}
-            className="fill-gray-500 text-[13px] font-semibold uppercase tracking-wide"
+            className="fill-fg-muted text-[13px] font-semibold uppercase tracking-wide"
           >
             {CATEGORY_META[c as Category].label}
           </text>
@@ -134,9 +134,9 @@ export default function PrereqMap({
                 className={
                   active
                     ? hover
-                      ? "stroke-brand-500 text-brand-500"
-                      : "stroke-gray-300 text-gray-300"
-                    : "stroke-gray-200 text-gray-200"
+                      ? "stroke-brand text-brand"
+                      : "stroke-border-strong text-border-strong"
+                    : "stroke-border text-border"
                 }
                 markerEnd="url(#arrow)"
                 opacity={active ? 1 : 0.35}
@@ -172,15 +172,15 @@ export default function PrereqMap({
                 rx={8}
                 className={
                   isHover
-                    ? "fill-brand-50 stroke-brand-500"
-                    : "fill-white stroke-gray-300"
+                    ? "fill-brand/10 stroke-brand"
+                    : "fill-surface stroke-border-strong"
                 }
                 strokeWidth={1.2}
               />
               <text
                 x={12}
                 y={NODE_H / 2 + 4}
-                className="fill-gray-900 text-[12.5px] font-medium"
+                className="fill-fg text-[12.5px] font-medium"
               >
                 {shorten(titles[t.id] ?? t.id)}
               </text>
@@ -195,8 +195,8 @@ export default function PrereqMap({
                       rx={1}
                       className={
                         l >= t.difficulty!.min && l <= t.difficulty!.max
-                          ? "fill-brand-500"
-                          : "fill-gray-200"
+                          ? "fill-brand"
+                          : "fill-border"
                       }
                     />
                   ))}

@@ -18,13 +18,13 @@ export default function AiBand({
   return (
     <div
       className={cn(
-        "relative rounded-xl border border-amber-200/70 bg-amber-50/50 px-5 py-4 pt-9 sm:pt-4 sm:pr-24",
+        "relative rounded-xl border border-warning/30 bg-warning-bg/40 px-5 py-4 pt-9 sm:pt-4 sm:pr-24",
         className
       )}
     >
       <span
-        className="absolute right-3 top-3 rounded-full bg-amber-100 px-2 py-0.5
-                   text-[11px] font-medium uppercase tracking-wide text-amber-800"
+        className="absolute right-3 top-3 rounded-full bg-warning-bg px-2 py-0.5
+                   text-[11px] font-medium uppercase tracking-wide text-warning-fg"
         title="Ovaj odjeljak je generiran uz pomoć AI-ja i još ga nije pregledao član sekcije."
       >
         AI nacrt

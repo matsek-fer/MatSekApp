@@ -71,10 +71,10 @@ export default function TopicPage({ params }: { params: { id: string } }) {
         <dl className="grid gap-3 sm:grid-cols-2">
           {m.strengths && (
             <div>
-              <dt className="mb-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
+              <dt className="mb-1 text-xs font-semibold uppercase tracking-wide text-success-fg">
                 Prednosti
               </dt>
-              <dd className="text-gray-700">
+              <dd className="text-fg">
                 <Markdown topicIds={ids} inline>
                   {m.strengths}
                 </Markdown>
@@ -83,10 +83,10 @@ export default function TopicPage({ params }: { params: { id: string } }) {
           )}
           {m.weaknesses && (
             <div>
-              <dt className="mb-1 text-xs font-semibold uppercase tracking-wide text-rose-700">
+              <dt className="mb-1 text-xs font-semibold uppercase tracking-wide text-danger-fg">
                 Nedostaci
               </dt>
-              <dd className="text-gray-700">
+              <dd className="text-fg">
                 <Markdown topicIds={ids} inline>
                   {m.weaknesses}
                 </Markdown>
@@ -111,18 +111,18 @@ export default function TopicPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="space-y-6">
-      <nav className="text-sm text-gray-500" aria-label="Putanja">
-        <Link href="/materials" className="text-brand-600 hover:underline">
+      <nav className="text-sm text-fg-muted" aria-label="Putanja">
+        <Link href="/materials" className="text-brand hover:underline">
           Materijali
         </Link>
         <span className="mx-2">/</span>
         <span>{CATEGORY_META[topic.category].label}</span>
       </nav>
 
-      <header className="rounded-xl border border-gray-200 bg-white p-6">
-        <h1 className="text-2xl font-bold text-gray-900">{topic.title}</h1>
-        <p className="mt-2 text-gray-600 leading-relaxed">{topic.tagline}</p>
-        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-gray-600">
+      <header className="rounded-xl border border-border bg-surface p-6">
+        <h1 className="text-2xl font-bold text-fg">{topic.title}</h1>
+        <p className="mt-2 text-fg-muted leading-relaxed">{topic.tagline}</p>
+        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-fg-muted">
           <span className="inline-flex items-center gap-2">
             <DifficultyBar difficulty={topic.difficulty} size="md" />
             {topic.difficulty ? (
@@ -148,12 +148,12 @@ export default function TopicPage({ params }: { params: { id: string } }) {
           <div className="mt-4 grid gap-2 sm:grid-cols-2 text-sm">
             {topic.prerequisites.length > 0 && (
               <div>
-                <span className="text-gray-500">Traži: </span>
+                <span className="text-fg-muted">Traži: </span>
                 {topic.prerequisites.map((p) => (
                   <Link
                     key={p}
                     href={`/materials/${p}`}
-                    className="mr-1 inline-block rounded bg-gray-100 px-2 py-0.5 text-gray-700 hover:bg-brand-50 hover:text-brand-700"
+                    className="mr-1 inline-block rounded bg-surface-hover px-2 py-0.5 text-fg hover:bg-brand/10 hover:text-brand"
                   >
                     {titles[p] ?? p}
                   </Link>
@@ -162,12 +162,12 @@ export default function TopicPage({ params }: { params: { id: string } }) {
             )}
             {topic.requiredBy.length > 0 && (
               <div>
-                <span className="text-gray-500">Vodi u: </span>
+                <span className="text-fg-muted">Vodi u: </span>
                 {topic.requiredBy.map((p) => (
                   <Link
                     key={p}
                     href={`/materials/${p}`}
-                    className="mr-1 inline-block rounded bg-gray-100 px-2 py-0.5 text-gray-700 hover:bg-brand-50 hover:text-brand-700"
+                    className="mr-1 inline-block rounded bg-surface-hover px-2 py-0.5 text-fg hover:bg-brand/10 hover:text-brand"
                   >
                     {titles[p] ?? p}
                   </Link>
@@ -215,7 +215,7 @@ export default function TopicPage({ params }: { params: { id: string } }) {
               hint={
                 <>
                   Dijelovi{" "}
-                  <Link href="/materials/general" className="text-brand-600 hover:underline">
+                  <Link href="/materials/general" className="text-brand hover:underline">
                     općih materijala
                   </Link>{" "}
                   koji pokrivaju ovu temu.
@@ -246,16 +246,16 @@ export default function TopicPage({ params }: { params: { id: string } }) {
             </Section>
           )}
 
-          <nav className="flex justify-between border-t border-gray-200 pt-6 text-sm">
+          <nav className="flex justify-between border-t border-border pt-6 text-sm">
             {prev ? (
-              <Link href={`/materials/${prev.id}`} className="text-brand-600 hover:underline">
+              <Link href={`/materials/${prev.id}`} className="text-brand hover:underline">
                 ← {prev.title}
               </Link>
             ) : (
               <span />
             )}
             {next ? (
-              <Link href={`/materials/${next.id}`} className="text-brand-600 hover:underline text-right">
+              <Link href={`/materials/${next.id}`} className="text-brand hover:underline text-right">
                 {next.title} →
               </Link>
             ) : (
@@ -266,14 +266,14 @@ export default function TopicPage({ params }: { params: { id: string } }) {
 
         <aside className="hidden lg:block">
           <div className="sticky top-24 space-y-1 text-sm">
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">
               Na ovoj stranici
             </div>
             {toc.map((s) => (
               <a
                 key={s.id}
                 href={`#${s.id}`}
-                className="block rounded px-2 py-1 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                className="block rounded px-2 py-1 text-fg-muted hover:bg-surface-hover hover:text-fg"
               >
                 {s.label}
               </a>
@@ -298,8 +298,8 @@ function Section({
 }) {
   return (
     <section id={id} className="scroll-mt-24">
-      <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-      {hint && <p className="mt-1 mb-3 text-sm text-gray-500">{hint}</p>}
+      <h2 className="text-xl font-semibold text-fg">{title}</h2>
+      {hint && <p className="mt-1 mb-3 text-sm text-fg-muted">{hint}</p>}
       <div className={hint ? "" : "mt-3"}>{children}</div>
     </section>
   );
