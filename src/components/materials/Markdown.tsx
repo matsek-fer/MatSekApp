@@ -61,7 +61,7 @@ export default function Markdown({
     <div
       className={cn(
         !inline &&
-          "prose max-w-none prose-headings:font-semibold prose-h3:text-base prose-h3:mt-6 prose-li:my-1 prose-p:leading-relaxed",
+          "prose max-w-none prose-code:before:content-none prose-code:after:content-none prose-headings:font-semibold prose-h3:text-base prose-h3:mt-6 prose-li:my-1 prose-p:leading-relaxed",
         className
       )}
     >
