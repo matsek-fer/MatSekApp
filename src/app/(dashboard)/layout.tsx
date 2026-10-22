@@ -59,6 +59,7 @@ export default async function DashboardLayout({
 
               <div className="hidden gap-1 self-stretch md:flex">
                 <VoronoiNavbarLink href="/calendar">{t.calendar}</VoronoiNavbarLink>
+                <VoronoiNavbarLink href="/materials">{t.materials}</VoronoiNavbarLink>
                 <VoronoiNavbarLink href="/tools">{t.tools}</VoronoiNavbarLink>
                 {session && (
                   <VoronoiNavbarLink href="/activities/new">
@@ -111,6 +112,9 @@ export default async function DashboardLayout({
           <div className="flex gap-1 overflow-x-auto pb-1 md:hidden">
             <VoronoiNavbarLink href="/calendar" className="!py-2">
               {t.calendar}
+            </VoronoiNavbarLink>
+            <VoronoiNavbarLink href="/materials" className="!py-2">
+              {t.materials}
             </VoronoiNavbarLink>
             <VoronoiNavbarLink href="/tools" className="!py-2">
               {t.tools}

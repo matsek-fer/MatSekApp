@@ -20,6 +20,8 @@ export async function middleware(request: NextRequest) {
       pathname === "/calendar" ||
       // The tools guide is documentation — readable before anyone registers.
       pathname === "/tools" ||
+      // The materials are a public reading list, the same as the guide.
+      pathname.startsWith("/materials") ||
       pathname.startsWith("/activities") ||
       pathname.startsWith("/login") ||
       pathname.startsWith("/register") ||

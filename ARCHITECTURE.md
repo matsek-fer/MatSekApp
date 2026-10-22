@@ -97,8 +97,16 @@ The full SQL is in `supabase/schema.sql`.
 
 ## Phase 2: Project Architecture & Directory Structure
 
+> **Materials page (added later):** `content/materials/**.md` is the source of
+> truth for `/materials` (public). `src/lib/materials.ts` parses the files at
+> request time (frontmatter via gray-matter, sections and `###` material
+> entries by hand); `src/app/(dashboard)/materials/` renders the overview
+> (category grid + prerequisite map) and topic pages. Schema and editing rules:
+> `content/materials/README.md`.
+
 ```
 MatSekApp/
+├── content/materials/                # Markdown source for the Materials page
 ├── supabase/
 │   └── schema.sql                    # Complete DDL + RLS + triggers
 ├── copilot-instructions/

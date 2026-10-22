@@ -54,6 +54,9 @@ export default async function HomePage({
               <ButtonLink href="/calendar" size="lg">
                 {t.calendar}
               </ButtonLink>
+              <ButtonLink href="/materials" size="lg" variant="secondary">
+                {t.materials}
+              </ButtonLink>
               <ButtonLink href="/tools" size="lg" variant="secondary">
                 {t.tools}
               </ButtonLink>
@@ -66,6 +69,9 @@ export default async function HomePage({
               </ButtonLink>
               <ButtonLink href="/login" size="lg" variant="secondary">
                 {t.login}
+              </ButtonLink>
+              <ButtonLink href="/materials" size="lg" variant="ghost">
+                {t.materials}
               </ButtonLink>
               <ButtonLink href="/tools" size="lg" variant="ghost">
                 {t.tools}
