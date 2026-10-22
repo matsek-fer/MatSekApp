@@ -58,7 +58,7 @@ export default function TopicCard({
       {topic.prerequisites.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1">
           <span className="text-[11px] text-fg-subtle mr-1 self-center">
-            treba:
+            Preduvjeti:
           </span>
           {topic.prerequisites.map((p) => (
             <span

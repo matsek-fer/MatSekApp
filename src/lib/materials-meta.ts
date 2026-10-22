@@ -101,8 +101,8 @@ export const CATEGORY_META: Record<
       "Analiza, algebra, kombinatorika, vjerojatnost, topologija, logika i računarstvo — temelji na koje se sve ostalo oslanja.",
   },
   language: {
-    label: "Motivacija za bolji jezik",
-    short: "Jezik",
+    label: "Kategorije i slično",
+    short: "Kategorije",
     description:
       "Teorija kategorija i teorija tipova: što ih čini moćnima, kompozicionalnost, i klasična područja gledana s više razine.",
   },
