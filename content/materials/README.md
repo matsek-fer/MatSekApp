@@ -176,6 +176,8 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - UI (done): `/materials` renders this directory; sections listed in
   `ai_generated` get a translucent band, `<details>` hints collapse, and
   `topic-id` code spans link to topics. Loader: `src/lib/materials.ts`.
+  The page chrome is bilingual (`src/lib/i18n/materials.ts`); the topic
+  files themselves are English and shown as they are in both languages.
 - `compositionality`: pitch problems still not final (several attempts);
   revisit with a member who knows the field. Its Braess problem now also
   appears in `compositional-game-theory` (its natural home) — replace one.

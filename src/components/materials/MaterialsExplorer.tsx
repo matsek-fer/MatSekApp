@@ -2,12 +2,9 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  CATEGORY_META,
-  CATEGORY_ORDER,
-  DIFFICULTY_LABELS,
-  type TopicSummary,
-} from "@/lib/materials-meta";
+import { CATEGORY_ORDER, type TopicSummary } from "@/lib/materials-meta";
+import { MATERIALS } from "@/lib/i18n/materials";
+import type { Lang } from "@/lib/i18n";
 import TopicCard from "./TopicCard";
 import PrereqMap from "./PrereqMap";
 import { cn } from "@/lib/utils";
@@ -22,11 +19,14 @@ export default function MaterialsExplorer({
   topics,
   general,
   titles,
+  lang,
 }: {
   topics: TopicSummary[];
   general: TopicSummary | null;
   titles: Record<string, string>;
+  lang: Lang;
 }) {
+  const t = MATERIALS[lang];
   const [query, setQuery] = useState("");
   const [levels, setLevels] = useState<Set<number>>(new Set());
   const [view, setView] = useState<View>("grid");
@@ -63,18 +63,18 @@ export default function MaterialsExplorer({
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Pretraži teme…"
-            aria-label="Pretraži teme"
+            placeholder={t.searchPlaceholder}
+            aria-label={t.searchLabel}
             className="field text-sm sm:max-w-xs"
           />
-          <div className="flex items-center gap-1" role="group" aria-label="Filtriraj po težini">
-            <span className="mr-1 text-xs text-fg-muted">Težina</span>
+          <div className="flex items-center gap-1" role="group" aria-label={t.filterByDifficulty}>
+            <span className="mr-1 text-xs text-fg-muted">{t.difficulty}</span>
             {[1, 2, 3, 4, 5].map((l) => (
               <button
                 key={l}
                 type="button"
                 onClick={() => toggleLevel(l)}
-                title={DIFFICULTY_LABELS[l]}
+                title={t.difficultyLabels[l]}
                 aria-pressed={levels.has(l)}
                 className={cn(
                   "h-8 w-8 rounded-md border text-sm font-medium transition-colors",
@@ -92,7 +92,7 @@ export default function MaterialsExplorer({
                 onClick={() => setLevels(new Set())}
                 className="ml-1 text-xs text-fg-muted hover:text-fg"
               >
-                poništi
+                {t.reset}
               </button>
             )}
           </div>
@@ -111,7 +111,7 @@ export default function MaterialsExplorer({
                   : "text-fg hover:bg-surface-hover"
               )}
             >
-              {v === "grid" ? "Pregled" : "Karta preduvjeta"}
+              {v === "grid" ? t.viewGrid : t.viewMap}
             </button>
           ))}
         </div>
@@ -120,13 +120,13 @@ export default function MaterialsExplorer({
       {/* Difficulty legend */}
       <details className="text-sm text-fg-muted">
         <summary className="cursor-pointer select-none text-fg-muted hover:text-fg">
-          Što znače razine težine?
+          {t.legendSummary}
         </summary>
         <ol className="mt-2 grid gap-1 sm:grid-cols-5">
           {[1, 2, 3, 4, 5].map((l) => (
             <li key={l} className="rounded-md bg-surface-hover px-3 py-2">
               <span className="font-semibold text-fg">{l}</span>{" "}
-              <span>{DIFFICULTY_LABELS[l]}</span>
+              <span>{t.difficultyLabels[l]}</span>
             </li>
           ))}
         </ol>
@@ -141,18 +141,18 @@ export default function MaterialsExplorer({
         >
           <div>
             <div className="text-xs font-semibold uppercase tracking-wide text-brand">
-              {CATEGORY_META.general.label}
+              {t.categories.general.label}
             </div>
             <p className="text-sm text-fg">{general.tagline}</p>
           </div>
           <span className="text-sm text-brand whitespace-nowrap">
-            {general.counts.materials} izvora →
+            {t.nSources(general.counts.materials)} →
           </span>
         </Link>
       )}
 
       {view === "map" ? (
-        <PrereqMap topics={topics} titles={titles} matching={matching} />
+        <PrereqMap topics={topics} titles={titles} matching={matching} lang={lang} />
       ) : (
         <div className="space-y-10">
           {CATEGORY_ORDER.map((cat) => {
@@ -167,10 +167,10 @@ export default function MaterialsExplorer({
                       id={`cat-${cat}`}
                       className="text-lg font-semibold text-fg"
                     >
-                      {CATEGORY_META[cat].label}
+                      {t.categories[cat].label}
                     </h2>
                     <p className="text-sm text-fg-muted">
-                      {CATEGORY_META[cat].description}
+                      {t.categories[cat].description}
                     </p>
                   </div>
                   <span className="text-xs text-fg-subtle whitespace-nowrap">
@@ -179,12 +179,12 @@ export default function MaterialsExplorer({
                 </div>
                 {shown.length === 0 ? (
                   <p className="text-sm text-fg-subtle italic">
-                    Nijedna tema ne odgovara filtru.
+                    {t.noMatch}
                   </p>
                 ) : (
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {shown.map((t) => (
-                      <TopicCard key={t.id} topic={t} titles={titles} />
+                    {shown.map((topic) => (
+                      <TopicCard key={topic.id} topic={topic} titles={titles} lang={lang} />
                     ))}
                   </div>
                 )}

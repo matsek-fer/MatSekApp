@@ -1,6 +1,7 @@
 /**
  * Types and constants for the Materials page that are safe to import from
- * client components (no Node APIs). The loader lives in materials.ts.
+ * client components (no Node APIs). The loader lives in materials.ts; the
+ * user-facing labels live in i18n/materials.ts.
  */
 
 export type Category = "general" | "classical" | "language" | "advanced";
@@ -84,40 +85,7 @@ export function shortTitle(title: string): string {
 
 export const CATEGORY_ORDER: Category[] = ["classical", "language", "advanced"];
 
-export const CATEGORY_META: Record<
-  Category,
-  { label: string; short: string; description: string }
-> = {
-  general: {
-    label: "Opći materijali",
-    short: "Opće",
-    description:
-      "Atlasi, indeksi i kanali koji pokrivaju cijelu matematiku — za orijentaciju prije odabira teme.",
-  },
-  classical: {
-    label: "Uvod u klasična područja",
-    short: "Klasično",
-    description:
-      "Analiza, algebra, kombinatorika, vjerojatnost, topologija, logika i računarstvo — temelji na koje se sve ostalo oslanja.",
-  },
-  language: {
-    label: "Kategorije i slično",
-    short: "Kategorije",
-    description:
-      "Teorija kategorija i teorija tipova: što ih čini moćnima, kompozicionalnost, i klasična područja gledana s više razine.",
-  },
-  advanced: {
-    label: "Napredno i specijalizirano",
-    short: "Napredno",
-    description:
-      "Nastavak klasičnih područja, primjene u fizici, napredna logika, geometrija, računarstvo i teorija igara.",
-  },
-};
-
-export const DIFFICULTY_LABELS: Record<number, string> = {
-  1: "Znatiželjnik / srednja škola",
-  2: "Prva godina",
-  3: "Viši preddiplomski",
-  4: "Diplomski / blizu istraživanja",
-  5: "Istraživačka razina",
-};
+/** "2" or "2–4": the language-neutral part of every difficulty badge. */
+export function difficultyRange(d: Difficulty): string {
+  return d.min === d.max ? `${d.min}` : `${d.min}–${d.max}`;
+}

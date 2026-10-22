@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-  CATEGORY_META,
   CATEGORY_ORDER,
   type Category,
   type TopicSummary,
 } from "@/lib/materials-meta";
+import { MATERIALS } from "@/lib/i18n/materials";
+import type { Lang } from "@/lib/i18n";
 
 const NODE_W = 204;
 const NODE_H = 46;
@@ -146,19 +147,22 @@ export default function PrereqMap({
   topics,
   titles,
   matching,
+  lang,
 }: {
   topics: TopicSummary[];
   titles: Record<string, string>;
   /** Ids that pass the current filters; others are faded. */
   matching: Set<string>;
+  lang: Lang;
 }) {
+  const t = MATERIALS[lang];
   const router = useRouter();
   const [hover, setHover] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const focus = hover ?? selected;
 
   const g = useMemo(() => layout(topics), [topics]);
-  const byId = useMemo(() => new Map(topics.map((t) => [t.id, t])), [topics]);
+  const byId = useMemo(() => new Map(topics.map((topic) => [topic.id, topic])), [topics]);
 
   const related = useMemo(() => {
     if (!focus) return null;
@@ -190,13 +194,10 @@ export default function PrereqMap({
         {CATEGORY_ORDER.map((c) => (
           <span key={c} className="inline-flex items-center gap-1.5">
             <span className={cn("h-2.5 w-2.5 rounded-sm", CATEGORY_DOT[c])} />
-            {CATEGORY_META[c].label}
+            {t.categories[c].label}
           </span>
         ))}
-        <span className="ml-auto">
-          Slijeva nadesno: tema stoji desno od svojih preduvjeta. Klikni temu
-          za njezine veze, dvaput za otvaranje.
-        </span>
+        <span className="ml-auto">{t.mapHint}</span>
       </div>
 
       <div
@@ -208,7 +209,7 @@ export default function PrereqMap({
           width="100%"
           style={{ minWidth: Math.min(g.width, 1100) }}
           role="img"
-          aria-label="Karta preduvjeta među temama"
+          aria-label={t.mapAria}
         >
           <defs>
             <marker
@@ -243,33 +244,33 @@ export default function PrereqMap({
             })}
           </g>
 
-          {topics.map((t) => {
-            const p = g.pos.get(t.id);
+          {topics.map((topic) => {
+            const p = g.pos.get(topic.id);
             if (!p) return null;
             const faded =
-              !matching.has(t.id) || (related ? !related.has(t.id) : false);
-            const isFocus = focus === t.id;
+              !matching.has(topic.id) || (related ? !related.has(topic.id) : false);
+            const isFocus = focus === topic.id;
             return (
               <g
-                key={t.id}
+                key={topic.id}
                 transform={`translate(${p.x} ${p.y})`}
                 className="cursor-pointer"
                 opacity={faded ? 0.3 : 1}
-                onMouseEnter={() => setHover(t.id)}
+                onMouseEnter={() => setHover(topic.id)}
                 onMouseLeave={() => setHover(null)}
                 onClick={(ev) => {
                   ev.stopPropagation();
-                  if (selected === t.id) open(t.id);
-                  else setSelected(t.id);
+                  if (selected === topic.id) open(topic.id);
+                  else setSelected(topic.id);
                 }}
                 role="button"
                 tabIndex={0}
-                aria-label={titles[t.id] ?? t.id}
+                aria-label={titles[topic.id] ?? topic.id}
                 onKeyDown={(ev) => {
-                  if (ev.key === "Enter") open(t.id);
+                  if (ev.key === "Enter") open(topic.id);
                   if (ev.key === " ") {
                     ev.preventDefault();
-                    setSelected(selected === t.id ? null : t.id);
+                    setSelected(selected === topic.id ? null : topic.id);
                   }
                 }}
               >
@@ -289,10 +290,10 @@ export default function PrereqMap({
                   width={4}
                   height={NODE_H - 12}
                   rx={2}
-                  className={CATEGORY_FILL[t.category]}
+                  className={CATEGORY_FILL[topic.category]}
                 />
                 {(() => {
-                  const lines = wrap(titles[t.id] ?? t.id);
+                  const lines = wrap(titles[topic.id] ?? topic.id);
                   const y0 = lines.length === 1 ? NODE_H / 2 + 4 : NODE_H / 2 - 3;
                   return (
                     <text
@@ -308,7 +309,7 @@ export default function PrereqMap({
                     </text>
                   );
                 })()}
-                {t.difficulty && (
+                {topic.difficulty && (
                   <g transform={`translate(${NODE_W - 10 - 5 * 8} ${NODE_H / 2 - 3})`}>
                     {[1, 2, 3, 4, 5].map((l) => (
                       <rect
@@ -318,7 +319,7 @@ export default function PrereqMap({
                         height={6}
                         rx={1}
                         className={
-                          l >= t.difficulty!.min && l <= t.difficulty!.max
+                          l >= topic.difficulty!.min && l <= topic.difficulty!.max
                             ? "fill-brand"
                             : "fill-border"
                         }
@@ -339,13 +340,13 @@ export default function PrereqMap({
             <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-muted">
               {sel.prerequisites.length > 0 && (
                 <span>
-                  Preduvjeti:{" "}
+                  {t.prerequisites}{" "}
                   {sel.prerequisites.map((p) => titles[p] ?? p).join(", ")}
                 </span>
               )}
               {sel.requiredBy.length > 0 && (
                 <span>
-                  Vodi u:{" "}
+                  {t.leadsTo}{" "}
                   {sel.requiredBy.map((p) => titles[p] ?? p).join(", ")}
                 </span>
               )}
@@ -355,7 +356,7 @@ export default function PrereqMap({
             href={`/materials/${sel.id}`}
             className="shrink-0 text-brand hover:underline"
           >
-            Otvori temu →
+            {t.openTopic}
           </Link>
         </div>
       )}

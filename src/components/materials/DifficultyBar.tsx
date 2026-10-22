@@ -1,5 +1,7 @@
 import { cn } from "@/lib/utils";
-import { DIFFICULTY_LABELS, type Difficulty } from "@/lib/materials-meta";
+import type { Difficulty } from "@/lib/materials-meta";
+import { MATERIALS } from "@/lib/i18n/materials";
+import type { Lang } from "@/lib/i18n";
 
 /**
  * Five segments, filled from `min` to `max`. Reads as "which levels does
@@ -7,20 +9,16 @@ import { DIFFICULTY_LABELS, type Difficulty } from "@/lib/materials-meta";
  */
 export default function DifficultyBar({
   difficulty,
+  lang,
   size = "sm",
   className,
 }: {
   difficulty: Difficulty | null;
+  lang: Lang;
   size?: "sm" | "md";
   className?: string;
 }) {
-  const title = difficulty
-    ? difficulty.min === difficulty.max
-      ? `Težina ${difficulty.min} — ${DIFFICULTY_LABELS[difficulty.min]}`
-      : `Težina ${difficulty.min}–${difficulty.max} — od „${
-          DIFFICULTY_LABELS[difficulty.min]
-        }” do „${DIFFICULTY_LABELS[difficulty.max]}”`
-    : "Težina nije označena";
+  const title = MATERIALS[lang].difficultyTitle(difficulty);
   const seg = size === "sm" ? "h-1.5 w-3" : "h-2 w-4";
   return (
     <span

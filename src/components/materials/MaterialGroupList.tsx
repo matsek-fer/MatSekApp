@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { MATERIALS } from "@/lib/i18n/materials";
+import type { Lang } from "@/lib/i18n";
 import MaterialCard, { type MaterialCardData } from "./MaterialCard";
 
 export interface MaterialGroupData {
@@ -15,9 +17,12 @@ export interface MaterialGroupData {
  */
 export default function MaterialGroupList({
   groups,
+  lang,
 }: {
   groups: MaterialGroupData[];
+  lang: Lang;
 }) {
+  const t = MATERIALS[lang];
   const [open, setOpen] = useState<Set<string>>(new Set());
   const total = groups.reduce((n, g) => n + g.materials.length, 0);
   const allOpen = open.size >= total && total > 0;
@@ -39,16 +44,13 @@ export default function MaterialGroupList({
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-fg-muted">
-          {total} {total === 1 ? "materijal" : total < 5 ? "materijala" : "materijala"} ·
-          klikni na naziv za prednosti i nedostatke
-        </p>
+        <p className="text-sm text-fg-muted">{t.groupSummary(total)}</p>
         <button
           type="button"
           onClick={toggleAll}
           className="text-sm text-brand hover:underline"
         >
-          {allOpen ? "Sažmi sve" : "Proširi sve"}
+          {allOpen ? t.collapseAll : t.expandAll}
         </button>
       </div>
       {groups.map((g) => (
@@ -65,6 +67,7 @@ export default function MaterialGroupList({
                 key={key(g.title, i)}
                 material={m.data}
                 details={m.details}
+                lang={lang}
                 open={open.has(key(g.title, i))}
                 onToggle={() => toggle(key(g.title, i))}
               />

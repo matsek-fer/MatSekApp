@@ -1,13 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  CATEGORY_META,
-  DIFFICULTY_LABELS,
-  getAllTopics,
-  getTopic,
-  getTopicTitles,
-} from "@/lib/materials";
+import { getAllTopics, getTopic, getTopicTitles } from "@/lib/materials";
+import { getLang } from "@/lib/i18n/server";
+import { MATERIALS } from "@/lib/i18n/materials";
 import Markdown from "@/components/materials/Markdown";
 import AiBand from "@/components/materials/AiBand";
 import DifficultyBar from "@/components/materials/DifficultyBar";
@@ -21,24 +17,19 @@ export function generateMetadata({
   params: { id: string };
 }): Metadata {
   const topic = getTopic(params.id);
+  const { meta } = MATERIALS[getLang()];
   return topic
-    ? { title: `${topic.title} — Materijali — MATSEK`, description: topic.tagline }
-    : { title: "Materijali — MATSEK" };
+    ? { title: `${topic.title} — ${meta.title}`, description: topic.tagline }
+    : { title: meta.title };
 }
-
-const SECTION_TITLES = {
-  pitch: "Zašto ova tema",
-  pitchProblems: "Problemi za početak",
-  prerequisites: "Preduvjeti",
-  general: "Iz općih materijala",
-  materials: "Materijali",
-  problems: "Zadaci i nastavak",
-  matsek: "MatSek materijali",
-} as const;
 
 export default function TopicPage({ params }: { params: { id: string } }) {
   const topic = getTopic(params.id);
   if (!topic) notFound();
+
+  const lang = getLang();
+  const t = MATERIALS[lang];
+  const SECTION_TITLES = t.sections;
 
   const titles = getTopicTitles();
   const ids = Object.keys(titles);
@@ -72,7 +63,7 @@ export default function TopicPage({ params }: { params: { id: string } }) {
           {m.strengths && (
             <div>
               <dt className="mb-1 text-xs font-semibold uppercase tracking-wide text-success-fg">
-                Prednosti
+                {t.strengths}
               </dt>
               <dd className="text-fg">
                 <Markdown topicIds={ids} inline>
@@ -84,7 +75,7 @@ export default function TopicPage({ params }: { params: { id: string } }) {
           {m.weaknesses && (
             <div>
               <dt className="mb-1 text-xs font-semibold uppercase tracking-wide text-danger-fg">
-                Nedostaci
+                {t.weaknesses}
               </dt>
               <dd className="text-fg">
                 <Markdown topicIds={ids} inline>
@@ -111,12 +102,12 @@ export default function TopicPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="space-y-6">
-      <nav className="text-sm text-fg-muted" aria-label="Putanja">
+      <nav className="text-sm text-fg-muted" aria-label={t.breadcrumb}>
         <Link href="/materials" className="text-brand hover:underline">
-          Materijali
+          {t.heading}
         </Link>
         <span className="mx-2">/</span>
-        <span>{CATEGORY_META[topic.category].label}</span>
+        <span>{t.categories[topic.category].label}</span>
       </nav>
 
       <header className="rounded-xl border border-border bg-surface p-6">
@@ -124,31 +115,20 @@ export default function TopicPage({ params }: { params: { id: string } }) {
         <p className="mt-2 text-fg-muted leading-relaxed">{topic.tagline}</p>
         <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-fg-muted">
           <span className="inline-flex items-center gap-2">
-            <DifficultyBar difficulty={topic.difficulty} size="md" />
-            {topic.difficulty ? (
-              <span>
-                težina{" "}
-                {topic.difficulty.min === topic.difficulty.max
-                  ? `${topic.difficulty.min} (${DIFFICULTY_LABELS[topic.difficulty.min]})`
-                  : `${topic.difficulty.min}–${topic.difficulty.max} (${
-                      DIFFICULTY_LABELS[topic.difficulty.min]
-                    } → ${DIFFICULTY_LABELS[topic.difficulty.max]})`}
-              </span>
-            ) : (
-              <span>težina nije označena</span>
-            )}
+            <DifficultyBar difficulty={topic.difficulty} lang={lang} size="md" />
+            <span>{t.difficultyLong(topic.difficulty)}</span>
           </span>
           <span>
-            {topic.counts.materials} materijala
-            {topic.counts.free > 0 && `, ${topic.counts.free} besplatnih`}
+            {t.nMaterials(topic.counts.materials)}
+            {topic.counts.free > 0 && `, ${t.nFree(topic.counts.free)}`}
           </span>
-          {topic.counts.problems > 0 && <span>{topic.counts.problems} problema</span>}
+          {topic.counts.problems > 0 && <span>{t.nProblems(topic.counts.problems)}</span>}
         </div>
         {(topic.prerequisites.length > 0 || topic.requiredBy.length > 0) && (
           <div className="mt-4 grid gap-2 sm:grid-cols-2 text-sm">
             {topic.prerequisites.length > 0 && (
               <div>
-                <span className="text-fg-muted">Traži: </span>
+                <span className="text-fg-muted">{t.requires} </span>
                 {topic.prerequisites.map((p) => (
                   <Link
                     key={p}
@@ -162,7 +142,7 @@ export default function TopicPage({ params }: { params: { id: string } }) {
             )}
             {topic.requiredBy.length > 0 && (
               <div>
-                <span className="text-fg-muted">Vodi u: </span>
+                <span className="text-fg-muted">{t.leadsTo} </span>
                 {topic.requiredBy.map((p) => (
                   <Link
                     key={p}
@@ -182,7 +162,7 @@ export default function TopicPage({ params }: { params: { id: string } }) {
         <div className="space-y-10 min-w-0">
           {topic.sections.pitch && (
             <Section id="pitch" title={SECTION_TITLES.pitch}>
-              <AiBand active={ai("pitch")}>
+              <AiBand active={ai("pitch")} lang={lang}>
                 <Markdown topicIds={ids}>{topic.sections.pitch}</Markdown>
               </AiBand>
             </Section>
@@ -192,9 +172,9 @@ export default function TopicPage({ params }: { params: { id: string } }) {
             <Section
               id="problems"
               title={SECTION_TITLES.pitchProblems}
-              hint="Problemi koji se mogu razumjeti (i napasti) bez poznavanja teorije. Upute su skrivene — otvori ih tek kad zapneš."
+              hint={t.problemsHint}
             >
-              <AiBand active={ai("pitch_problems")}>
+              <AiBand active={ai("pitch_problems")} lang={lang}>
                 <Markdown topicIds={ids} className="prose-ol:space-y-6">
                   {topic.sections.pitchProblems}
                 </Markdown>
@@ -214,11 +194,11 @@ export default function TopicPage({ params }: { params: { id: string } }) {
               title={SECTION_TITLES.general}
               hint={
                 <>
-                  Dijelovi{" "}
+                  {t.generalHint.before}
                   <Link href="/materials/general" className="text-brand hover:underline">
-                    općih materijala
-                  </Link>{" "}
-                  koji pokrivaju ovu temu.
+                    {t.generalHint.link}
+                  </Link>
+                  {t.generalHint.after}
                 </>
               }
             >
@@ -228,7 +208,7 @@ export default function TopicPage({ params }: { params: { id: string } }) {
 
           {groups.length > 0 && (
             <Section id="materials" title={SECTION_TITLES.materials}>
-              <MaterialGroupList groups={groups} />
+              <MaterialGroupList groups={groups} lang={lang} />
             </Section>
           )}
 
@@ -240,7 +220,7 @@ export default function TopicPage({ params }: { params: { id: string } }) {
 
           {topic.sections.matsek && (
             <Section id="matsek" title={SECTION_TITLES.matsek}>
-              <AiBand active={ai("matsek_materials")}>
+              <AiBand active={ai("matsek_materials")} lang={lang}>
                 <Markdown topicIds={ids}>{topic.sections.matsek}</Markdown>
               </AiBand>
             </Section>
@@ -267,7 +247,7 @@ export default function TopicPage({ params }: { params: { id: string } }) {
         <aside className="hidden lg:block">
           <div className="sticky top-24 space-y-1 text-sm">
             <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">
-              Na ovoj stranici
+              {t.onThisPage}
             </div>
             {toc.map((s) => (
               <a

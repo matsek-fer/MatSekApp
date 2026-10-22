@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { Difficulty, FreeStatus } from "@/lib/materials-meta";
+import { MATERIALS } from "@/lib/i18n/materials";
+import type { Lang } from "@/lib/i18n";
 import DifficultyBar from "./DifficultyBar";
 
 export interface MaterialCardData {
@@ -16,11 +17,11 @@ export interface MaterialCardData {
   freeText: string;
 }
 
-const FREE_STYLE: Record<FreeStatus, { label: string; cls: string }> = {
-  yes: { label: "besplatno", cls: "bg-success-bg text-success-fg" },
-  partial: { label: "dijelom besplatno", cls: "bg-warning-bg text-warning-fg" },
-  no: { label: "plaća se", cls: "bg-surface-hover text-fg-muted" },
-  unknown: { label: "", cls: "" },
+const FREE_CLASS: Record<FreeStatus, string> = {
+  yes: "bg-success-bg text-success-fg",
+  partial: "bg-warning-bg text-warning-fg",
+  no: "bg-surface-hover text-fg-muted",
+  unknown: "",
 };
 
 /**
@@ -31,15 +32,18 @@ const FREE_STYLE: Record<FreeStatus, { label: string; cls: string }> = {
 export default function MaterialCard({
   material,
   details,
+  lang,
   open,
   onToggle,
 }: {
   material: MaterialCardData;
   details: React.ReactNode;
+  lang: Lang;
   open: boolean;
   onToggle: () => void;
 }) {
-  const free = FREE_STYLE[material.free];
+  const t = MATERIALS[lang];
+  const freeLabel = t.free[material.free];
   return (
     <li className="rounded-lg border border-border bg-surface">
       <button
@@ -65,13 +69,15 @@ export default function MaterialCard({
                 {material.type}
               </span>
             )}
-            <DifficultyBar difficulty={material.difficulty} />
+            <DifficultyBar difficulty={material.difficulty} lang={lang} />
             {material.difficultyText && (
-              <span>težina {material.difficultyText}</span>
+              <span>
+                {t.difficultyWord} {material.difficultyText}
+              </span>
             )}
-            {free.label && (
-              <span className={cn("rounded px-1.5 py-0.5", free.cls)}>
-                {free.label}
+            {freeLabel && (
+              <span className={cn("rounded px-1.5 py-0.5", FREE_CLASS[material.free])}>
+                {freeLabel}
               </span>
             )}
           </span>
@@ -90,8 +96,7 @@ export default function MaterialCard({
             </a>
           ) : (
             <span className="text-fg-muted italic">
-              {material.linkText.replace(/[*_]/g, "").trim() ||
-                "Poveznica još nije dostupna"}
+              {material.linkText.replace(/[*_]/g, "").trim() || t.linkPending}
             </span>
           )}
           {material.linkText &&
@@ -104,7 +109,7 @@ export default function MaterialCard({
           {material.freeText &&
             !/^(yes|no|partial)$/i.test(material.freeText.trim()) && (
               <p className="mt-1 text-fg-muted">
-                Dostupnost: {material.freeText}
+                {t.availability} {material.freeText}
               </p>
             )}
           <div className="mt-3">{details}</div>
