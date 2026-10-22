@@ -39,14 +39,14 @@ export default function MaterialGroupList({
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-fg-muted">
           {total} {total === 1 ? "materijal" : total < 5 ? "materijala" : "materijala"} ·
           klikni na naziv za prednosti i nedostatke
         </p>
         <button
           type="button"
           onClick={toggleAll}
-          className="text-sm text-brand-600 hover:underline"
+          className="text-sm text-brand hover:underline"
         >
           {allOpen ? "Sažmi sve" : "Proširi sve"}
         </button>
@@ -54,7 +54,7 @@ export default function MaterialGroupList({
       {groups.map((g) => (
         <section key={g.title} id={`g-${slug(g.title)}`}>
           {groups.length > 1 && (
-            <h3 className="mb-2 text-base font-semibold text-gray-900">
+            <h3 className="mb-2 text-base font-semibold text-fg">
               {g.title}
             </h3>
           )}

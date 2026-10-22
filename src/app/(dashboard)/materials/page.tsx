@@ -17,8 +17,8 @@ export default function MaterialsPage() {
   return (
     <div className="space-y-6">
       <header className="max-w-3xl">
-        <h1 className="text-2xl font-bold text-gray-900">Materijali</h1>
-        <p className="mt-2 text-gray-600 leading-relaxed">
+        <h1 className="text-2xl font-bold text-fg">Materijali</h1>
+        <p className="mt-2 text-fg-muted leading-relaxed">
           Karta tema kojima se sekcija bavi. Svaka tema ima kratki uvod,
           tri problema za početak, popis preduvjeta i odabrane materijale
           (knjige, skripte, videe, zadatke) s ocjenom težine i kratkim

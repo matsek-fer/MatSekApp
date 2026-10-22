@@ -79,6 +79,33 @@ const config: Config = {
         "fade-in-up": "fade-in-up 0.15s ease-out",
         progress: "progress 1.2s ease-in-out infinite",
       },
+      // The plugin ships its own grey palette and a separate prose-invert for
+      // dark backgrounds. Pointing its variables at the tokens instead makes
+      // `prose` follow the .dark class like everything else, with no variant.
+      typography: {
+        DEFAULT: {
+          css: {
+            "--tw-prose-body": "rgb(var(--fg))",
+            "--tw-prose-headings": "rgb(var(--fg))",
+            "--tw-prose-lead": "rgb(var(--fg-muted))",
+            "--tw-prose-links": "rgb(var(--brand))",
+            "--tw-prose-bold": "rgb(var(--fg))",
+            "--tw-prose-counters": "rgb(var(--fg-muted))",
+            "--tw-prose-bullets": "rgb(var(--border-strong))",
+            "--tw-prose-hr": "rgb(var(--border))",
+            "--tw-prose-quotes": "rgb(var(--fg))",
+            "--tw-prose-quote-borders": "rgb(var(--border))",
+            "--tw-prose-captions": "rgb(var(--fg-muted))",
+            "--tw-prose-kbd": "rgb(var(--fg))",
+            "--tw-prose-kbd-shadows": "rgb(var(--fg) / 10%)",
+            "--tw-prose-code": "rgb(var(--fg))",
+            "--tw-prose-pre-code": "rgb(var(--fg))",
+            "--tw-prose-pre-bg": "rgb(var(--surface-hover))",
+            "--tw-prose-th-borders": "rgb(var(--border-strong))",
+            "--tw-prose-td-borders": "rgb(var(--border))",
+          },
+        },
+      },
     },
   },
   plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],

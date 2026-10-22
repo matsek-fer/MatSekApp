@@ -36,7 +36,7 @@ export default function DifficultyBar({
             className={cn(
               "rounded-sm",
               seg,
-              on ? "bg-brand-500" : "bg-gray-200"
+              on ? "bg-brand" : "bg-border"
             )}
           />
         );
