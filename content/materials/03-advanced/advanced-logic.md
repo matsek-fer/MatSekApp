@@ -34,7 +34,7 @@ precisely when it can compute something no algorithm can.
 The topic connects `logic-sets` to `computability` (the two are one
 subject viewed from two sides), to `type-theory` (termination proofs are
 ordinal analyses), and — through Löb's theorem — to
-`game-theory-compositional`, where agents who can read each other's source
+`open-source-game-theory`, where agents who can read each other's source
 code cooperate by exactly the reasoning Löb forbids them to doubt.
 
 ## Pitch problems

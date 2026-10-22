@@ -14,7 +14,7 @@ content/materials/
   README.md                       # this file: schema + master topic list
   general.md                      # atlases & channels referenced from many topics
   01-classical/<topic>.md         # introductions to classical fields
-  02-language/<topic>.md          # category theory, type theory, "better language"
+  02-language/<topic>.md          # categories and the like: category theory, type theory
   03-advanced/<topic>.md          # advanced / specialized / cross-field
 ```
 
@@ -99,7 +99,7 @@ Dynamical systems & differential equations · Introduction to algebra (groups,
 rings, fields) · Formal systems, set theory, logic · Metric spaces & topology ·
 Computer science (DSA, distributed systems, applied math, complexity theory)
 
-### 02 · Motivation for better language
+### 02 · Categories and the like (motivation for a better language)
 Category theory & type theory: what makes them powerful; compositionality;
 categorification of classical subjects; applied category theory; category
 theory applied to every field in 01 from a higher vantage point; higher
@@ -142,12 +142,15 @@ Status: ☐ not started · ◐ draft · ● reviewed
 
 ### 03-advanced
 - ◐ `advanced-analysis` — Advanced analysis & functional analysis
-- ◐ `advanced-algebra` — Advanced algebra & representation theory
+- ◐ `galois-theory` — Galois theory
+- ◐ `representation-theory` — Representation theory
+- ◐ `commutative-homological-algebra` — Commutative & homological algebra
 - ◐ `physics-symmetry` — Noether, topological groups, Lie algebras, gauge theory
 - ◐ `advanced-logic` — Gödel, Löb, provability, reverse mathematics
 - ◐ `geometry` — Erlangen program, categorification of geometry
 - ◐ `computability` — Computability & complexity, advanced
-- ◐ `game-theory-compositional` — Open-source & compositional game theory
+- ◐ `open-source-game-theory` — Open-source game theory
+- ◐ `compositional-game-theory` — Compositional game theory
 
 ### Potential lecture topics (no materials page)
 - Geometric & categorical deep learning
@@ -175,7 +178,8 @@ Status: ☐ not started · ◐ draft · ● reviewed
   `topic-id` code spans link to topics. Loader: `src/lib/materials.ts`.
 - `compositionality`: pitch problems still not final (several attempts);
   revisit with a member who knows the field. Its Braess problem now also
-  appears in `game-theory-compositional` (its natural home) — replace one.
-- Review pass still owed on: `advanced-algebra`, `physics-symmetry`,
-  `advanced-logic`, `geometry`, `computability`,
-  `game-theory-compositional` (written without review).
+  appears in `compositional-game-theory` (its natural home) — replace one.
+- Review pass still owed on: `galois-theory`, `representation-theory`,
+  `commutative-homological-algebra`, `physics-symmetry`, `advanced-logic`,
+  `geometry`, `computability`, `open-source-game-theory`,
+  `compositional-game-theory` (written without review).

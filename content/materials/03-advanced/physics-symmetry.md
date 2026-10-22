@@ -3,7 +3,7 @@ id: physics-symmetry
 title: Applications in physics — Noether, topological groups, Lie algebras, gauge theory
 category: advanced
 tagline: Every conservation law is a symmetry, every symmetry is a group, and the groups that act continuously are Lie groups — the mathematics behind why physics looks the way it does.
-prerequisites: [linear-algebra, dynamical-systems, topology, algebra-intro, advanced-algebra]
+prerequisites: [linear-algebra, dynamical-systems, topology, algebra-intro, representation-theory]
 status: draft
 ai_generated: [pitch, pitch_problems, matsek_materials]
 ---
@@ -34,7 +34,7 @@ for SU(2) × U(1) and SU(3) it is the weak and strong forces. The Standard
 Model is the statement that nature chose particular Lie groups.
 
 This topic is where `linear-algebra`, `dynamical-systems`, `topology` and
-`advanced-algebra` are used at once, and where the categorical language of
+`representation-theory` are used at once, and where the categorical language of
 part 02 begins to earn its keep in `categorical-physics`.
 
 ## Pitch problems
@@ -116,7 +116,7 @@ part 02 begins to earn its keep in `categorical-physics`.
 - **Dynamical systems** (`dynamical-systems`): Newtonian and Lagrangian
   mechanics as systems of ODEs; Hamilton's equations help.
 - **Topology** (`topology`): the fundamental group, covering spaces.
-- **Algebra** (`algebra-intro`, `advanced-algebra`): groups,
+- **Algebra** (`algebra-intro`, `representation-theory`): groups,
   homomorphisms, and the representation theory of finite groups as a model
   for the continuous case.
 - Multivariable calculus from `real-analysis`; no physics beyond

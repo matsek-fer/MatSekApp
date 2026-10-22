@@ -57,7 +57,7 @@ boundary is what makes the language powerful rather than merely tidy.
    <details><summary>Hint 3</summary>
    The behaviour of a network of self-interested parts is not a monotone
    function of the parts' behaviours. Compositional game theory
-   (`game-theory-compositional`) is the language built to repair this.
+   (`compositional-game-theory`) is the language built to repair this.
    </details>
 
 2. **The Bell game.** Alice and Bob sit in separate rooms. The referee gives

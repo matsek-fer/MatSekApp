@@ -35,25 +35,74 @@ here is what it costs."
 
 > _AI-generated draft — not yet reviewed by a MatSek member._
 
-1. **Sorting a million numbers.** The obvious method — repeatedly find the
-   smallest and move it to the front — takes about 10¹² steps. A better idea
-   takes about 2·10⁷, fifty thousand times fewer, on the same hardware. Now
-   the real question: how can you *prove* that no method, however clever, can
-   do fundamentally better than that?
-2. **Counting a billion visitors in a kilobyte.** A website gets a billion
-   visits and wants to know how many *distinct* people came. The obvious
-   method — remember everyone you have seen — needs gigabytes of memory.
-   There is a method that uses about one kilobyte, is off by only a couple of
-   percent, and rests on a party trick: ask everyone in a room to flip a coin
-   until they get tails and report their longest run of heads; from the
-   longest run in the room you can estimate how many people were flipping.
-   Why does the longest streak know how many people there were — and how do
-   you turn that into an algorithm every large database now runs?
-3. **The two generals.** Two armies on opposite hills must attack at the same
-   moment or lose. They can only communicate by messengers who might be
-   captured. Can they ever be *certain* they agree? Provably not — no
-   protocol works. Every database that runs on more than one computer lives
-   with the consequences of that proof.
+1. **A hundred prisoners and a hundred boxes.** A room holds 100 closed
+   boxes, each containing one of the numbers 1 to 100, shuffled at random.
+   Prisoners numbered 1 to 100 enter one at a time; each may open at most
+   50 boxes looking for their own number, then must leave the room exactly
+   as it was, without communicating. If *every* prisoner finds their number,
+   all go free; if even one fails, all die. Opening boxes at random gives
+   each prisoner a ½ chance, so the group survives with probability 2^{−100}.
+   Find a strategy, agreed in advance, under which the group survives with
+   probability above 30 %.
+
+   <details><summary>Hint 1</summary>
+   Open the box with your own number; whatever it contains, open the box
+   with that number next.
+   </details>
+   <details><summary>Hint 2</summary>
+   The boxes define a permutation. Everyone succeeds exactly when no cycle
+   is longer than 50.
+   </details>
+   <details><summary>Hint 3</summary>
+   The probability that a random permutation of 100 has a cycle longer
+   than 50 is Σ_{k=51}^{100} 1/k ≈ ln 2, so the group survives with
+   probability about 31 %. Why the strategy works is a question about the
+   structure of the data, not about luck.
+   </details>
+
+2. **Find the repeated number without a notebook.** An array holds n + 1
+   integers, each between 1 and n, so at least one value occurs twice. Find
+   a repeated value using only a constant amount of extra memory, without
+   modifying the array, and in time proportional to n. (Sorting is out —
+   it modifies the array or needs memory. So is a seen-before table.)
+
+   <details><summary>Hint 1</summary>
+   Read the array as a function f(i) = a[i] from {1, …, n+1} to {1, …, n},
+   and follow i → f(i) → f(f(i)) → … starting from n + 1.
+   </details>
+   <details><summary>Hint 2</summary>
+   The path must eventually enter a cycle; the value at the entry of the
+   cycle is a duplicate. Find the entry with two pointers moving at
+   different speeds.
+   </details>
+   <details><summary>Hint 3</summary>
+   Floyd's tortoise-and-hare. The same idea finds the period of a
+   pseudo-random generator and factors integers in Pollard's rho method.
+   </details>
+
+3. **The Byzantine generals.** n generals must agree whether to attack, by
+   exchanging messengers; some of them are traitors who may send anything
+   to anyone. The loyal generals must all reach the same decision, and if
+   the commander is loyal, that decision must be the commander's order.
+   (a) Prove that with 3 generals, one of them a traitor, no protocol can
+   work — however many rounds of messages are exchanged. (b) Design a
+   protocol for 4 generals with one traitor, and prove it works.
+
+   <details><summary>Hint 1</summary>
+   (a) Consider three scenarios in which the lieutenants see the same
+   messages but a different general is the traitor.
+   </details>
+   <details><summary>Hint 2</summary>
+   (b) Two rounds: the commander sends an order; each lieutenant relays what
+   it received to the others; each lieutenant decides by majority of the
+   three values it holds.
+   </details>
+   <details><summary>Hint 3</summary>
+   Lamport–Shostak–Pease (1982): agreement is possible exactly when more
+   than two thirds of the generals are loyal. The argument is why
+   blockchains and replicated databases need 3f + 1 nodes to survive f
+   faulty ones.
+   </details>
 
 ## Prerequisites
 
@@ -205,15 +254,16 @@ Erickson's and Sipser's exercises cover the theory side.
 
 > _AI-generated TODO recommendations — none of these exist yet. Replace with real MatSek materials as they are produced._
 
+- **Prisoners and permutations** — the strategy, the cycle structure of
+  random permutations, the 31 % computed. Resolves pitch problem 1; joint
+  with `probability`.
+- **Cycle finding** — the duplicate, Floyd's and Brent's algorithms,
+  Pollard's rho. Resolves pitch problem 2.
+- **Byzantine agreement** — the 3-general impossibility, the 4-general
+  protocol, then FLP and CAP: what engineers do about them. Resolves pitch
+  problem 3.
 - **Why n log n?** — the comparison-sort lower bound by decision trees.
-  Resolves pitch problem 1.
-- **Counting without counting** — from the coin-flip trick to
-  HyperLogLog: hashing, the longest-run estimator, averaging buckets, with
-  a thirty-line implementation. Resolves pitch problem 2; joint with
-  `probability`.
-- **P vs NP in one hour** — the question, reductions, why sudoku is SAT,
-  what a proof would and would not change.
-- **Impossibility results** — two generals, FLP, CAP: statements,
-  proof sketches, what engineers do about them. Resolves pitch problem 3.
+- **Counting without counting** — HyperLogLog from the coin-flip trick,
+  with a thirty-line implementation; joint with `probability`.
 - **Algorithms as recursion** — Erickson's method applied to five classic
   problems, live.
