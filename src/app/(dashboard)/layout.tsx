@@ -1,9 +1,14 @@
 import Link from "next/link";
-import Image from "next/image";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import VoronoiNavbarLink from "@/components/layout/VoronoiNavbarLink";
 import LogoutButton from "@/components/auth/LogoutButton";
+import ThemeToggle from "@/components/ui/ThemeToggle";
+import { ButtonLink } from "@/components/ui/Button";
+import Logo from "@/components/ui/Logo";
+import LanguageToggle from "@/components/ui/LanguageToggle";
+import { getLang } from "@/lib/i18n/server";
+import { CHROME } from "@/lib/i18n/chrome";
 
 export default async function DashboardLayout({
   children,
@@ -18,86 +23,126 @@ export default async function DashboardLayout({
   let profile: { role: string; full_name: string } | null = null;
 
   if (session) {
-    const { data: p } = await supabase
+    const { data } = await supabase
       .from("profiles")
       .select("role, full_name")
       .eq("id", session.user.id)
       .single();
-    profile = p;
+    profile = data;
   }
 
   const isAdmin = profile?.role === "admin";
+  const lang = getLang();
+  const t = CHROME[lang];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top navbar */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center gap-8">
+    <div className="min-h-screen bg-bg">
+      {/* The id is how the reader finds this bar to measure it. Its height is
+          not a constant — an extra nav row wraps under `md` — so the reading
+          view reads `offsetHeight` rather than hardcoding 4rem. */}
+      <nav
+        id="app-navbar"
+        className="sticky top-0 z-40 border-b border-border bg-surface"
+      >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between gap-4">
+            {/* self-stretch down the chain so the nav links can fill the bar's
+                full height; the logo beside them stays vertically centred. */}
+            <div className="flex items-center gap-6 self-stretch">
               <Link
                 href="/"
-                className="flex-shrink-0"
+                className="shrink-0 rounded-lg"
+                aria-label={t.home}
               >
-                <Image
-                  src="/logo.png"
-                  alt="MATSEK — Matematička sekcija"
-                  width={140}
-                  height={48}
-                  className="h-10 w-auto"
-                  priority
-                  unoptimized
-                />
+                <Logo width={112} />
               </Link>
-              <div className="hidden md:flex gap-1">
-                <VoronoiNavbarLink href="/calendar">
-                  Kalendar
-                </VoronoiNavbarLink>
+
+              <div className="hidden gap-1 self-stretch md:flex">
+                <VoronoiNavbarLink href="/calendar">{t.calendar}</VoronoiNavbarLink>
+                <VoronoiNavbarLink href="/tools">{t.tools}</VoronoiNavbarLink>
                 {session && (
                   <VoronoiNavbarLink href="/activities/new">
-                    Predloži aktivnost
+                    {t.propose}
+                  </VoronoiNavbarLink>
+                )}
+                {session && (
+                  <VoronoiNavbarLink href="/documents">
+                    {t.documents}
                   </VoronoiNavbarLink>
                 )}
                 {isAdmin && (
-                  <VoronoiNavbarLink
-                    href="/admin"
-                    className="text-brand-600 font-medium hover:text-brand-700"
-                  >
-                    Admin panel
+                  <VoronoiNavbarLink href="/admin" className="text-brand">
+                    {t.admin}
                   </VoronoiNavbarLink>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-4">
+
+            <div className="flex items-center gap-1 self-stretch sm:gap-2">
+              {/* Under md the toggle moves to the end of the collapsed nav row —
+                  the signed-out bar has no room for another control. */}
+              <div className="hidden md:block">
+                <LanguageToggle lang={lang} label={t.toggleLang} />
+              </div>
+              <ThemeToggle label={t.toggleTheme} />
               {session ? (
                 <>
                   <NotificationBell />
-                  <VoronoiNavbarLink href="/profile">
+                  <VoronoiNavbarLink
+                    href="/profile"
+                    className="hidden max-w-[16ch] self-stretch truncate sm:inline-flex"
+                  >
                     {profile?.full_name || session.user.email}
                   </VoronoiNavbarLink>
-                  <LogoutButton />
+                  <LogoutButton label={t.logout} pendingLabel={t.loggingOut} />
                 </>
               ) : (
                 <>
-                  <VoronoiNavbarLink href="/login">
-                    Prijavi se
+                  <VoronoiNavbarLink href="/login" className="self-stretch">
+                    {t.login}
                   </VoronoiNavbarLink>
-                  <Link
-                    href="/register"
-                    className="px-4 py-2 bg-brand-600 text-white rounded-lg
-                               hover:bg-brand-700 transition-colors text-sm"
-                  >
-                    Registriraj se
-                  </Link>
+                  <ButtonLink href="/register">{t.register}</ButtonLink>
                 </>
               )}
+            </div>
+          </div>
+
+          {/* Primary nav collapses under the bar on small screens. */}
+          <div className="flex gap-1 overflow-x-auto pb-1 md:hidden">
+            <VoronoiNavbarLink href="/calendar" className="!py-2">
+              {t.calendar}
+            </VoronoiNavbarLink>
+            <VoronoiNavbarLink href="/tools" className="!py-2">
+              {t.tools}
+            </VoronoiNavbarLink>
+            {session && (
+              <VoronoiNavbarLink href="/activities/new" className="!py-2">
+                {t.proposeShort}
+              </VoronoiNavbarLink>
+            )}
+            {session && (
+              <VoronoiNavbarLink href="/documents" className="!py-2">
+                {t.documents}
+              </VoronoiNavbarLink>
+            )}
+            {session && (
+              <VoronoiNavbarLink href="/profile" className="!py-2">
+                {t.profile}
+              </VoronoiNavbarLink>
+            )}
+            {isAdmin && (
+              <VoronoiNavbarLink href="/admin" className="!py-2 text-brand">
+                {t.adminShort}
+              </VoronoiNavbarLink>
+            )}
+            <div className="ml-auto self-center">
+              <LanguageToggle lang={lang} label={t.toggleLang} />
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Page content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {children}
       </main>
     </div>

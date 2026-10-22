@@ -1,6 +1,6 @@
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { verificationEmailTemplate, sendEmail } from "@/lib/email";
 import { NextResponse, type NextRequest } from "next/server";
+import { isAllowedEmail } from "@/lib/validation";
 import type { ApiResponse } from "@/types";
 
 /**
@@ -30,6 +30,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!isAllowedEmail(email)) {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          error: "Dozvoljene su samo @fer.hr i @student.fer.hr email adrese.",
+        },
+        { status: 400 }
+      );
+    }
+
     const supabase = createServerClient();
 
     const { data, error } = await supabase.auth.signUp({
@@ -49,21 +59,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate verification link using Supabase's built-in mechanism
-    // (we can also use a custom token flow; standard Verify OTP is simplest)
-    const { data: verifyData, error: verifyError } =
-      await supabase.auth.resend({
-        type: "signup",
-        email,
-      });
-
-    // Alternative: send custom email with verification link
-    // const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify?token=...`;
-    // await sendEmail({
-    //   to: email,
-    //   subject: "Verificiraj svoj Math Club FER račun",
-    //   html: verificationEmailTemplate(full_name, verifyUrl),
-    // });
+    // signUp() already dispatches the confirmation mail. Calling resend() here
+    // as well delivered two codes and burned the per-address rate limit.
 
     return NextResponse.json<ApiResponse>(
       {

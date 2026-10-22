@@ -1,0 +1,123 @@
+#!/bin/sh
+#
+# Blocks commits that would leak credentials.
+#
+# Enable (once per clone):   git config core.hooksPath .githooks
+# Bypass a false positive:   git commit --no-verify
+#
+# This exists because a build output directory was committed once, which baked
+# the Supabase keys into tracked JS chunks — .gitignore alone did not catch it,
+# since the leak was inside an artifact rather than in a .env file.
+
+fail() {
+  echo ""
+  echo "  ✖ COMMIT BLOCKED — possible credential leak"
+  echo ""
+  echo "  $1"
+  echo ""
+  echo "  Fix it, then commit again."
+  echo "  If this is a false positive: git commit --no-verify"
+  echo ""
+  exit 1
+}
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$staged" ] && exit 0
+
+# ── 1. Environment files ───────────────────────────────────────────────────
+env_files=$(printf '%s\n' "$staged" \
+  | grep -E '(^|/)\.env' \
+  | grep -vE '\.(example|sample|template)$')
+if [ -n "$env_files" ]; then
+  fail "Staged environment file(s):
+$(printf '%s\n' "$env_files" | sed 's/^/      /')
+
+  These hold real credentials. Keep them untracked — the template
+  .env.local.example is the file that belongs in the repo."
+fi
+
+# ── 2. Build output (this is how the keys leaked last time) ────────────────
+build_files=$(printf '%s\n' "$staged" | grep -E '^(\.next|out|build|dist)/')
+if [ -n "$build_files" ]; then
+  fail "Staged build output:
+$(printf '%s\n' "$build_files" | head -5 | sed 's/^/      /')
+
+  Next.js inlines every NEXT_PUBLIC_* value into these bundles."
+fi
+
+# ── 3. Key material anywhere in the staged content ─────────────────────────
+# Supabase keys are JWTs; the base64 payload carries the role verbatim.
+#   InNlcnZpY2Vfcm9sZSI = "service_role"      ImFub24i = "anon"
+#
+# Scanned with `grep -a` over a pipe rather than a shell variable: command
+# substitution strips null bytes and would warn on every staged binary.
+scan() { git show ":$1" 2>/dev/null | grep -qa "$2"; }
+
+for file in $staged; do
+  # This script necessarily contains the patterns it looks for.
+  case "$file" in .githooks/*) continue ;; esac
+
+  if scan "$file" 'InNlcnZpY2Vfcm9sZSI'; then
+    fail "SUPABASE SERVICE_ROLE KEY found in: $file
+
+  This key bypasses Row Level Security — it grants full read/write on
+  every table. It must never reach the repo, and if it already has,
+  rotate it in the Supabase dashboard immediately."
+  fi
+
+  if scan "$file" 'ImFub24i'; then
+    fail "Supabase anon key found in: $file
+
+  The anon key is public by design (it ships to the browser), but it
+  should still come from the environment rather than be committed."
+  fi
+
+  if scan "$file" 'BEGIN \(RSA \|OPENSSH \|EC \)\?PRIVATE KEY'; then
+    fail "Private key material found in: $file"
+  fi
+
+  # Members' AI provider keys. These bill to someone's personal account and we
+  # cannot revoke them for them, so a leak is their problem to clean up — which
+  # is exactly why it must not happen here. Developers handle real keys while
+  # working on the reading assistant, so the prefixes are worth catching.
+  #   sk-ant-  Anthropic   sk-proj- / sk-  OpenAI   AIza  Google   sk-  DeepSeek
+  if scan "$file" 'sk-ant-[A-Za-z0-9_-]\{16,\}'; then
+    fail "Anthropic API key found in: $file
+
+  This is a member's or your own key, and it bills to that account.
+  Remove it, then revoke the key at platform.claude.com."
+  fi
+
+  if scan "$file" 'sk-proj-[A-Za-z0-9_-]\{16,\}'; then
+    fail "OpenAI API key found in: $file
+
+  Remove it, then revoke the key at platform.openai.com."
+  fi
+
+  # DeepSeek and legacy OpenAI keys are a bare sk- prefix over one long
+  # alphanumeric run. The 24-character floor keeps ordinary identifiers that
+  # happen to start with sk- out of the net; both vendors' keys clear it.
+  if scan "$file" 'sk-[A-Za-z0-9]\{24,\}'; then
+    fail "DeepSeek or OpenAI API key found in: $file
+
+  Remove it, then revoke the key at platform.deepseek.com or
+  platform.openai.com."
+  fi
+
+  if scan "$file" 'AIza[A-Za-z0-9_-]\{30,\}'; then
+    fail "Google API key found in: $file
+
+  Remove it, then revoke the key at aistudio.google.com."
+  fi
+
+  # The master secret itself. A real one is 44 base64 characters; the
+  # placeholder in .env.local.example is shorter and passes.
+  if scan "$file" 'AI_KEY_ENCRYPTION_SECRET=[A-Za-z0-9+/]\{40,\}'; then
+    fail "AI_KEY_ENCRYPTION_SECRET found in: $file
+
+  This decrypts every member's provider API key. Remove it, generate a
+  replacement with \`openssl rand -base64 32\`, and redeploy."
+  fi
+done
+
+exit 0
