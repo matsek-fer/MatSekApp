@@ -56,9 +56,14 @@ function parseFree(text: string): FreeStatus {
   return "unknown";
 }
 
+/**
+ * First http(s) URL in the field, or a root-relative path: hosted files
+ * (the topology script) live under public/materials/<topic>/ and are
+ * linked as `/materials/topology/predavanje-1.pdf`.
+ */
 function firstUrl(text: string): string | null {
-  const m = text.match(/https?:\/\/[^\s)\]>]+/);
-  return m ? m[0] : null;
+  const m = text.match(/https?:\/\/[^\s)\]>]+|(?:^|\s)\/[^\s)\]>]+/);
+  return m ? m[0].trim() : null;
 }
 
 /** Drop the AI-generated note blockquote that opens flagged sections. */

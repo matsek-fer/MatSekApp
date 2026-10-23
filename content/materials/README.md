@@ -66,7 +66,7 @@ free alternative. Optional subsections (`## Problem books`, `## Lectures`)
 may follow; every entry uses the same fields.
 
 ### <Material name>
-- **Link:** <url>
+- **Link:** <url, or /path to a file under public/materials/<topic>/>
 - **Type:** book | notes | video | course | paper | blog | repo | site | problems
 - **Difficulty:** 1 | 2 | 3 | 4 | 5 | or a range like 2-3 / 1-5
 - **Free:** yes | no | partial
@@ -76,7 +76,10 @@ may follow; every entry uses the same fields.
 ## Matsek materials
 Materials produced by MatSek members (scripts, problem sheets, session plans),
 with links once they exist. Until then the section holds AI-generated TODO
-recommendations, marked by the blockquote note.
+recommendations, marked by the blockquote note. Once real items arrive,
+drop `matsek_materials` from the flag and keep a visible note over the
+remaining suggestions only (see `topology`); word it so it does not start
+with `_AI-generated`, which is the note the loader hides.
 ```
 
 ## Difficulty scale
@@ -129,7 +132,7 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - ◐ `dynamical-systems` — Dynamical systems & differential equations
 - ◐ `algebra-intro` — Introduction to algebra (groups, rings, fields)
 - ◐ `logic-sets` — Formal systems, set theory, logic
-- ◐ `topology` — Metric spaces & topology (club script PDF pending)
+- ◐ `topology` — Metric spaces & topology (script hosted: lectures 1–5)
 - ◐ `cs-foundations` — CS: DSA, distributed systems, applied math, complexity
 
 ### 02-language
@@ -170,6 +173,10 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - Lists are deliberately short. Breadth lives in `general.md` (Real Not
   Complex, the Napkin, the Princeton Companion), not in topic files.
 - Strengths/weaknesses are opinions — sign heavy edits in the git log.
+- Hosted files live under `public/materials/<topic>/` and are linked
+  root-relative (`/materials/topology/predavanje-1.pdf`); the loader treats
+  such a Link as a real link, and the middleware already serves everything
+  under `/materials` without a session.
 
 ## TODO
 
@@ -181,6 +188,8 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - `compositionality`: pitch problems still not final (several attempts);
   revisit with a member who knows the field. Its Braess problem now also
   appears in `compositional-game-theory` (its natural home) — replace one.
+- `topology`: lectures 6 onwards of the script, when they arrive — one
+  PDF each under `public/materials/topology/`, one list item each.
 - Review pass still owed on: `galois-theory`, `representation-theory`,
   `commutative-homological-algebra`, `physics-symmetry`, `advanced-logic`,
   `geometry`, `computability`, `open-source-game-theory`,
