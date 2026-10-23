@@ -1,5 +1,13 @@
 import type { Metadata } from "next";
-import { getAllTopics, getTopicShortTitles, toSummary } from "@/lib/materials";
+import {
+  VIEWS,
+  getAllTopics,
+  getConnections,
+  getTopicShortTitles,
+  toConnectionSummary,
+  toSummary,
+  type View,
+} from "@/lib/materials";
 import { getLang } from "@/lib/i18n/server";
 import { MATERIALS } from "@/lib/i18n/materials";
 import MaterialsExplorer from "@/components/materials/MaterialsExplorer";
@@ -9,13 +17,20 @@ export function generateMetadata(): Metadata {
   return { title: meta.title, description: meta.description };
 }
 
-export default function MaterialsPage() {
+export default function MaterialsPage({
+  searchParams,
+}: {
+  searchParams?: { view?: string };
+}) {
   const lang = getLang();
   const t = MATERIALS[lang];
   const all = getAllTopics();
   const titles = getTopicShortTitles();
   const general = all.find((topic) => topic.category === "general");
   const topics = all.filter((topic) => topic.category !== "general").map(toSummary);
+  const connections = getConnections().map(toConnectionSummary);
+  const view = searchParams?.view;
+  const initialView = VIEWS.includes(view as View) ? (view as View) : "grid";
 
   return (
     <div className="space-y-6">
@@ -27,7 +42,9 @@ export default function MaterialsPage() {
         topics={topics}
         general={general ? toSummary(general) : null}
         titles={titles}
+        connections={connections}
         lang={lang}
+        initialView={initialView}
       />
     </div>
   );

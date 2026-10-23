@@ -1,12 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAllTopics, getTopic, getTopicTitles } from "@/lib/materials";
+import {
+  getAllTopics,
+  getConnectionsFor,
+  getTopic,
+  getTopicShortTitles,
+  getTopicTitles,
+} from "@/lib/materials";
 import { getLang } from "@/lib/i18n/server";
 import { MATERIALS } from "@/lib/i18n/materials";
 import Markdown from "@/components/materials/Markdown";
 import AiBand from "@/components/materials/AiBand";
 import DifficultyBar from "@/components/materials/DifficultyBar";
+import StrengthDots from "@/components/materials/StrengthDots";
 import MaterialGroupList, {
   type MaterialGroupData,
 } from "@/components/materials/MaterialGroupList";
@@ -32,7 +39,9 @@ export default function TopicPage({ params }: { params: { id: string } }) {
   const SECTION_TITLES = t.sections;
 
   const titles = getTopicTitles();
+  const short = getTopicShortTitles();
   const ids = Object.keys(titles);
+  const connections = getConnectionsFor(topic.id);
   const all = getAllTopics();
   const idx = all.findIndex((t) => t.id === topic.id);
   const prev = idx > 0 ? all[idx - 1] : null;
@@ -95,6 +104,8 @@ export default function TopicPage({ params }: { params: { id: string } }) {
     toc.push({ id: "problems", label: SECTION_TITLES.pitchProblems });
   if (topic.sections.prerequisites)
     toc.push({ id: "prerequisites", label: SECTION_TITLES.prerequisites });
+  if (connections.length)
+    toc.push({ id: "connections", label: SECTION_TITLES.connections });
   if (topic.sections.general) toc.push({ id: "general", label: SECTION_TITLES.general });
   if (groups.length) toc.push({ id: "materials", label: SECTION_TITLES.materials });
   if (topic.sections.problems) toc.push({ id: "exercises", label: SECTION_TITLES.problems });
@@ -185,6 +196,39 @@ export default function TopicPage({ params }: { params: { id: string } }) {
           {topic.sections.prerequisites && (
             <Section id="prerequisites" title={SECTION_TITLES.prerequisites}>
               <Markdown topicIds={ids}>{topic.sections.prerequisites}</Markdown>
+            </Section>
+          )}
+
+          {connections.length > 0 && (
+            <Section
+              id="connections"
+              title={SECTION_TITLES.connections}
+              hint={
+                <>
+                  {t.connectionsSectionHint}{" "}
+                  <Link href="/materials?view=connections" className="text-brand hover:underline">
+                    {t.connectionsAll}
+                  </Link>
+                </>
+              }
+            >
+              <ul className="grid gap-x-6 gap-y-3 sm:grid-cols-2 text-sm">
+                {connections.map((c) => {
+                  const otherId = c.a === topic.id ? c.b : c.a;
+                  return (
+                    <li key={c.pair} className="min-w-0">
+                      <Link
+                        href={`/materials/connections/${c.pair}`}
+                        className="inline-flex items-center gap-2 font-medium text-brand hover:underline"
+                      >
+                        {short[otherId] ?? otherId}
+                        <StrengthDots strength={c.strength} lang={lang} />
+                      </Link>
+                      <span className="block text-fg-muted">{c.tagline}</span>
+                    </li>
+                  );
+                })}
+              </ul>
             </Section>
           )}
 

@@ -4,9 +4,12 @@ import matter from "gray-matter";
 import {
   CATEGORY_ORDER,
   type Category,
+  type Connection,
+  type ConnectionSummary,
   type Difficulty,
   type FreeStatus,
   type Material,
+  type Strength,
   type MaterialGroup,
   type Topic,
   type TopicSections,
@@ -25,6 +28,8 @@ export * from "./materials-meta";
  */
 
 const CONTENT_DIR = path.join(process.cwd(), "content", "materials");
+/** One file per edge of the connections map; not topics, so the walk skips it. */
+const CONNECTIONS_DIR = path.join(CONTENT_DIR, "connections");
 
 const SECTION_KEYS: Record<string, keyof TopicSections> = {
   pitch: "pitch",
@@ -224,7 +229,9 @@ function listTopicFiles(): string[] {
   const walk = (dir: string) => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) walk(full);
+      if (entry.isDirectory()) {
+        if (full !== CONNECTIONS_DIR) walk(full);
+      }
       else if (entry.name.endsWith(".md") && entry.name !== "README.md")
         out.push(full);
     }
@@ -340,4 +347,76 @@ export function getTopicShortTitles(): Record<string, string> {
   return Object.fromEntries(
     getAllTopics().map((t) => [t.id, shortTitle(t.title)])
   );
+}
+
+// ── Connections ──────────────────────────────────────────────────────────
+
+let connectionCache: Connection[] | null = null;
+
+/**
+ * The edges of the connections map, from content/materials/connections.
+ * A file whose `between` does not name two known topics is skipped with a
+ * warning rather than breaking the page: the content is edited by hand.
+ */
+export function getConnections(): Connection[] {
+  if (connectionCache && process.env.NODE_ENV === "production")
+    return connectionCache;
+
+  const ids = new Set(getAllTopics().map((t) => t.id));
+  const seen = new Set<string>();
+  const out: Connection[] = [];
+  const names = fs.existsSync(CONNECTIONS_DIR)
+    ? fs.readdirSync(CONNECTIONS_DIR).filter((n) => n.endsWith(".md")).sort()
+    : [];
+  for (const name of names) {
+    const raw = fs.readFileSync(path.join(CONNECTIONS_DIR, name), "utf8");
+    const { data, content } = matter(raw);
+    const between = asStringArray(data.between);
+    if (between.length !== 2 || !between.every((id) => ids.has(id))) {
+      console.warn(`materials: skipping connections/${name}: between = ${JSON.stringify(data.between)}`);
+      continue;
+    }
+    const [a, b] = [...between].sort();
+    const pair = `${a}--${b}`;
+    if (seen.has(pair)) {
+      console.warn(`materials: skipping connections/${name}: duplicate of ${pair}`);
+      continue;
+    }
+    seen.add(pair);
+    const strength = Number(data.strength);
+    out.push({
+      a,
+      b,
+      pair,
+      tagline: String(data.tagline ?? ""),
+      strength: (strength === 1 || strength === 3 ? strength : 2) as Strength,
+      aiGenerated: data.ai_generated === true || String(data.ai_generated) === "true",
+      status: String(data.status ?? "draft"),
+      body: stripAiNote(content),
+    });
+  }
+  connectionCache = out;
+  return out;
+}
+
+export function getConnection(pair: string): Connection | undefined {
+  return getConnections().find((c) => c.pair === pair);
+}
+
+/** A topic's connections, strongest first, then in overview order of the other end. */
+export function getConnectionsFor(id: string): Connection[] {
+  const order = new Map(getAllTopics().map((t, i) => [t.id, i]));
+  return getConnections()
+    .filter((c) => c.a === id || c.b === id)
+    .sort((x, y) => {
+      if (x.strength !== y.strength) return y.strength - x.strength;
+      const ox = order.get(x.a === id ? x.b : x.a) ?? 0;
+      const oy = order.get(y.a === id ? y.b : y.a) ?? 0;
+      return ox - oy;
+    });
+}
+
+export function toConnectionSummary(c: Connection): ConnectionSummary {
+  const { a, b, pair, tagline, strength, aiGenerated } = c;
+  return { a, b, pair, tagline, strength, aiGenerated };
 }

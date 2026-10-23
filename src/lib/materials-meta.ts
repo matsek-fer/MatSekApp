@@ -85,6 +85,36 @@ export function shortTitle(title: string): string {
 
 export const CATEGORY_ORDER: Category[] = ["classical", "language", "advanced"];
 
+/** The overview's views; `?view=` on /materials opens one of the maps. */
+export type View = "grid" | "map" | "connections";
+export const VIEWS: readonly View[] = ["grid", "map", "connections"];
+
+/** How much two topics trade: 1 touching, 2 regular traffic, 3 inseparable. */
+export type Strength = 1 | 2 | 3;
+
+/** One edge of the connections map, as the client components see it. */
+export interface ConnectionSummary {
+  /** The two topic ids, alphabetical. */
+  a: string;
+  b: string;
+  /** `${a}--${b}`: the file name and the route segment. */
+  pair: string;
+  tagline: string;
+  strength: Strength;
+  aiGenerated: boolean;
+}
+
+export interface Connection extends ConnectionSummary {
+  status: string;
+  /** Markdown */
+  body: string;
+}
+
+/** The pair key of two topic ids, whichever order they come in. */
+export function pairId(a: string, b: string): string {
+  return [a, b].sort().join("--");
+}
+
 /** "2" or "2–4": the language-neutral part of every difficulty badge. */
 export function difficultyRange(d: Difficulty): string {
   return d.min === d.max ? `${d.min}` : `${d.min}–${d.max}`;

@@ -44,6 +44,7 @@ export interface MaterialsCopy {
   reset: string;
   viewGrid: string;
   viewMap: string;
+  viewConnections: string;
   legendSummary: string;
   noMatch: string;
 
@@ -57,6 +58,19 @@ export interface MaterialsCopy {
   openTopic: string;
   mapHint: string;
   mapAria: string;
+
+  connectionsHint: string;
+  connectionsAria: string;
+  connectionsCrumb: string;
+  connectionsAll: string;
+  connectionsSectionHint: string;
+  connectedTo: string;
+  openConnection: string;
+  topicsLabel: string;
+  strengthWord: string;
+  strengthLabels: Record<number, string>;
+  nConnections: (n: number) => string;
+  otherConnections: (title: string) => string;
 
   free: Record<FreeStatus, string>;
   linkPending: string;
@@ -75,6 +89,7 @@ export interface MaterialsCopy {
     materials: string;
     problems: string;
     matsek: string;
+    connections: string;
   };
   problemsHint: string;
   /** Rendered as `before <a>link</a> after`. */
@@ -178,6 +193,7 @@ const hr: MaterialsCopy = {
   reset: "poništi",
   viewGrid: "Pregled",
   viewMap: "Karta preduvjeta",
+  viewConnections: "Karta veza",
   legendSummary: "Što znače razine težine?",
   noMatch: "Nijedna tema ne odgovara filtru.",
 
@@ -193,6 +209,20 @@ const hr: MaterialsCopy = {
   mapHint:
     "Slijeva nadesno: tema stoji desno od svojih preduvjeta. Klikni temu za njezine veze, dvaput za otvaranje.",
   mapAria: "Karta preduvjeta među temama",
+
+  connectionsHint:
+    "Teme na kružnici, veze kao lukovi: deblji luk, jača veza. Prijeđi mišem preko teme za njezine veze; klikni luk za opis.",
+  connectionsAria: "Karta veza među temama",
+  connectionsCrumb: "Veze",
+  connectionsAll: "Sve veze →",
+  connectionsSectionHint: "Što ova tema razmjenjuje s drugima: svaka veza ima svoj opis.",
+  connectedTo: "Povezano s:",
+  openConnection: "Otvori opis →",
+  topicsLabel: "Teme:",
+  strengthWord: "jačina",
+  strengthLabels: { 1: "dodir", 2: "redovita razmjena", 3: "nerazdvojive" },
+  nConnections: (n) => hrN(n, "veza", "veze", "veza"),
+  otherConnections: (title) => `Ostale veze teme ${title}`,
 
   free: { yes: "besplatno", partial: "dijelom besplatno", no: "plaća se", unknown: "" },
   linkPending: "Poveznica još nije dostupna",
@@ -211,6 +241,7 @@ const hr: MaterialsCopy = {
     materials: "Materijali",
     problems: "Zadaci i nastavak",
     matsek: "MatSek materijali",
+    connections: "Veze s drugim temama",
   },
   problemsHint:
     "Problemi koji se mogu razumjeti (i napasti) bez poznavanja teorije. Upute su skrivene — otvori ih tek kad zapneš.",
@@ -282,6 +313,7 @@ const en: MaterialsCopy = {
   reset: "clear",
   viewGrid: "Overview",
   viewMap: "Prerequisite map",
+  viewConnections: "Connections map",
   legendSummary: "What do the difficulty levels mean?",
   noMatch: "No topic matches the filter.",
 
@@ -297,6 +329,20 @@ const en: MaterialsCopy = {
   mapHint:
     "Left to right: a topic sits to the right of its prerequisites. Click a topic to see its links, click again to open it.",
   mapAria: "Prerequisite map of the topics",
+
+  connectionsHint:
+    "Topics on a circle, connections as chords: the thicker, the stronger. Hover a topic for its connections; click a chord for its description.",
+  connectionsAria: "Map of connections between topics",
+  connectionsCrumb: "Connections",
+  connectionsAll: "All connections →",
+  connectionsSectionHint: "What this topic trades with others: every connection has its own page.",
+  connectedTo: "Connected to:",
+  openConnection: "Open the description →",
+  topicsLabel: "Topics:",
+  strengthWord: "strength",
+  strengthLabels: { 1: "touching", 2: "regular traffic", 3: "inseparable" },
+  nConnections: (n) => enN(n, "connection", "connections"),
+  otherConnections: (title) => `Other connections of ${title}`,
 
   free: { yes: "free", partial: "partly free", no: "paid", unknown: "" },
   linkPending: "Link not yet available",
@@ -315,6 +361,7 @@ const en: MaterialsCopy = {
     materials: "Materials",
     problems: "Exercises and where next",
     matsek: "MatSek materials",
+    connections: "Connections to other topics",
   },
   problemsHint:
     "Problems you can understand (and attack) without knowing the theory. The hints are hidden — open them only when you are stuck.",

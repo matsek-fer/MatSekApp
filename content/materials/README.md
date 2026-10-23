@@ -16,6 +16,7 @@ content/materials/
   01-classical/<topic>.md         # introductions to classical fields
   02-language/<topic>.md          # categories and the like: category theory, type theory
   03-advanced/<topic>.md          # advanced / specialized / cross-field
+  connections/<a>--<b>.md         # how two topics interconnect (the connections map)
 ```
 
 ## Topic file schema
@@ -80,6 +81,36 @@ recommendations, marked by the blockquote note. Once real items arrive,
 drop `matsek_materials` from the flag and keep a visible note over the
 remaining suggestions only (see `topology`); word it so it does not start
 with `_AI-generated`, which is the note the loader hides.
+```
+
+## Connection file schema
+
+One file per edge of the connections map, named `<a>--<b>.md` with the two
+topic ids in alphabetical order. Unlike prerequisites, a connection is
+undirected: it describes what the two fields trade with each other.
+
+```markdown
+---
+between: [linear-algebra, probability]   # two topic ids, alphabetical
+tagline: one sentence (≤ 25 words) saying what the two fields trade
+strength: 3                              # 1 touching · 2 regular traffic · 3 inseparable
+status: draft                            # draft | reviewed
+ai_generated: true                       # drop once a member has signed it off
+---
+
+About 400 words (360–440 of prose). Open with the one idea that binds the
+two fields, then what each gives the other, then one concrete bridge — a
+named theorem or construction with an example a strong first-year student
+can follow — and where to see it, naming materials already listed on the
+two topic pages. Topic ids in backticks become links. Mathematics in
+Unicode, as in the topic files (no LaTeX).
+
+A diagram is optional and only where prose would be worse: a GFM table as
+a dictionary between the two fields, or an inline SVG — `viewBox` set,
+`width="100%"`, `style="max-width:560px"`, `role="img"` with an
+`aria-label`, shapes `fill="none" stroke="currentColor"`, text
+`fill="currentColor"` at 12px or larger, no other colours, well-formed
+(every tag closed), at most ~40 lines, a blank line before and after.
 ```
 
 ## Difficulty scale
@@ -190,6 +221,10 @@ Status: ☐ not started · ◐ draft · ● reviewed
   appears in `compositional-game-theory` (its natural home) — replace one.
 - `topology`: lectures 6 onwards of the script, when they arrive — one
   PDF each under `public/materials/topology/`, one list item each.
+- `connections/`: all 48 pages were AI-drafted and AI-reviewed, none read
+  by a member yet. Review pass owed; drop `ai_generated` as each is signed
+  off. Adding an edge is one new file; the map and the topic pages pick
+  it up on the next load.
 - Review pass still owed on: `galois-theory`, `representation-theory`,
   `commutative-homological-algebra`, `physics-symmetry`, `advanced-logic`,
   `geometry`, `computability`, `open-source-game-theory`,

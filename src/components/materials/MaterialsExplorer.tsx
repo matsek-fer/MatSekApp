@@ -2,34 +2,50 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CATEGORY_ORDER, type TopicSummary } from "@/lib/materials-meta";
+import {
+  CATEGORY_ORDER,
+  VIEWS,
+  type ConnectionSummary,
+  type TopicSummary,
+  type View,
+} from "@/lib/materials-meta";
 import { MATERIALS } from "@/lib/i18n/materials";
 import type { Lang } from "@/lib/i18n";
 import TopicCard from "./TopicCard";
 import PrereqMap from "./PrereqMap";
+import ConnectionsMap from "./ConnectionsMap";
 import { cn } from "@/lib/utils";
 
-type View = "grid" | "map";
-
 /**
- * The overview: search + difficulty filter, then either the category grid
- * or the prerequisite map. Filters narrow both views the same way.
+ * The overview: search + difficulty filter, then the category grid, the
+ * prerequisite map or the connections map. Filters narrow all three views
+ * the same way.
  */
 export default function MaterialsExplorer({
   topics,
   general,
   titles,
+  connections,
   lang,
+  initialView = "grid",
 }: {
   topics: TopicSummary[];
   general: TopicSummary | null;
   titles: Record<string, string>;
+  connections: ConnectionSummary[];
   lang: Lang;
+  /** From `?view=`, so a link can open the page on a map. */
+  initialView?: View;
 }) {
   const t = MATERIALS[lang];
+  const viewLabel: Record<View, string> = {
+    grid: t.viewGrid,
+    map: t.viewMap,
+    connections: t.viewConnections,
+  };
   const [query, setQuery] = useState("");
   const [levels, setLevels] = useState<Set<number>>(new Set());
-  const [view, setView] = useState<View>("grid");
+  const [view, setView] = useState<View>(initialView);
 
   const matching = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -98,7 +114,7 @@ export default function MaterialsExplorer({
           </div>
         </div>
         <div className="inline-flex rounded-lg border border-border-strong bg-surface p-0.5 self-start">
-          {(["grid", "map"] as View[]).map((v) => (
+          {VIEWS.map((v) => (
             <button
               key={v}
               type="button"
@@ -111,7 +127,7 @@ export default function MaterialsExplorer({
                   : "text-fg hover:bg-surface-hover"
               )}
             >
-              {v === "grid" ? t.viewGrid : t.viewMap}
+              {viewLabel[v]}
             </button>
           ))}
         </div>
@@ -153,6 +169,14 @@ export default function MaterialsExplorer({
 
       {view === "map" ? (
         <PrereqMap topics={topics} titles={titles} matching={matching} lang={lang} />
+      ) : view === "connections" ? (
+        <ConnectionsMap
+          topics={topics}
+          titles={titles}
+          connections={connections}
+          matching={matching}
+          lang={lang}
+        />
       ) : (
         <div className="space-y-10">
           {CATEGORY_ORDER.map((cat) => {
