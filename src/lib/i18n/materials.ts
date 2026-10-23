@@ -53,7 +53,6 @@ export interface MaterialsCopy {
   aiBandTitle: string;
 
   prerequisites: string;
-  requires: string;
   leadsTo: string;
   openTopic: string;
   mapHint: string;
@@ -189,7 +188,6 @@ const hr: MaterialsCopy = {
     "Ovaj odjeljak je generiran uz pomoć AI-ja i još ga nije pregledao član sekcije.",
 
   prerequisites: "Preduvjeti:",
-  requires: "Traži:",
   leadsTo: "Vodi u:",
   openTopic: "Otvori temu →",
   mapHint:
@@ -294,7 +292,6 @@ const en: MaterialsCopy = {
     "This section was generated with AI and has not yet been reviewed by a member of the section.",
 
   prerequisites: "Prerequisites:",
-  requires: "Requires:",
   leadsTo: "Leads to:",
   openTopic: "Open topic →",
   mapHint:

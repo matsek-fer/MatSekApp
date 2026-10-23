@@ -1,6 +1,6 @@
 ---
 id: physics-symmetry
-title: Applications in physics
+title: Applications in physics — Noether, topological groups, Lie algebras, gauge theory
 category: advanced
 tagline: Every conservation law is a symmetry, every symmetry is a group, and the groups that act continuously are Lie groups — the mathematics behind why physics looks the way it does.
 prerequisites: [linear-algebra, dynamical-systems, topology, algebra-intro, representation-theory]

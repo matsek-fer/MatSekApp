@@ -1,6 +1,6 @@
 ---
 id: advanced-logic
-title: Advanced logic
+title: Advanced logic — Gödel, Löb, provability, reverse mathematics
 category: advanced
 tagline: What a formal system can say about itself, which truths lie beyond it, and exactly which axioms each theorem needs.
 prerequisites: [logic-sets, cs-foundations, type-theory]

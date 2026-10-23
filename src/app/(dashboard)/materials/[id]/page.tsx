@@ -128,7 +128,7 @@ export default function TopicPage({ params }: { params: { id: string } }) {
           <div className="mt-4 grid gap-2 sm:grid-cols-2 text-sm">
             {topic.prerequisites.length > 0 && (
               <div>
-                <span className="text-fg-muted">{t.requires} </span>
+                <span className="text-fg-muted">{t.prerequisites} </span>
                 {topic.prerequisites.map((p) => (
                   <Link
                     key={p}

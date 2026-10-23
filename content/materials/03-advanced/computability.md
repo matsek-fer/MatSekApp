@@ -1,6 +1,6 @@
 ---
 id: computability
-title: Computability & complexity
+title: Computability & complexity, advanced
 category: advanced
 tagline: The limits of computation — what no algorithm can do, what no fast algorithm can do, and the handful of ideas that prove it.
 prerequisites: [cs-foundations, logic-sets, probability]
