@@ -46,12 +46,14 @@ here is what it costs."
    probability above 30 %.
 
    <details><summary>Hint 1</summary>
-   Open the box with your own number; whatever it contains, open the box
-   with that number next.
+   A number inside a box is also the label of a box. The prisoners cannot
+   share information, but the boxes themselves can tell each prisoner
+   where to look next.
    </details>
    <details><summary>Hint 2</summary>
-   The boxes define a permutation. Everyone succeeds exactly when no cycle
-   is longer than 50.
+   Open the box with your own number; whatever it contains, open the box
+   with that number next. The boxes define a permutation, and everyone
+   succeeds exactly when no cycle is longer than 50.
    </details>
    <details><summary>Hint 3</summary>
    The probability that a random permutation of 100 has a cycle longer
@@ -60,29 +62,33 @@ here is what it costs."
    structure of the data, not about luck.
    </details>
 
-2. **Find the repeated number without a notebook.** An array holds n + 1
-   integers, each between 1 and n, so at least one value occurs twice. Find
-   a repeated value using only a constant amount of extra memory, without
-   modifying the array, and in time proportional to n. (Sorting is out —
-   it modifies the array or needs memory. So is a seen-before table.)
+2. **Find the repeated number without a notebook.** A long sheet of paper
+   lists n + 1 whole numbers, each between 1 and n, so some value appears
+   at least twice. You may look at any position on the sheet as often as
+   you like, but you cannot write anything down and can hold only a fixed
+   handful of numbers in your head, however large n is. Find a repeated
+   value with a number of looks proportional to n. (Remembering which
+   numbers you have seen is out — that takes n slots. So is reordering the
+   sheet.)
 
    <details><summary>Hint 1</summary>
-   Read the array as a function f(i) = a[i] from {1, …, n+1} to {1, …, n},
-   and follow i → f(i) → f(f(i)) → … starting from n + 1.
+   Every number on the sheet is also a position on the sheet. Use that to
+   turn the list into a path you can walk.
    </details>
    <details><summary>Hint 2</summary>
-   The path must eventually enter a cycle; the value at the entry of the
-   cycle is a duplicate. Find the entry with two pointers moving at
-   different speeds.
+   Read the sheet as a rule i → (the number at position i), from
+   {1, …, n+1} to {1, …, n}, and follow it from position n + 1. The walk
+   must eventually enter a cycle, and the value at the cycle's entry is a
+   duplicate. Find the entry with two walkers moving at different speeds.
    </details>
    <details><summary>Hint 3</summary>
    Floyd's tortoise-and-hare. The same idea finds the period of a
    pseudo-random generator and factors integers in Pollard's rho method.
    </details>
 
-3. **The Byzantine generals.** n generals must agree whether to attack, by
-   exchanging messengers; some of them are traitors who may send anything
-   to anyone. The loyal generals must all reach the same decision, and if
+3. **Attack at dawn, or not at all.** n generals must agree whether to
+   attack, by exchanging messengers; some of them are traitors who may
+   send anything to anyone. The loyal generals must all reach the same decision, and if
    the commander is loyal, that decision must be the commander's order.
    (a) Prove that with 3 generals, one of them a traitor, no protocol can
    work — however many rounds of messages are exchanged. (b) Design a

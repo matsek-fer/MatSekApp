@@ -102,7 +102,7 @@ Dynamical systems & differential equations · Introduction to algebra (groups,
 rings, fields) · Formal systems, set theory, logic · Metric spaces & topology ·
 Computer science (DSA, distributed systems, applied math, complexity theory)
 
-### 02 · Categories and the like (motivation for a better language)
+### 02 · Categories and the like
 Category theory & type theory: what makes them powerful; compositionality;
 categorification of classical subjects; applied category theory; category
 theory applied to every field in 01 from a higher vantage point; higher

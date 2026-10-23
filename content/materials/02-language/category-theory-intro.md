@@ -30,9 +30,9 @@ categories; natural transformations compare functors; adjunctions make
 turns out to cover logic (quantifiers are adjoints), topology (Stone–Čech),
 algebra (tensor–hom), and the `map` function in your programming language.
 
-This is why the category is called "motivation for better language". The
-fields in part 01 are the content; category theory is the grammar that
-makes the content shorter, clearer and portable. Everything in parts 02 and
+This is why category theory gets a part of its own. The fields in part 01
+are the content; category theory is the grammar that makes the content
+shorter, clearer and portable. Everything in parts 02 and
 03 builds on it.
 
 ## Pitch problems

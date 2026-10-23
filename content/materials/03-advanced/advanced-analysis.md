@@ -31,7 +31,7 @@ mathematical skeleton of quantum mechanics.
 The payoff is everywhere: Fourier analysis, partial differential equations
 (Sobolev spaces, weak solutions), probability (Lᵖ spaces, martingales),
 numerical analysis, signal processing, and the Hilbert-space formalism that
-`physics-symmetry` and `categorical-physics` assume. This is also the field
+`physics-symmetry` and the categorification of physics assume. This is also the field
 where the existence of a counterexample is often proved before anyone can
 write one down — a style of argument worth learning for its own sake.
 

@@ -16,7 +16,8 @@ const NODE_W = 204;
 const NODE_H = 46;
 const LAYER_W = 270;
 const ROW_H = 58;
-const LABEL_CHARS = 21;
+/** Label budget in px: the label starts 14px in, the difficulty squares at 154px. */
+const LABEL_PX = 136;
 const PAD_X = 20;
 const PAD_Y = 24;
 
@@ -25,7 +26,7 @@ const PAD_Y = 24;
  * layer to the right of its deepest prerequisite, so every arrow points
  * right and no arrow has to loop back into its own column. Category is shown
  * as a coloured bar on the node instead. Within a layer, nodes are ordered
- * by the average position of what they connect to (two barycentre sweeps),
+ * by the average position of what they connect to (three barycentre sweeps),
  * which removes most crossings for a graph this size. Edges are faint until a
  * topic is hovered or selected, when its own edges and neighbours light up —
  * the full graph is a hint of shape, the selection is the readable part.
@@ -51,7 +52,7 @@ interface Pos {
   layer: number;
 }
 
-function layout(topics: TopicSummary[]) {
+export function layout(topics: TopicSummary[]) {
   const byId = new Map(topics.map((t) => [t.id, t]));
   const depth = new Map<string, number>();
   const visiting = new Set<string>();
@@ -96,7 +97,11 @@ function layout(topics: TopicSummary[]) {
 
   // Barycentre sweeps: order each layer by the mean row of its neighbours
   // in the layer already placed, forwards (by prerequisites) then backwards
-  // (by dependents), then forwards once more to settle.
+  // (by dependents), then forwards once more to settle. Half the edges span
+  // more than one layer and are invisible to this, but counting neighbours
+  // in every placed layer, weighted by distance or not, and sweeping seven
+  // times instead of three all measured worse on the real graph (181–184
+  // straight-segment crossings against 178), so the simple rule stays.
   const sweep = (forward: boolean) => {
     const range = forward
       ? layers.map((_, i) => i).slice(1)
@@ -364,10 +369,36 @@ export default function PrereqMap({
   );
 }
 
+/*
+ * Advance widths of Inter Medium at 12.5px, measured in Chromium with
+ * getComputedTextLength on the map's own <text> element. A character count
+ * cannot do this job: "differential equations" is 22 characters and 128px,
+ * "Higher category theory" is 22 characters and 139px, and a four-bucket
+ * estimate still missed by 7% on the latter. Unknown characters get a
+ * typical lowercase width.
+ */
+const CHAR_PX = new Map<string, number>();
+for (const [px, chars] of [
+  [3.1, "ijl"], [3.4, " I"], [3.5, "’"], [3.8, ",.:"], [3.9, ";'"], [4.2, "t"],
+  [4.4, "f"], [4.6, "()/"], [4.9, "r"], [5.2, "1"], [5.8, "-"], [6.2, "–"],
+  [6.7, "sš"], [7.0, "kxzž"], [7.1, "aL"], [7.2, "cvyJćč"], [7.3, "e7"],
+  [7.4, "F"], [7.5, "hnouE"], [7.7, "bdgpqđ2"], [7.8, "3"], [7.9, "689"],
+  [8.0, "PZŽ"], [8.1, "0&RSTŠ"], [8.2, "B4"], [8.6, "K"], [8.7, "XY"],
+  [9.0, "ADV"], [9.2, "CUČĆ"], [9.3, "GHĐ"], [9.4, "N"], [9.6, "OQ"],
+  [10.3, "w"], [11.1, "m"], [11.4, "M…"], [12.5, "—"], [12.7, "W"],
+] as const)
+  for (const ch of chars) CHAR_PX.set(ch, px);
+
+function textWidth(s: string): number {
+  let w = 0;
+  for (const ch of s) w += CHAR_PX.get(ch) ?? 7.5;
+  return w;
+}
+
 /**
- * Node labels get at most two lines of LABEL_CHARS; the full title is on the
- * topic page. Words are packed greedily, and a title that still does not fit
- * is cut with an ellipsis on the second line.
+ * Node labels get at most two lines of LABEL_PX; the full title is on the
+ * topic page. Words are packed greedily, and a line that still does not fit
+ * is cut with an ellipsis.
  */
 function wrap(title: string): string[] {
   const words = title.split(/ — | – |: /)[0].split(" ");
@@ -375,18 +406,18 @@ function wrap(title: string): string[] {
   let cur = "";
   for (const w of words) {
     if (!cur) cur = w;
-    else if ((cur + " " + w).length <= LABEL_CHARS) cur += " " + w;
+    else if (textWidth(cur + " " + w) <= LABEL_PX) cur += " " + w;
     else {
       lines.push(cur);
       cur = w;
     }
   }
   if (cur) lines.push(cur);
-  if (lines.length > 2) {
-    const second = lines.slice(1).join(" ");
-    return [lines[0], second.slice(0, LABEL_CHARS - 1).trimEnd() + "…"];
-  }
-  if (lines[0].length > LABEL_CHARS)
-    lines[0] = lines[0].slice(0, LABEL_CHARS - 1).trimEnd() + "…";
-  return lines;
+  if (lines.length > 2) lines.splice(1, lines.length - 1, lines.slice(1).join(" "));
+  return lines.map((line) => {
+    if (textWidth(line) <= LABEL_PX) return line;
+    let cut = line;
+    while (cut.length > 1 && textWidth(cut + "…") > LABEL_PX) cut = cut.slice(0, -1);
+    return cut.trimEnd() + "…";
+  });
 }

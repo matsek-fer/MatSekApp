@@ -35,7 +35,8 @@ Model is the statement that nature chose particular Lie groups.
 
 This topic is where `linear-algebra`, `dynamical-systems`, `topology` and
 `representation-theory` are used at once, and where the categorical language of
-part 02 begins to earn its keep in `categorical-physics`.
+part 02 begins to earn its keep in the categorification of physics (a
+lecture topic for now, not a page).
 
 ## Pitch problems
 

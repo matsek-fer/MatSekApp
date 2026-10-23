@@ -51,9 +51,12 @@ compose naively — and what does.
    achieve.
 
    <details><summary>Hint 1</summary>
-   (a) 2000 each way, 65 minutes. (b) Everyone takes S→A→B→E: 80 minutes.
+   (a) The two routes look alike, so split the drivers evenly and add up
+   the times. (b) After the new road, ask what one driver does once
+   everyone else has chosen; nobody can be left better off on an old route.
    </details>
    <details><summary>Hint 2</summary>
+   (a) 2000 each way, 65 minutes. (b) Everyone takes S→A→B→E: 80 minutes.
    (c) Compare the equilibrium flow f with the optimal flow f* using the
    equilibrium condition "no driver can improve" and the inequality
    x·(ay + b) ≤ x·(ax + b) + y·(ay + b)/4 for a single road.
@@ -100,10 +103,12 @@ compose naively — and what does.
    expected revenue in the two cases.
 
    <details><summary>Hint 1</summary>
-   (a) Bid half your value: b(v) = v/2.
+   (a) Try a bid that is a fixed fraction of your value, and find the
+   fraction that is a best response to itself.
    </details>
    <details><summary>Hint 2</summary>
-   (b) Forwards: values in, bids out, winner and price out. Backwards: each
+   (a) b(v) = v/2. (b) Forwards: values in, bids out, winner and price out.
+   Backwards: each
    bidder's utility, computed from the allocation and sent back along the
    wire that carried the bid.
    </details>

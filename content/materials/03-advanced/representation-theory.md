@@ -30,7 +30,7 @@ theory of the circle; the fast Fourier transform is representation theory of
 ℤ/2ⁿ. Wherever there is symmetry and linearity together, this is the
 language.
 
-It is also the most computable of the advanced algebra topics: a character
+It is also the most computable of the algebra topics in part 03: a character
 table can be worked out by hand in an afternoon, and the exercises are
 genuine calculations with genuine answers.
 

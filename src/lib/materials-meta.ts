@@ -78,9 +78,9 @@ export type TopicSummary = Pick<
   | "order"
 > & { levels: number[]; shortTitle: string };
 
-/** Title before the first " — " or ": " — for chips and map labels. */
+/** Title before the first " — ", ": " or " (" — for chips and map labels. */
 export function shortTitle(title: string): string {
-  return title.split(/ — | – |: /)[0].trim();
+  return title.split(/ — | – |: | \(/)[0].trim();
 }
 
 export const CATEGORY_ORDER: Category[] = ["classical", "language", "advanced"];
