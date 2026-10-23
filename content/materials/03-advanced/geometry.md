@@ -1,6 +1,6 @@
 ---
 id: geometry
-title: Geometry — the Erlangen program and the categorification of geometry
+title: Geometry
 category: advanced
 tagline: A geometry is a space together with the transformations you are allowed to use — and, one level up, a space is whatever its ring of functions says it is.
 prerequisites: [linear-algebra, algebra-intro, topology, complex-analysis, category-theory-intro]

@@ -1,6 +1,6 @@
 ---
 id: dynamical-systems
-title: Dynamical systems & differential equations
+title: Dynamical systems
 category: classical
 tagline: Rules that say how things change, and the surprising question of what they do in the long run.
 prerequisites: [real-analysis, linear-algebra]

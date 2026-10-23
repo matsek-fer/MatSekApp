@@ -1,6 +1,6 @@
 ---
 id: probability
-title: Probability (with measure)
+title: Probability
 category: classical
 tagline: Reasoning precisely about uncertainty — and discovering that "probability" needs measure theory to even be defined.
 prerequisites: [real-analysis, combinatorics]

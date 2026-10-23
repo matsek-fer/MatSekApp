@@ -1,6 +1,6 @@
 ---
 id: compositionality
-title: Compositionality — what makes the language powerful
+title: Compositionality
 category: language
 tagline: Understand the parts and how they are wired, and you understand the whole — the principle, when it holds, and the algebra of wiring.
 prerequisites: [category-theory-intro, linear-algebra]

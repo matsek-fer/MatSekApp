@@ -1,6 +1,6 @@
 ---
 id: algebra-intro
-title: Introduction to algebra (groups, rings, fields)
+title: Algebra
 category: classical
 tagline: Symmetry, arithmetic and equations, abstracted until the same theorem explains all three.
 prerequisites: [logic-sets]

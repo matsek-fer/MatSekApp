@@ -1,6 +1,6 @@
 ---
 id: category-theory-intro
-title: Category theory — motivation and first concepts
+title: Category theory
 category: language
 tagline: The language in which the fields you just learned turn out to be saying the same things.
 prerequisites: [algebra-intro, logic-sets]

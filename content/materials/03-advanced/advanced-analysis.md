@@ -1,6 +1,6 @@
 ---
 id: advanced-analysis
-title: Advanced analysis & functional analysis
+title: Advanced analysis
 category: advanced
 tagline: Analysis in infinitely many dimensions — where functions become points, operators become the objects of study, and existence is proved by abstract principle.
 prerequisites: [real-analysis, linear-algebra, topology]

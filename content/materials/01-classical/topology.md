@@ -1,6 +1,6 @@
 ---
 id: topology
-title: Metric spaces & topology
+title: Topology
 category: classical
 tagline: Geometry with the distances removed — what stays true when you can stretch and bend but not cut or glue.
 prerequisites: [real-analysis, logic-sets]

@@ -1,6 +1,6 @@
 ---
 id: cs-foundations
-title: Computer science — algorithms, complexity, distributed systems, applied mathematics
+title: Computer science
 category: classical
 tagline: What can be computed, how fast, on how many machines — and the mathematics that answers each question.
 prerequisites: [logic-sets, combinatorics]

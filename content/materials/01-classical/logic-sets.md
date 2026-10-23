@@ -1,6 +1,6 @@
 ---
 id: logic-sets
-title: Formal systems, set theory, logic
+title: Logic & set theory
 category: classical
 tagline: What a proof is, what a set is, and what happens when mathematics turns around and studies itself.
 prerequisites: []
