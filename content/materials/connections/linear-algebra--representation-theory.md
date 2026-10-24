@@ -14,23 +14,23 @@ theorems are linear algebra with a group watching.
 
 ## What each side lends
 
-Linear algebra supplies the material. A change of basis P turns ρ into
-PρP⁻¹, and conjugation is equivalence of representations. Since
-tr(AB) = tr(BA), χ(g) = tr ρ(g) is basis-independent and constant on
-conjugacy classes: characters are traces. Inner products give Maschke
-(below); Axler's thesis that every operator on a finite-dimensional
-complex space has an eigenvalue is the whole of Schur's lemma: if T commutes
+A change of basis P turns ρ into PρP⁻¹, and conjugation is equivalence of
+representations. Since tr(AB) = tr(BA), χ(g) = tr ρ(g) is basis-independent
+and constant on conjugacy classes: characters are traces. Inner products give
+Maschke (below); Axler's thesis that every operator on a finite-dimensional
+complex space has an eigenvalue is all Schur's lemma needs: if T commutes
 with an irreducible ρ, the kernel of T − λI for an eigenvalue λ is a non-zero
 invariant subspace, hence all of V, and T = λI.
 
 Representation theory repays with reasons. Decomposing V into irreducibles is
-simultaneous block-diagonalisation of the family {ρ(g)}, and for abelian G
-Schur makes every block 1×1, so commuting matrices of finite order share an
-eigenbasis for a structural reason. The hypercube problem on
+simultaneous block-diagonalisation of the family {ρ(g)}, and for finite
+abelian G Schur makes every block 1×1, so commuting matrices of finite order
+share an eigenbasis for a structural reason. The hypercube problem on
 `representation-theory` is this in action: its adjacency matrix commutes with
-translation by (ℤ/2)ⁿ, so the characters are eigenvectors. And a matrix
-theorem linear algebra cannot reach alone: homomorphisms G → GLₙ(ℂ) agreeing
-in trace on every g are conjugate.
+all translations by (ℤ/2)ⁿ, hence preserves their joint eigenspaces, the
+lines spanned by the 2ⁿ characters. And a matrix theorem linear algebra
+cannot reach alone: for finite G, two homomorphisms G → GLₙ(ℂ) with the same
+trace on every g are conjugate.
 
 ## Maschke, with S₃
 
@@ -39,20 +39,20 @@ has an invariant complement W′, V = W ⊕ W′. Proof: average any inner produ
 over G, ⟨u, v⟩ = (1/|G|) Σ_g ⟨ρ(g)u, ρ(g)v⟩₀; each ρ(g) is then unitary, so
 ⟨ρ(g)w′, w⟩ = ⟨w′, ρ(g⁻¹)w⟩ = 0 for w′ ∈ W^⊥, w ∈ W, and W^⊥ works.
 
-Take S₃ permuting the coordinates of ℂ³. Permutation matrices are already
-orthogonal; span(1, 1, 1) is invariant, hence so is {x + y + z = 0}, and in
-the basis (1, 1, 1), (1, −1, 0), (1, 1, −2) every permutation matrix is
-1 ⊕ (2×2 block). A permutation matrix's trace is its number of fixed points,
-so the block has character 2, 0, −1 on the identity, transpositions and
-3-cycles, and (1/6)(2² + 3·0² + 2·1²) = 1 says it is irreducible.
+Take S₃ permuting the coordinates of ℂ³. Permutation matrices are orthogonal,
+so no averaging is needed; span(1, 1, 1) is invariant, hence so is
+{x + y + z = 0}, and in the basis (1, 1, 1), (1, −1, 0), (1, 1, −2) every
+permutation matrix is 1 ⊕ (2×2 block). A permutation matrix's trace is its
+number of fixed points, so the block has character 2, 0, −1 on the identity,
+transpositions and 3-cycles, and the orthogonality test
+(1/6)(2² + 3·0² + 2·(−1)²) = 1 says it is irreducible.
 
 ## Where to see it
 
 Axler's chapters on eigenvalues and inner product spaces hold everything the
-proofs used; Serre's Part I proves Maschke by this averaging in its first
-pages, Steinberg assumes only that and a first group course, and James &
-Liebeck compute S₃ by hand. The table is a phrasebook between
-`linear-algebra` and `representation-theory`.
+proofs used; Serre's Part I proves Maschke in its first pages by averaging a
+projection instead, Steinberg assumes only that and a first group course, and
+James & Liebeck compute S₃ by hand. The table below is the phrasebook.
 
 | Linear algebra | Representation theory |
 |---|---|
@@ -62,9 +62,9 @@ Liebeck compute S₃ by hand. The table is a phrasebook between
 | block-diagonal form, no block splits further | decomposition into irreducibles |
 | trace, tr(AB) = tr(BA) | character χ(g) = tr ρ(g), a class function |
 | matrix of finite order, roots of unity as eigenvalues | ρ(g) for finite G |
-| averaged inner product, unitary matrices | Weyl's unitary trick |
+| averaged inner product, unitary matrices | G-invariant inner product; every ρ(g) unitary |
 | orthogonal complement W^⊥ | invariant complement (Maschke) |
-| every operator has an eigenvalue | Schur: End(V) = ℂ for V irreducible |
+| every operator has an eigenvalue | Schur: anything commuting with an irreducible ρ is a scalar |
 | commuting family with a common eigenbasis | representation of an abelian group |
 | discrete Fourier matrix diagonalising circulants | irreducible characters of ℤ/n |
 | V ⊗ W, V* | ρ ⊗ σ with character χ_ρ χ_σ, dual with character χ̄ |
