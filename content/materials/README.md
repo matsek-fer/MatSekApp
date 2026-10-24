@@ -171,7 +171,7 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - ◐ `type-theory` — Type theory & the Curry–Howard–Lambek correspondence
 - ◐ `compositionality` — Compositionality & what makes the language powerful
 - ◐ `applied-category-theory` — Applied category theory
-- ◐ `categorical-classical` — Classical fields seen categorically
+- ◐ `categorical-classical` — Categorification of classical fields
 - ◐ `higher-category-theory` — Higher category theory
 
 ### 03-advanced
