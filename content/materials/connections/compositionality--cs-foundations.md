@@ -25,11 +25,12 @@ instructions.
 has no meaning of its own, only as a transformer Store → Store, so its summary
 names every variable in the program and goes stale whenever another part
 changes. Aliasing, two names for one cell, makes two wires secretly one.
-Milner's full abstraction problem (1977) asks whether denotational equality is
-equality in every program context; Scott's model of PCF contains parallel-or,
-which no program defines, and a junk-free model waited for game semantics
-(1994). Herlihy and Wing (1990) proved linearisability local — a history is
-linearisable iff each object's part is — and sequential consistency not.
+Milner's full abstraction problem (1977) asks whether denotational equality
+coincides with equality in every program context; Plotkin showed that Scott's
+model of PCF contains parallel-or, which no program defines, and a junk-free
+model waited for game semantics (1994). Herlihy and Wing (1990) proved
+linearisability local — a history is linearisable iff each object's part is —
+and showed that sequential consistency is not.
 
 ## The frame rule
 
@@ -40,8 +41,9 @@ disjoint parts satisfying P and R; x ↦ v is the single cell x holding v. So
 neighbour.
 
 From {x ↦ 0} [x] := 1 {x ↦ 1} the rule gives
-{x ↦ 0 ∗ y ↦ 5} [x] := 1 {x ↦ 1 ∗ y ↦ 5}. With ∧ for ∗ it is false:
-x ↦ 0 ∧ y ↦ 0 forces x = y, one cell under two names, and after the write
+{x ↦ 0 ∗ y ↦ 0} [x] := 1 {x ↦ 1 ∗ y ↦ 0}, sound because ∗ forces x ≠ y.
+With ∧ in place of ∗ it is false: x ↦ 0 ∧ y ↦ 0 is satisfied only by a
+one-cell heap, so x = y, one cell under two names, and after the write
 y ↦ 0 fails. The disjointness ∗ carries is the rest of the heap being a
 separate wire.
 
@@ -62,7 +64,7 @@ Kleppmann's consistency and consensus chapter cites Herlihy–Wing.
 | independent instructions or threads | parallel composition f ⊗ g |
 | reordering independent instructions | sliding boxes along wires |
 | denotational semantics ⟦−⟧ | functor from syntax to a semantic category |
-| referential transparency | contextual equivalence is a congruence |
+| referential transparency | equal denotations may be substituted in any context |
 | full abstraction | model equality coincides with contextual equivalence |
 | global variable | one wire every box must touch; arrows Store → Store |
 | threading the store through the interface, the State monad | Kleisli arrow A → (B × S)^S |

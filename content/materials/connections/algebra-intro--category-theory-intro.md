@@ -37,8 +37,9 @@ N ⊆ ker φ there is exactly one φ̄: G/N → H with φ = φ̄ ∘ π. Cosets 
 existence; the property makes anything else with it isomorphic to G/N over
 π. For N = ker φ the map φ̄ is injective, so φ factors as G ↠ G/ker φ ↪ H:
 the first isomorphism theorem. The second and third are the same
-factorisation for π restricted to a subgroup H, giving HN/N ≅ H/(H ∩ N), and
-for G → G/N → (G/N)/(M/N), giving G/M.
+factorisation for π restricted to a subgroup K ≤ G, giving
+KN/N ≅ K/(K ∩ N), and for the composite G → G/N → (G/N)/(M/N) with
+N ⊆ M ⊴ G, giving G/M.
 
 Reduction n ↦ (n mod 2, n mod 3) is a homomorphism ℤ → ℤ/2 × ℤ/3 killing 6ℤ,
 so it factors uniquely through ℤ/6; the induced map is injective, as 2 | n

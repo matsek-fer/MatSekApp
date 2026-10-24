@@ -29,18 +29,19 @@ n-gon; the rotations of a cube are S₄, acting on its four long diagonals; the
 rotations of a dodecahedron are A₅, acting on five inscribed cubes, and A₅,
 being simple, is why the quintic is insoluble in `galois-theory`. The finite
 subgroups of SO(3) — cyclic, dihedral, A₄, S₄, A₅ — fall to the
-orbit–stabiliser count of the necklace problem, applied to the poles of the
-rotations.
+orbit–stabiliser count behind the necklace problem, applied to the poles of
+the rotations.
 
 ## The crystallographic restriction
 
 Theorem: a rotation in a wallpaper group has order 1, 2, 3, 4 or 6. Proof:
 let r ∈ G be a rotation through θ and t ∈ T the translation by v. Then
-r t r⁻¹ is the translation by r(v), so r maps the lattice T to itself and,
-in a basis of T, is a 2×2 integer matrix. Its trace is 2cos θ, so
-2cos θ ∈ ℤ, cos θ ∈ {1, −1, −½, 0, ½}, and θ is 360°, 180°, 120°, 90° or
-60°. So no wallpaper or crystal has five-fold symmetry; the seventeen
-wallpaper groups follow from listing the point groups each lattice admits.
+r t r⁻¹ is the translation by r(v), so r maps the lattice T to itself, and
+its linear part, written in a basis of T, is a 2×2 integer matrix. Its trace
+is 2cos θ, so 2cos θ ∈ ℤ, cos θ ∈ {1, −1, −½, 0, ½}, and θ is 360°, 180°,
+120°, 90° or 60°. So no wallpaper or crystal has five-fold symmetry, and
+classifying the seventeen wallpaper groups starts by listing the point groups
+each of the five lattices admits.
 
 ## Where to see it
 
@@ -49,8 +50,8 @@ chapters classify the discrete groups of plane motions and the finite
 subgroups of SO(3); Judson proves the crystallographic restriction in his
 chapter on matrix groups and symmetry. On `geometry`, Stillwell's *Four
 Pillars* has the transformation-group pillar, Klein's 1872 paper is the
-manifesto, and Sharpe's opening chapters make the pair (G, H) the definition.
-The table is a phrasebook.
+manifesto, and Sharpe's chapter on Klein geometries makes the pair (G, H)
+the definition. The table is a phrasebook.
 
 | Algebra | Geometry |
 |---|---|

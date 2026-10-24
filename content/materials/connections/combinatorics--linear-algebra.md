@@ -8,9 +8,9 @@ ai_generated: true
 
 A subset of {1, …, n} is its indicator vector in 𝔽ⁿ; a graph on n vertices is
 its adjacency matrix. Inside a vector space a finite structure acquires two
-numbers combinatorics cannot see, a dimension and a spectrum, and both bound
-or count things. The traffic back runs through the finite structure inside
-every matrix: a determinant is a signed sum over permutations.
+numbers it did not have, a dimension and a spectrum, and both bound or count
+things. The traffic back runs through the finite structure inside every
+matrix: a determinant is a signed sum over permutations.
 
 ## What each side lends
 
@@ -18,8 +18,8 @@ Linear algebra's export is the linear-algebra method: bound a family of sets
 by showing its indicator vectors are independent in a space of known
 dimension. Fisher's inequality is the model: m blocks on n points, any two
 sharing exactly λ points and each larger than λ, force m ≤ n, because the Gram
-matrix NᵀN = λJ + D, D diagonal and positive, is positive definite and the
-incidence matrix N has rank m. For a d-regular graph with adjacency
+matrix NᵀN = λJ + D, D diagonal with positive entries, is positive definite,
+so the n×m incidence matrix N has rank m. For a d-regular graph with adjacency
 eigenvalues d = λ₁ ≥ … ≥ λₙ, Hoffman's bound caps an independent set at
 n·(−λₙ)/(d − λₙ) vertices, and the gap d − λ₂ measures expansion (Cheeger's
 inequality).
@@ -28,11 +28,12 @@ Combinatorics repays in structure. The Leibniz formula
 det A = ∑_σ sgn(σ) ∏ᵢ a_{i,σ(i)} is a signed count over permutations;
 unsigned, it is the permanent, which counts a bipartite graph's perfect
 matchings via its biadjacency matrix. Elimination finds a determinant in O(n³)
-steps; Valiant proved the permanent #P-complete: the signs' cancellation
-is what elimination exploits. The transfer-matrix method joins the Fibonacci
-problem on both topic pages: tilings of a 2×n strip are walks of length n in
-a two-state graph, so their number is an entry of [[1, 1], [1, 0]]ⁿ and their
-generating function has denominator det(I − xA) = 1 − x − x².
+steps; Valiant (1979) proved the permanent #P-complete: the signs'
+cancellation is what elimination exploits. The transfer-matrix method joins
+the Fibonacci problem on both topic pages: tilings of a 2×n strip are walks of
+length n in a two-state graph, so their number is an entry of
+[[1, 1], [1, 0]]ⁿ and their generating function has denominator
+det(I − xA) = 1 − x − x².
 
 ## Oddtown
 
@@ -42,8 +43,8 @@ vectors v₁, …, vₘ ∈ 𝔽₂ⁿ satisfy vᵢ·vⱼ = |Cᵢ ∩ Cⱼ| mod 
 and 0 otherwise. If ∑ aᵢvᵢ = 0, dotting with vⱼ leaves aⱼ = 0, so the vectors
 are independent and m ≤ n. For n = 4 the clubs {1,2,3}, {1,2,4}, {1,3,4},
 {2,3,4} have three members each and share two pairwise, so the bound is tight.
-Change "odd" to "even" and the answer jumps to 2^⌊n/2⌋, which no counting
-argument predicts.
+Change "odd" to "even" and the answer jumps to 2^⌊n/2⌋: the vectors now span
+a self-orthogonal subspace, of dimension at most n/2.
 
 ## Where to see it
 

@@ -1,6 +1,6 @@
 ---
 between: [category-theory-intro, geometry]
-tagline: Geometry lends category theory its first dualities and the functor of points; category theory returns a grammar in which every ring is a space.
+tagline: Geometry lends category theory its first dualities and the functor of points; category theory returns a grammar in which every commutative ring is a space.
 strength: 2
 status: draft
 ai_generated: true
@@ -24,19 +24,19 @@ Spec useful: Hom(Spec B, Spec A) ≅ Hom(A, B). Klein's groups come along:
 GL_n is the functor R ↦ GL_n(R), represented by ℤ[x_ij][1/det], so the
 Erlangen program makes sense over 𝔽₅ as well as ℝ.
 
-Geometry repays with examples: opposite categories were a formality until
-these dualities made them the main event. The open sets of X form a poset
-O(X), a sheaf is a functor O(X)ᵒᵖ → Set whose values glue along covers, and
-a scheme is a space with a sheaf of rings 𝒪_X. The Yoneda lemma, which on
-`category-theory-intro` says Hom(−, X) determines X, is in geometry the
-functor of points: a scheme is the functor R ↦ X(R) it represents, and can
-be defined as one.
+Geometry repays with examples: Gelfand's duality predates the word functor,
+and dualities like it are what opposite categories are for. The open sets
+of X form a poset O(X), a sheaf is a functor O(X)ᵒᵖ → Set whose values glue
+along covers, and a scheme is a space with a sheaf of rings 𝒪_X, locally
+some Spec A. The Yoneda lemma, which on `category-theory-intro` says
+Hom(−, X) determines X, is in geometry the functor of points: a scheme is
+the functor R ↦ X(R) it represents, and can be defined as one.
 
 ## Points over every ring
 
 Let A = ℤ[x, y]/(x² + y² − 1) and X = Spec A. By the Hom bijection,
 X(R) = Hom(Spec R, X) ≅ Hom(A, R) = {(a, b) ∈ R² : a² + b² = 1}: the
-R-points are the solutions in R. X(ℝ) is the unit circle. X(ℂ) is ℂ× in
+R-points are the solutions in R. X(ℝ) is the unit circle. X(ℂ) is ℂ^× in
 disguise: with u = x + iy, v = x − iy it reads uv = 1, the hyperbola of pitch
 problem 3(b) on `geometry`. X(𝔽₅) has four points, (0, ±1) and (±1, 0),
 because 2 is not a square mod 5. One ring, three spaces, each read off a
@@ -44,7 +44,7 @@ Hom set.
 
 ## Where to see it
 
-Vakil's The Rising Sea is this page at book length: chapters 1–2 teach
+Vakil's The Rising Sea is the dictionary at book length: chapters 1–2 teach
 categories, Yoneda and sheaves, chapters 3–4 build Spec and schemes. The
 Napkin's algebraic geometry part is the short version. On
 `category-theory-intro`, Leinster's chapter on representables and the Yoneda
@@ -65,4 +65,4 @@ table is a phrasebook between the two.
 | solutions of the equations over R | R-points X(R) = Hom(Spec R, X) = Hom(A, R) |
 | a space is its solution sets | Yoneda: X is determined by the functor Hom(−, X) |
 | transformation group of a Klein geometry | group object in schemes, GL_n = Spec ℤ[x_ij][1/det] |
-| invariant of the group | natural transformation out of the action |
+| invariant of the group | map X → Y constant on orbits: it equalises the action G × X → X and the projection |

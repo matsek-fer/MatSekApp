@@ -8,22 +8,22 @@ ai_generated: true
 
 A theory whose axioms a program can list is itself a program: list the
 proofs, print their last lines. "T proves A" then says that a search halts,
-a Σ₁ sentence; every true Σ₁ sentence is provable, so unprovability begins
-with Π₁, "never halts". `advanced-logic` asks what that search can establish
-about itself; `computability` asks which searches halt, and with which
-oracle.
+a Σ₁ sentence; every true Σ₁ sentence is provable in any T ⊇ Q, so
+unprovability begins with Π₁, "never halts". `advanced-logic` asks what that
+search can establish about itself; `computability` asks which searches halt,
+and with which oracle.
 
 ## What each side lends
 
 `computability` supplies the engine and the yardstick. The engine is
-Kleene's recursion theorem: for every computable f there is a program e with
-φ_e = φ_{f(e)}, so a program may use its own code. The diagonal lemma of
-`advanced-logic` is the same construction with sentences for programs, and
-both come out of the s-m-n theorem. The yardstick is the Turing jump: RCA₀
-is the computable world and ACA₀ is closure under the jump, so a theorem at
-the Bolzano–Weierstrass level is one that hands over the halting set, and
-Specker's limit (pitch problem 3 on `advanced-logic`) is the halting set in
-binary.
+Kleene's recursion theorem: for every total computable f there is a program
+e with φ_e = φ_{f(e)}, so a program may use its own code. The diagonal lemma
+of `advanced-logic` is the same construction with sentences for programs
+and representable substitution for s-m-n. The yardstick is the Turing jump:
+RCA₀ is the computable world and ACA₀ is closure under the jump, so a
+theorem at the Bolzano–Weierstrass level is one that hands over the halting
+set, and Specker's limit (pitch problem 3 on `advanced-logic`) is the
+halting set in binary.
 
 `advanced-logic` repays with the laws of provability, which are facts about
 proof search. Necessitation is running the proof checker; □A → □□A is
@@ -53,7 +53,8 @@ own consistency, the proof above would give T ⊢ ⊥; that is the second.
 
 Smith's *Gödel Without (Too Many) Tears*, on `advanced-logic`, proves the
 diagonal lemma and Löb's theorem; Cutland, on `computability`, proves s-m-n
-and the recursion theorem and introduces degrees. The table is a dictionary.
+and the recursion theorem and introduces degrees; Open Logic's
+*Incompleteness and Computability*, on both pages, does the two together.
 
 | Advanced logic | Computability |
 |---|---|

@@ -6,7 +6,7 @@ status: draft
 ai_generated: true
 ---
 
-Poincaré created both subjects with one question: with no formula for
+Poincaré founded both subjects on one question: with no formula for
 x′ = f(x), where do orbits go? Any answer must survive coordinate changes,
 so the qualitative theory of `dynamical-systems` studies flows
 up to topological conjugacy, a homeomorphism carrying orbits to orbits, and
@@ -20,7 +20,7 @@ closed disc into itself gives each time-t map a fixed point, and t → 0 with
 compactness an equilibrium. The index of a closed curve, the winding number
 of f along it, is +1 round a node, spiral or centre, −1 round a saddle and +1
 along a periodic orbit, so every cycle encloses equilibria of total index +1:
-the Lotka–Volterra cycles (pitch problem 3) circle theirs. For chaos, Smale's
+the Lotka–Volterra cycles (pitch problem 3) circle theirs. Smale's
 horseshoe has an invariant Cantor set Λ on which f is conjugate to the shift
 σ on {0,1}^ℤ, whose dense orbit is explicit.
 
@@ -34,17 +34,17 @@ and is log 2 on the two-shift, so positive for the horseshoe.
 
 ## Poincaré–Bendixson
 
-Theorem: if a trajectory of a C¹ planar flow stays for t ≥ 0 in a compact
-set without equilibria, its ω-limit set is a periodic orbit. The topology is
+If a trajectory of a C¹ planar flow stays for t ≥ 0 in a compact set
+without equilibria, its ω-limit set is a periodic orbit. The topology is
 one step: an orbit arc between two crossings of a transversal segment,
 closed by the segment, is a Jordan curve, so later crossings are monotone
 and the limit orbit must close. For ṙ = r(1 − r²), θ̇ = 1 on the annulus
 1/2 ≤ r ≤ 2, ṙ > 0 on the inner circle, ṙ < 0 on the outer, so orbits never
 leave, and the only equilibrium, the origin, is excluded. Hence a periodic
 orbit, r = 1, round a spiral of index +1. On the torus a closed curve need
-not separate, hence the dense flow above; in ℝ³ it separates nothing, and
-Lorenz's bounded trajectories limit on a strange attractor. Chaos in a flow
-needs three dimensions.
+not separate, so the flow above can be dense; in ℝ³ it separates nothing,
+and Lorenz's bounded trajectories limit on a strange attractor. Chaos in a
+flow needs three dimensions.
 
 ## Where to see it
 

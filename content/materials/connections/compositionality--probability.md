@@ -1,6 +1,6 @@
 ---
 between: [compositionality, probability]
-tagline: Compositionality gives probability a category whose arrows are Markov kernels; probability gives back the first process theory where copying a wire is not free.
+tagline: Compositionality gives probability a category whose arrows are Markov kernels; probability returns a process theory where copying a wire does not commute with the boxes.
 strength: 2
 status: draft
 ai_generated: true
@@ -8,9 +8,8 @@ ai_generated: true
 
 Probability almost composes. An experiment whose outcome feeds the next is a
 Markov kernel, and kernels compose like functions: run the first, then the
-second. What refuses to compose — correlation, conditioning, the Bell
-inequalities — fails at one diagram law, and the two fields trade across that
-law.
+second. What resists — correlation, conditioning, the Bell inequalities —
+turns on one diagram law, the copying of a wire.
 
 ## What each side lends
 
@@ -20,7 +19,7 @@ X → G(Y) are the Markov kernels, and Kleisli composition is
 Chapman–Kolmogorov, (l∘k)(A | x) = ∫ l(A | y) k(dy | x). Product measure is a
 monoidal product and marginalisation discards a wire, so Fritz's Markov
 categories make conditional independence and d-separation diagram rules. The
-same monad is the semantics of probabilistic programming, bind being kernel
+same monad gives probabilistic programs their semantics, bind being kernel
 composition.
 
 `probability` returns the counterexamples. Kl(G) has copy and discard yet is
@@ -44,10 +43,10 @@ point mass. Proof: the left side puts mass f(y | x) on (y, y) and nothing off
 the diagonal; the right puts f(y | x) f(y′ | x) on (y, y′); equality forces
 f(y | x)² = f(y | x), so f(y | x) ∈ {0, 1}.
 
-Take a fair coin c from a point. Δ∘c is ½ on (H, H) and ½ on (T, T): one
-coin, read twice. (c ⊗ c)∘Δ is ¼ on each pair: two coins. The gap between
-them is the whole content of the word random, and the one law separating
-Markov categories from cartesian ones.
+Take a fair coin c: 1 → {H, T}, a kernel from one point. Δ∘c is ½ on (H, H)
+and ½ on (T, T): one coin, read twice. (c ⊗ c)∘Δ is ¼ on each pair: two
+coins. The gap is what randomness adds; copy commuting with every arrow is
+what makes a Markov category cartesian (Fox's theorem).
 
 ## Where to see it
 

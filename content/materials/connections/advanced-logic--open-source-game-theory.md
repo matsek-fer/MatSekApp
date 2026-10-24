@@ -6,31 +6,32 @@ status: draft
 ai_generated: true
 ---
 
-A program given its opponent's source is a theory reasoning about
-another theory; "my opponent cooperates with me" says a proof search halts.
-The self-reference that gives `advanced-logic` the Gödel sentence gives
-`open-source-game-theory` the fixed point two agents settle into when each
-reasons about the other, and Löb's theorem says it is cooperation, not
-regress.
+A program handed its opponent's source can prove things about it in a
+formal theory, and "my opponent provably cooperates with me" says a proof
+search halts. The self-reference that gives `advanced-logic` the Gödel
+sentence gives `open-source-game-theory` the fixed point two agents settle
+into when each reasons about the other, and Löb's theorem says it is
+cooperation, not regress.
 
 `advanced-logic` supplies the proof apparatus. The diagonal lemma lets an
 agent quote its own source; Löb's theorem collapses "if the opponent
 provably cooperates, cooperate" into cooperation; GL, K plus
 □(□A → A) → □A, makes the collapse mechanical. By the de Jongh–Sambin
 theorem every formula with p only inside boxes has a unique fixed point, so
-each pair of modal agents has a determined outcome, and by Solovay's theorem
-what GL derives, PA proves and the programs enact. The second
-incompleteness theorem is the obstacle: "FairBot defects against DefectBot"
-is PA-equivalent to Con(PA), so an agent needing it must search a stronger
+each pair of modal agents has a determined outcome, and by Solovay's
+theorem PA proves a letterless modal sentence exactly when GL does, so the
+modal calculus decides what the programs do. The second incompleteness
+theorem is the obstacle: "FairBot defects against DefectBot" is
+PA-equivalent to Con(PA), so an agent needing it must search a stronger
 theory.
 
 `open-source-game-theory` returns a scoreboard. CooperateBot is ⊤,
 DefectBot ⊥, FairBot □p; the Barasz et al. algorithm is GL's Kripke
 semantics run as a tournament; PrudentBot, searching PA for "X cooperates
-with me" and PA + Con(PA) for "X defects against DefectBot", pays for
-climbing the hierarchy of theories. Running agents check proofs only up to
-length n, so the field needed, and Critch proved, a bounded Löb's theorem
-for □ₙ under which the cooperation below survives.
+with me" and PA + Con(PA) for "X defects against DefectBot", is the first
+step up the hierarchy of theories. Running agents check proofs only up to
+length n, so Critch proved a bounded Löb's theorem for □ₙ under which the
+cooperation below survives.
 
 ## FairBot cooperates with FairBot
 
@@ -64,7 +65,7 @@ theorem.
 | ⊤ · ⊥ | CooperateBot · DefectBot |
 | □p | FairBot: cooperate iff the opponent provably cooperates with me |
 | Löb: T ⊢ □S → S gives T ⊢ S | "if provably cooperated with, cooperate" becomes cooperation |
-| fixed point of p ↔ □p is ⊤ | two FairBots cooperate, whatever their source |
+| fixed points of p ↔ □p and of p ↔ □□p are both ⊤ | a FairBot cooperates with itself and with any other FairBot |
 | de Jongh–Sambin fixed-point theorem | every pair of modal agents has one determined outcome |
 | Kripke semantics for GL; decidability | the Barasz et al. evaluation algorithm; modal combat |
 | Solovay: GL is what PA proves about □ | what the modal calculus predicts is what the programs do |

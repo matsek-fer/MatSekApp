@@ -7,7 +7,7 @@ ai_generated: true
 ---
 
 A mixed strategy is a distribution over moves, a chance move a
-distribution nobody controls, a private type a distribution drawn before
+distribution nobody controls, a private type a random variable drawn before
 play. Compositional game theory makes them one kind of arrow, a Markov
 kernel x ↦ k(· | x), composed with the rest of the game by the same rules.
 Forwards flows a kernel; backwards flows a conditional expectation.
@@ -24,20 +24,21 @@ by the Chapman–Kolmogorov equation,
 (k₂∘k₁)(z | x) = Σᵧ k₂(z | y) k₁(y | x), a product of stochastic matrices.
 
 The return traffic is lighter. Open games draw a probabilistic model as a
-string diagram: independence is parallel composition, marginalisation a
-discarded wire, Chapman–Kolmogorov two boxes in a row. The lens picture
-puts Bayes' rule and expected utility on one footing, both backward maps
-along a kernel; Bolt, Hedges & Zahn run Bayesian updating down the
-coutility wire. Revenue equivalence becomes a diagram equation between
-allocation boxes with the same expected backward flow.
+string diagram in a Markov category: independence is parallel composition,
+marginalisation a discarded wire, Chapman–Kolmogorov two boxes in a row. The
+lens picture puts Bayes' rule and expected utility on one footing: in
+Bolt, Hedges & Zahn's Bayesian open games the backward map may depend on
+what came forward, and that is where inverting a kernel against the prior
+enters. Revenue equivalence becomes a diagram equation between allocation
+boxes with the same expected backward flow.
 
 ## Matching pennies as an open game
 
-Nash's theorem: a game with finitely many players and moves has an
-equilibrium in mixed strategies; in open-game terms, each strategy a
-kernel from a point, the predicate "every kernel maximises expected
-coutility against the others" is satisfiable for a closed game. Alice and
-Bob each show heads or tails; Alice wins 1 on a match, loses 1 otherwise.
+Matching pennies is the standard first example of Nash's theorem; in
+open-game terms each mixed strategy is a kernel from a point, and the
+equilibrium predicate asks that every kernel maximise expected coutility
+against the others. Alice and Bob each show heads or tails; Alice wins 1 on
+a match, loses 1 otherwise.
 No pure profile is stable, since the loser always switches. If Alice
 shows heads with probability p and Bob with q, her expected payoff is
 (2p − 1)(2q − 1). At q = ½ every p earns 0,
@@ -48,7 +49,7 @@ computation is one kernel composition, p ⊗ q then u, and one expectation.
 ## Where to see it
 
 Osborne & Rubinstein, on `compositional-game-theory`, define Bayesian
-games in the strategic-games chapter and prove Nash's theorem in the
+games in the Nash-equilibrium chapter and prove Nash's theorem in the
 next; Roughgarden's auction lectures carry the probability behind revenue
 equivalence; Bolt, Hedges & Zahn's *Bayesian Open Games* puts kernels on
 the wires. On `probability`, Blitzstein & Hwang make conditioning the
@@ -68,5 +69,5 @@ Chapman–Kolmogorov.
 | chance moves in sequence | Chapman–Kolmogorov, product of stochastic matrices |
 | parallel composition ⊗ | independence, product measure |
 | discarding a wire | marginalisation |
-| Bayesian updating down the backward wire | Bayes' rule, inversion of a kernel against a prior |
+| backward map that sees the forward observation | Bayes' rule, inversion of a kernel against a prior |
 | revenue equivalence as a diagram equation | equal expected revenue over the prior |

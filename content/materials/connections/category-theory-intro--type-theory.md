@@ -34,8 +34,8 @@ reduce.
 ## Currying, three ways
 
 In a category with finite products, an exponential of B and C is an object
-C^B with ev : C^B × B → C such that every f : A × B → C factors as
-f = ev ∘ (λf × id_B) for exactly one λf : A → C^B.
+C^B with ev: C^B × B → C such that every f: A × B → C factors as
+f = ev ∘ (λf × id_B) for exactly one λf: A → C^B.
 
 In Set, C^B is the function set and λf(a) = (b ↦ f(a, b)). In the poset
 0 ≤ 1, × is ∧ and the condition reads a ∧ b ≤ c iff a ≤ c^b, forcing
@@ -46,20 +46,21 @@ into a pair is a pair of functions, and A → (B ∧ C) is (A → B) ∧ (A → 
 
 ## Where to see it
 
-Wadler's Propositions as Types fills the last two columns of the table;
-Leinster treats − × B ⊣ (−)^B among the first examples of an adjunction. The
-table is a phrasebook between `category-theory-intro` and `type-theory`.
+Wadler's Propositions as Types, on `type-theory`, fills the last two columns
+of the table; on `category-theory-intro`, Leinster treats − × B ⊣ (−)^B
+among the first adjunctions and Milewski writes products, exponentials and
+initial algebras in Haskell.
 
 | Category theory | Type theory | Logic |
 |---|---|---|
 | object A | type A | proposition A |
-| arrow f : A → B | term x : A ⊢ f(x) : B | proof of B from A |
+| arrow f: A → B | term x : A ⊢ f(x) : B | proof of B from A |
 | composition g ∘ f | substitution g(f(x)) | cut, one proof spliced into another |
 | identity id_A | the variable x : A | assumption A ⊢ A |
 | terminal object 1 | unit type, one element | ⊤, true |
 | product A × B, π₁, π₂ | pair type, projections | A ∧ B, ∧-elimination |
 | exponential C^B, ev | function type B → C, application | B → C, modus ponens |
-| λf : A → C^B from f : A × B → C | λb. f(a, b), currying | deduction theorem |
+| λf: A → C^B from f: A × B → C | λb. f(a, b), currying | deduction theorem |
 | β and η | β- and η-reduction | normalisation of proofs |
 | initial object 0 | empty type | ⊥, false |
 | coproduct A + B | sum type, case analysis | A ∨ B, proof by cases |

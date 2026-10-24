@@ -1,6 +1,6 @@
 ---
 between: [geometry, physics-symmetry]
-tagline: Geometry lends physics connections, curvature and holonomy; physics lends geometry its Lie groups, the gauge principle and, through Yang–Mills, new invariants of four-manifolds.
+tagline: Geometry lends physics connections, curvature and holonomy; physics lends geometry Noether's theorem, the gauge principle and, through Yang–Mills, Donaldson's invariants of four-manifolds.
 strength: 3
 status: draft
 ai_generated: true
@@ -24,9 +24,10 @@ geometry, Sharpe's subject, does the same for general relativity: a space-time
 is locally Minkowski space, the Klein geometry Poincaré/Lorentz, and its
 Riemann tensor is the curvature of the Lorentz connection.
 
-Physics repays in groups and equations. Klein's groups are Lie groups: the Möbius group of the disc in pitch problem 2 on `geometry`
-has Lie algebra sl(2, ℝ), and Noether's theorem turns each Killing field
-into a first integral of the geodesics. The Yang–Mills equations gave
+Physics repays in groups and equations. Klein's groups are the Lie groups
+of `physics-symmetry`: the Möbius group of the disc in pitch problem 2 on
+`geometry` has Lie algebra sl(2, ℝ), and Noether's theorem turns each Killing
+field into a first integral of the geodesics. The Yang–Mills equations gave
 geometry a new tool: Donaldson (1983) used the moduli space of their
 solutions to show that smooth four-manifolds obey restrictions topology
 alone does not force.
@@ -50,11 +51,12 @@ this is the Aharonov–Bohm effect.
 ## Where to see it
 
 Needham's *Visual Differential Geometry and Forms*, on `geometry`, draws
-parallel transport, holonomy and Gauss–Bonnet; Sharpe is this page's Klein-to-Cartan
-half, Lee the prerequisite both pages name. On
-`physics-symmetry`, Baez and Muniain's *Gauge Fields, Knots and Gravity*
-builds bundles, connections and curvature for the physicist's reasons;
-Tong's *Gauge Theory* is the right-hand column below.
+parallel transport, holonomy and Gauss–Bonnet; Sharpe is the Klein-to-Cartan
+half, and Lee's *Introduction to Smooth Manifolds* the prerequisite for Sharpe
+and for the physics texts alike. On `physics-symmetry`, Baez and Muniain's
+*Gauge Fields, Knots and Gravity* builds bundles, connections and curvature
+for the physicist's reasons; Tong's *Gauge Theory* teaches the right-hand
+column below.
 
 | Geometry | Physics-symmetry |
 |---|---|
@@ -66,7 +68,7 @@ Tong's *Gauge Theory* is the right-hand column below.
 | curvature F = dA + A ∧ A | field strength F_{μν}; Maxwell's F for U(1) |
 | flat connection | pure gauge, no field |
 | holonomy round a loop | phase exp(i∮A); the Aharonov–Bohm effect |
-| Riemann tensor of the Levi-Civita connection | the gravitational field |
+| Riemann tensor of the Levi-Civita connection | tidal gravity: the field strength of the Lorentz connection |
 | Killing vector field | continuous symmetry; Noether's conserved quantity |
 | geodesic | worldline of a free particle |
 | Gauss–Bonnet ∫K dA = 2πχ; Chern–Weil ∫ tr(F ∧ F) ∈ 8π² ℤ | total curvature fixed by topology; instanton number |

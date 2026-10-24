@@ -17,31 +17,33 @@ becomes a map Spec B → Spec A, the ring turned inside out. Pitch problem 3 on
 
 Algebra lends the theorems. Hilbert's basis theorem makes ℂ[x₁, …, xₙ]
 Noetherian, so every variety is cut out by finitely many equations; the
-twisted cubic of pitch problem 2 on `commutative-homological-algebra` needs
-two. Krull dimension, the longest chain of primes p₀ ⊂ ⋯ ⊂ p_d, is the
-variety's dimension. Homological algebra lends the measurements: a local ring
-is regular exactly when every finitely generated module has a finite free
-resolution (Auslander–Buchsbaum–Serre), and sheaf cohomology measures the
-failure of local functions to patch, so by Serre's criterion a variety is
-affine, is a ring, exactly when every coherent sheaf has H¹ = 0.
+affine twisted cubic of pitch problem 2 on `commutative-homological-algebra`
+needs two, y − x² and z − x³. Krull dimension, the longest chain of primes
+p₀ ⊂ ⋯ ⊂ p_d, is the variety's dimension. Homological algebra lends the
+measurements: a local ring is regular exactly when every finitely generated
+module has a finite free resolution (Auslander–Buchsbaum–Serre), and sheaf
+cohomology measures the failure of local functions to patch, so by Serre's
+criterion a variety is affine — is nothing more than its ring — exactly when
+every coherent sheaf has H¹ = 0.
 
 Geometry lends the words and the questions. Dimension, tangent space, singular
 and generic point are borrowed, and each became a definition that works for ℤ,
 which has no picture. Noether normalisation projects a d-dimensional variety
-finitely onto ℂᵈ, and the Nullstellensatz falls out. Serre asked whether
-vector bundles on ℂⁿ are trivial; Quillen and Suslin answered that projective
-modules over ℂ[x₁, …, xₙ] are free.
+finitely onto ℂᵈ, and the Nullstellensatz falls out. Serre asked in 1955
+whether algebraic vector bundles on ℂⁿ are trivial; Quillen and Suslin
+answered in 1976 that finitely generated projective modules over
+ℂ[x₁, …, xₙ] are free.
 
 ## Singular points are non-regular local rings
 
 Let A be the local ring of a variety at a point p, with maximal ideal m. Then
 m/m² is the cotangent space at p, and dim(m/m²) ≥ dim A, with equality exactly
 when p is non-singular; A is then regular. For a plane curve f = 0 through the
-origin, m/m² is ℂ² modulo the linear part of f, since they differ by an
-element of (x, y)². The parabola y − x² = 0 has linear part y, so m/m² ≅ ℂ,
-dimension 1 = dim A: regular, smooth. The cusp y² − x³ = 0 has linear part 0,
-so m/m² ≅ ℂ², dimension 2 > 1: not regular, a singular point. This is the
-gradient test from calculus, recovered from the ring alone.
+origin, m/m² is ℂ² modulo the linear part of f, since f and its linear part
+differ by an element of (x, y)². The parabola y − x² = 0 has linear part y, so
+m/m² ≅ ℂ, dimension 1 = dim A: regular, smooth. The cusp y² − x³ = 0 has
+linear part 0, so m/m² ≅ ℂ², dimension 2 > 1: not regular, a singular point.
+This is the gradient test from calculus, recovered from the ring alone.
 
 ## Where to see it
 
@@ -58,7 +60,7 @@ Spec and sheaf cohomology from this dictionary. The table is the phrasebook.
 | prime ideal p | irreducible subvariety, or its generic point |
 | ideal I with √I = I | subvariety V(I); I(V(I)) = √I is the strong Nullstellensatz |
 | I ⊂ J | V(J) ⊂ V(I); more equations, fewer points |
-| quotient A/I | the closed subvariety V(I) |
+| quotient A/I | the closed subscheme V(I); a subvariety when I is radical |
 | nilpotent ε with ε² = 0 | a point that remembers one tangent direction |
 | localisation A_m | the local ring at a point; functions defined near it |
 | localisation A[1/f] | the open set f ≠ 0; ℂ[x, 1/x] is the hyperbola xy = 1 |

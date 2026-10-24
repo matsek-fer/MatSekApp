@@ -18,7 +18,7 @@ tools.
 
 Higher categories give topology one object in place of a list of
 invariants: π₀(X) is the set of isomorphism classes of Π∞(X), π₁(X, x) the
-automorphism group of x. The interchange law for 2-cells is the
+group of automorphisms of x in Π₁(X). The interchange law for 2-cells is the
 Eckmann–Hilton argument of the `higher-category-theory` pitch, so π₂ is
 abelian, and the braiding one level up is the Whitehead product
 π₂ × π₂ → π₃. Pushouts of groupoids let Seifert–van Kampen compute π₁(S¹)
@@ -32,9 +32,10 @@ horn fillers gives Joyal's quasi-categories, Lurie's ∞-categories. It is
 also an acceptance test: strict n-groupoids model every 1-type and, as
 crossed modules (Mac Lane–Whitehead), every 2-type, but Simpson proved that
 no strict 3-groupoid has the 3-type of S². Strictness makes the braiding an
-identity, killing the Whitehead product, while on S² the square of the
-generator of π₂ is twice the Hopf map, nonzero in π₃(S²) ≅ ℤ. Spaces force
-weakness, hence Cheng & Lauda's book of competing definitions.
+identity, killing the Whitehead product, while on S² the Whitehead product
+of the generator of π₂ with itself is twice the Hopf map η, nonzero in
+π₃(S²) ≅ ℤ. Spaces force weakness, hence Cheng & Lauda's book of competing
+definitions.
 
 ## The hypothesis at level one
 
@@ -61,12 +62,12 @@ Armstrong's Basic Topology computes π₁(S¹) ≅ ℤ. The table is a phraseboo
 | point · path · homotopy of paths · homotopy of homotopies | object · 1-cell · 2-cell · 3-cell |
 | reversed path; constant path | inverse, up to a cell one level higher; identity |
 | π₀(X) | set of isomorphism classes of objects |
-| π₁(X, x) | automorphism group of the object x |
+| π₁(X, x) | automorphism group of the object x in Π₁(X) |
 | πₙ(X, x) | n-cells on the identity (n − 1)-cell at x, up to (n + 1)-cells |
 | homotopy equivalence | equivalence of ∞-groupoids |
 | Postnikov truncation PₙX | n-truncation, collapsing the cells above level n |
 | 1-type; K(G, 1) = BG | groupoid; the one-object groupoid G |
-| Eilenberg–MacLane space K(A, n) | one object, one cell in each dimension below n, A in dimension n |
+| Eilenberg–Mac Lane space K(A, n) | one object, one cell in each dimension below n, A in dimension n |
 | 2-type | strict 2-groupoid, equivalently a crossed module (Mac Lane–Whitehead) |
 | 3-type of S² | not any strict 3-groupoid (Simpson); weakness is forced |
 | π₂ abelian | interchange law for 2-cells (Eckmann–Hilton) |

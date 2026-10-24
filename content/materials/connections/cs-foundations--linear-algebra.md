@@ -16,11 +16,12 @@ linear map, a theorem.
 
 Linear algebra lends the tools. Least squares: the x̂ minimising ‖Ax − b‖
 makes Ax̂ the projection of b onto the column space of A, so AᵀA x̂ = Aᵀb;
-every model fit in Boyd & Vandenberghe starts there. PageRank, the
+it is the opening example of Boyd & Vandenberghe. PageRank, the
 `linear-algebra` pitch problem, is the eigenvector for eigenvalue 1 of the
 Google matrix G = 0.85P + 0.15J/n, link matrix plus uniform jump, unique by
-Perron–Frobenius. Over 𝔽₂ a subspace is a code, and kernel, rank and
-dimension become decoding, redundancy and rate.
+Perron–Frobenius. Over 𝔽₂ the kernel of a parity-check matrix is a code, its
+rank the number of check bits and the kernel's dimension the number of data
+bits.
 
 Computer science repays by counting. Gaussian elimination costs about ⅔n³
 flops; Strassen (1969) multiplied 2×2 block matrices with seven products
@@ -28,9 +29,10 @@ instead of eight, giving O(n^{log₂ 7}) ≈ O(n^{2.81}); the exponent ω, with
 2 ≤ ω < 2.372 all that is known, also governs inversion, determinants and
 solving systems. PageRank is found by power iteration, one sparse product per
 step, each shrinking the error by a factor 0.85. Floating point adds the
-condition number κ(A) = ‖A‖‖A⁻¹‖: solving Ax = b can lose log₁₀ κ of double
-precision's sixteen digits, which is why elimination pivots and why the
-normal equations, with κ(AᵀA) = κ(A)², give way to QR.
+condition number κ(A) = ‖A‖‖A⁻¹‖: however Ax = b is solved, log₁₀ κ of double
+precision's sixteen digits can be lost, and a careless algorithm loses more,
+which is why elimination pivots and why the normal equations, with
+κ(AᵀA) = κ(A)², give way to QR.
 
 ## The Hamming [7,4] code
 
@@ -51,8 +53,7 @@ CLRS covers Strassen in its divide-and-conquer chapter and LUP decomposition,
 inversion and least squares in its matrix-operations chapter; Strang's 18.06
 lectures on elimination, projections, least squares and the SVD add the
 geometry; 3Blue1Brown's Hamming-code videos derive H from the binary
-positions. The table is a phrasebook between `cs-foundations` and
-`linear-algebra`.
+positions.
 
 | Computer science | Linear algebra |
 |---|---|

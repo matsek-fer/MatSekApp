@@ -6,12 +6,12 @@ status: draft
 ai_generated: true
 ---
 
-An abelian category is a module category with the ring forgotten: every arrow
-has a kernel and a cokernel, every monomorphism is a kernel and every
-epimorphism a cokernel, exactly enough to say "exact sequence". Homological
-algebra is what those axioms alone can prove, and where
-`category-theory-intro` stops being a phrasebook: Ext and Tor have no
-definition that avoids a universal property.
+An abelian category is a module category with the ring forgotten: it is
+additive, every arrow has a kernel and a cokernel, every monomorphism is a
+kernel and every epimorphism a cokernel, exactly enough to say "exact
+sequence". Homological algebra is what those axioms alone can prove, and
+where `category-theory-intro` stops being optional: Ext and Tor are derived
+functors, defined by a universal property.
 
 ## What each side lends
 
@@ -19,19 +19,17 @@ Category theory lends adjunctions. The tensor–hom adjunction
 Hom(M ⊗ N, P) ≅ Hom(M, Hom(N, P)) makes − ⊗ N a left adjoint and Hom(N, −) a
 right adjoint on R-Mod. Left adjoints preserve colimits, so ⊗ keeps cokernels
 and is right exact; right adjoints preserve limits, so Hom keeps kernels and
-is left exact, as does Hom(−, M), which turns cokernels into kernels. So which
-half each functor loses is settled before any module is written down. Ext is
+is left exact, as does Hom(−, M), which turns cokernels into kernels. Ext is
 then pinned down by a universal property, the unique extension of Hom(−, M)
-to long exact sequences vanishing on free modules, and independence of the
-resolution is the usual uniqueness of a universal object.
+to long exact sequences whose higher terms vanish on projectives, and
+independence of the resolution is uniqueness of a universal object.
 
 Homological algebra lends the axioms themselves: Buchsbaum and Grothendieck
-distilled abelian categories from R-Mod in the 1950s so that sheaf cohomology
-could run on the same rails as Ext of modules. It lends the snake lemma, the
-first theorem proved by diagram chase, and the licence to chase elements
-anywhere: Freyd–Mitchell embeds every small abelian category fully,
-faithfully and exactly into some R-Mod, so element-chasing proofs in modules
-hold in every abelian category.
+distilled them from R-Mod in the 1950s so that sheaf cohomology could run on
+the rails built for Ext of modules. It lends the snake lemma, the archetypal
+diagram chase, and the licence to chase elements anywhere: Freyd–Mitchell
+embeds every small abelian category fully, faithfully and exactly into some
+R-Mod, so element chases in modules hold in every abelian category.
 
 ## Ext and Tor from one sequence
 
@@ -51,16 +49,16 @@ splices such failures into the long exact sequence
 
 Mac Lane's Categories for the Working Mathematician, on
 `category-theory-intro`, has a chapter on abelian categories, and Leinster's
-Basic Category Theory proves that right adjoints preserve limits. On
+Basic Category Theory proves right adjoints preserve limits. On
 `commutative-homological-algebra`, Aluffi's Algebra: Chapter 0, chapters
-VIII–IX, builds Ext and Tor in exactly this language, and Rotman's
+VIII–IX, builds Ext and Tor in this language, and Rotman's
 Introduction to Homological Algebra proves the snake lemma in full. The table
 is a phrasebook.
 
 | Modules over a ring | Category theory |
 |---|---|
 | R-Mod, Ab, sheaves of abelian groups | abelian categories; one axiom list, every theorem proved once |
-| Hom(M, N) is an abelian group, composition bilinear | additive (Ab-enriched) category |
+| Hom(M, N) is an abelian group, composition bilinear | preadditive (Ab-enriched) category |
 | kernel of f, the solutions of f(x) = 0 | equaliser of f and 0 |
 | cokernel N / im f | coequaliser of f and 0 |
 | image of f | kernel of the cokernel of f |
@@ -73,4 +71,4 @@ is a phrasebook.
 | projective resolution ⋯ → P₁ → P₀ → M → 0 | replacing an object by a complex of good ones, unique up to homotopy |
 | Ext, Tor | derived functors, pinned down by a universal property |
 | the snake lemma by chasing elements | Freyd–Mitchell: every small abelian category embeds exactly in some R-Mod |
-| Ext¹(C, A) classifies 0 → A → E → C → 0 | a set of arrows A → C of degree one; the Yoneda extension |
+| Ext¹(C, A) classifies 0 → A → E → C → 0 | Yoneda Ext: arrows C → A of degree one, composed by splicing |

@@ -8,29 +8,31 @@ ai_generated: true
 
 Iterate a rational map f of the Riemann sphere Ĉ and ask what
 `dynamical-systems` always asks: which starting points behave stably and
-which chaotically? For holomorphic f it has a clean answer. Ĉ splits into an
-open Fatou set, where the iterates fⁿ form a normal family, and its closed
-complement, the Julia set J(f), where they do not.
+which chaotically? Ĉ splits into an open Fatou set, where the iterates fⁿ
+form a normal family, and its closed complement, the Julia set J(f), where
+they do not.
 
 ## What each side lends
 
 `complex-analysis` supplies the rigidity. Montel's theorem — a family of
-holomorphic functions omitting three values of Ĉ is normal — gives at once
-that J(f) is non-empty when deg f ≥ 2, perfect, completely invariant and the
-closure of the repelling periodic points. Since f_c(z) = z² + c has one
-finite critical point, 0, and every attracting basin contains one (Fatou),
-the orbit of 0 decides everything: c lies in the Mandelbrot set M exactly
-when it stays bounded, and then J(f_c) is connected, otherwise a Cantor set
-carrying the shift on two symbols. Montel rests on the Cauchy estimates —
-bounded holomorphic families are equicontinuous — which real maps lack, so
-the logistic map on an interval gets no Fatou–Julia split.
+meromorphic functions omitting three values of Ĉ is normal — gives at once
+that J(f) is non-empty when deg f ≥ 2 and perfect, and with more work that
+it is the closure of the repelling periodic points. Since f_c(z) = z² + c
+has one finite critical point, 0, and every attracting basin contains one
+(Fatou), the orbit of 0 decides everything: c lies in the Mandelbrot set M
+exactly when it stays bounded, and then J(f_c) is connected, otherwise a
+Cantor set carrying the shift on two symbols. Underneath lies the Cauchy
+estimate — a bounded holomorphic family is equicontinuous — which real maps
+lack, so the logistic map gets a Fatou–Julia split only once it is
+complexified.
 
 Dynamics supplies the objects: Newton's method, Cayley's 1879 question about
 z³ − 1, period doubling. The logistic map x ↦ r·x(1 − x) is affinely
 conjugate, via z = r(1/2 − x), to z² + c with c = r/2 − r²/4, so the
 bifurcation diagram of pitch problem 2 on `dynamical-systems` is M ∩ ℝ =
 [−2, 1/4]: r = 3 is c = −3/4, where the main cardioid meets the period-2
-disc, and Feigenbaum's 4.669… is the rate the discs shrink.
+disc, and Feigenbaum's 4.669… is the ratio by which successive
+period-doubling components shrink along the axis.
 
 ## Newton's method on the sphere
 

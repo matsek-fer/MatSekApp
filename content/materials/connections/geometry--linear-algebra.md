@@ -7,10 +7,10 @@ ai_generated: true
 ---
 
 A geometry, for Klein, is a set with a group acting on it, and its theorems
-are the group's invariants. In every classical case the set comes from a
-vector space and the group is a matrix group, so the Erlangen hierarchy of
-`geometry` — projective, affine, similarity, Euclidean — is a chain of
-subgroups of GL(n+1), and its theorems are invariants of `linear-algebra`.
+are the group's invariants. Classically the set comes from a vector space
+and the group is a matrix group, so the Erlangen hierarchy of `geometry` —
+projective, affine, similarity, Euclidean — is a chain of subgroups of
+PGL(n+1), and its theorems are invariants of `linear-algebra`.
 
 ## What each side lends
 
@@ -53,7 +53,7 @@ an affine but not a projective invariant.
 Hitchin's *Projective Geometry* notes do conics and duality this way,
 Stillwell's *Four Pillars* has the transformation-group pillar, and Treil's
 chapter on bilinear and quadratic forms proves Sylvester's law. The table is
-a phrasebook between `geometry` and `linear-algebra`.
+a phrasebook.
 
 | Geometry | Linear algebra |
 |---|---|

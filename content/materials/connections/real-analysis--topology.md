@@ -6,20 +6,21 @@ status: draft
 ai_generated: true
 ---
 
-Every definition in `real-analysis` is a statement about open sets wearing a
-distance: xₙ → x means every open interval around x contains all but finitely
-many xₙ, continuity means preimages of open intervals are open, compactness
-means every cover by open intervals has a finite subcover. `topology` keeps
-the open sets, discards the numbers, and asks which theorems survive.
+The limit definitions of `real-analysis` are statements about open sets
+wearing a distance: xₙ → x means every open interval around x contains all but
+finitely many xₙ, continuity means preimages of open intervals are open,
+compactness means every cover by open intervals has a finite subcover.
+`topology` keeps the open sets, discards the numbers, and asks which theorems
+survive.
 
 ## What each side lends
 
 Analysis gives topology its test space, ℝ: Urysohn's lemma separates disjoint
 closed sets of a normal space by a continuous map to [0, 1] and Tietze extends
-real-valued functions from closed subsets, so the normality of the topology
-script's first lectures is about the supply of continuous functions into ℝ.
-Completeness of ℝ becomes the complete metric space, Cantor's intersection
-theorem and Baire's theorem, lectures 4 and 5.
+continuous real-valued functions from closed subsets, so the normality of the
+topology script's first lectures is about the supply of continuous functions
+into ℝ. Completeness of ℝ becomes the complete metric space, Cantor's
+intersection theorem and Baire's theorem, lectures 4 and 5.
 
 Topology repays with generality and names. The intermediate value theorem is
 "continuous images of connected sets are connected"; the extreme value theorem
@@ -28,7 +29,7 @@ Uniform convergence is convergence in the complete metric d(f, g) = sup |f − g
 on C([a, b]), so "a uniform limit of continuous functions is continuous" says
 C([a, b]) is closed in the bounded functions. Pointwise convergence is the
 product topology on ℝ^[a, b], where sequences stop describing closure: no
-sequence of indicators of finite subsets of [0, 1] converges pointwise to the
+sequence of indicators of finite subsets of [a, b] converges pointwise to the
 constant 1 (countably many finite sets miss some x), yet 1 is in their
 closure, since basic open sets constrain finitely many coordinates. So
 topology defines closure and compactness by open sets; the sequential versions
@@ -43,8 +44,8 @@ bounded in ℝⁿ, not in infinite dimensions: the closed unit ball of C([0, 1])
 in the sup metric is closed and bounded, yet fₙ(x) = xⁿ has no uniformly
 convergent subsequence, because its pointwise limit, 0 on [0, 1) and 1 at 1,
 is discontinuous, and a uniform limit of continuous functions is continuous.
-Arzelà–Ascoli names the missing hypothesis, equicontinuity, and underlies the
-existence theorems of `dynamical-systems`.
+Arzelà–Ascoli names the missing hypothesis, equicontinuity, and underlies
+Peano's existence theorem for ODEs in `dynamical-systems`.
 
 ## Where to see it
 
@@ -57,11 +58,11 @@ completeness and Baire in lectures 4 and 5. The table is a phrasebook between
 | Real analysis on ℝ | Topology |
 |---|---|
 | open interval (a, b); union of open intervals | basic open set; open set |
-| \|x − a\| < ε | x lies in an open neighbourhood of a |
+| \|x − a\| < ε | x lies in the ball B(a, ε), a basic open neighbourhood of a |
 | xₙ → x: eventually within every ε of x | eventually inside every open set containing x |
 | ε–δ continuity at every point | preimage of every open set is open |
-| closed set: contains the limits of its sequences | complement of an open set; equals its closure — sequences suffice only in metric spaces |
-| Bolzano–Weierstrass: bounded sequences have convergent subsequences | sequential compactness; equivalent to compactness only in metric spaces |
+| closed set: contains the limits of its sequences | complement of an open set; equals its closure — sequences suffice in metric spaces, not in general |
+| Bolzano–Weierstrass: bounded sequences have convergent subsequences | sequential compactness; equivalent to compactness in metric spaces, not in general |
 | Heine–Borel: closed and bounded | compact: every open cover has a finite subcover; in a metric space, complete and totally bounded |
 | intermediate value theorem | intervals are connected; continuous images of connected sets are connected |
 | extreme value theorem | continuous images of compact sets are compact |

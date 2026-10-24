@@ -18,15 +18,16 @@ formal systems, asking what they prove and what they compute.
 circuits (Shannon, 1938): every Boolean function f: {0,1}ⁿ → {0,1} is a
 formula in ∧, ∨, ¬, read off its truth table as a disjunction of
 conjunctions. First-order logic is SQL: Codd's theorem (1972) says relational
-algebra — SELECT, JOIN and WHERE — expresses exactly the domain-independent
-first-order queries over the tables. SQL has no ∀, so "students who take
-every course" is written ¬∃c ¬∃t (t.student = s ∧ t.course = c). And
-computability is definability: computably enumerable means Σ₁,
-{n : ∃y φ(n, y)} with only bounded quantifiers in φ (Kleene).
+algebra — selection, projection, join, union, difference, the operations
+behind SQL — expresses exactly the domain-independent first-order queries.
+SQL has no ∀, so "students who take every course" is written
+¬∃c ¬∃t (t.student = s ∧ t.course = c). Computability is definability:
+computably enumerable means Σ₁, {n : ∃y φ(n, y)} with only bounded
+quantifiers in φ (Kleene).
 
 `cs-foundations` repays with a measure of difficulty and a second proof of
-incompleteness. Cook–Levin (1971): satisfiability of a propositional formula
-is NP-complete, because the accepting runs of a polynomial-time
+incompleteness. Cook (1971) and Levin (1973): satisfiability of a
+propositional formula is NP-complete, because the accepting runs of a polynomial-time
 nondeterministic machine are the satisfying assignments of a polynomial-size
 formula. Fagin (1974) goes further: NP is exactly the properties of finite
 structures of the form ∃R₁ … ∃Rₖ φ with φ first-order.
@@ -39,21 +40,21 @@ arithmetic does). Then some true sentence "M does not halt on x" is
 unprovable in T.
 
 Proof. Suppose T proves every true "M does not halt on x". Given (M, x),
-simulate M on x while listing T's proofs, watching for a proof that M does
-not halt on x. If M halts, the simulation ends; if not, by assumption a proof
+simulate M on x while listing T's theorems, watching for "M does not halt
+on x". If M halts, the simulation ends; if not, by assumption a proof
 appears. A found proof is correct: if M halted, T would prove that too,
 against consistency. So halting is decidable, which Turing (1936) refuted. ∎
 
 Gödel's sentence says "I am not provable"; Turing's machine does the opposite
 of what is predicted of it. Both are Cantor's diagonal from pitch problem 3
-on `logic-sets`; in the dictionary below, Gödel's diagonal lemma is Kleene's
-recursion theorem, a program reading its own code.
+on `logic-sets`, and Gödel's diagonal lemma is Kleene's recursion theorem, a
+program reading its own code.
 
 ## Where to see it
 
-Sipser's *Introduction to the Theory of Computation*, on `cs-foundations`,
-has both halves: Cook–Levin in the chapter on time complexity, and the proof
-above under decidability of logical theories. On `logic-sets`, the Open Logic
+Sipser, on `cs-foundations`, has both halves: Cook–Levin in the chapter on
+time complexity, and an incompleteness proof of the same shape under
+decidability of logical theories. On `logic-sets`, the Open Logic
 Project's *Incompleteness and Computability* volume takes the same road from
 Turing machines to Gödel more slowly; `computability` and `advanced-logic`
 continue it.

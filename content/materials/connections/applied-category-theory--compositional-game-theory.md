@@ -7,28 +7,27 @@ ai_generated: true
 ---
 
 An open game is an open system in the sense `applied-category-theory` gave to
-Petri nets, circuits and databases: a morphism in a symmetric monoidal
+Petri nets, circuits and Markov processes: a morphism in a symmetric monoidal
 category, composed by plugging and juxtaposing boxes. The box is a game
 because the morphism is a lens: observations flow forwards into moves,
 utility flows backwards, and one composition law handles both.
 
 ## What each side lends
 
-From `applied-category-theory` come the tools. Joyal and Street's theorem on
+`applied-category-theory` supplies the tools. Joyal and Street's theorem on
 string diagrams makes a wiring diagram a proof: diagrams that deform into each
-other denote equal morphisms. The lens was Foster and Pierce's answer to the
-view-update problem for databases before it was a game. Fritz's Markov
-categories put kernels on the wires, so private types compose by
-Chapman–Kolmogorov and Bayesian inversion rides the backward map; Bolt,
-Hedges and Zahn's auctions live there.
+other denote equal morphisms. Fritz's Markov categories axiomatise kernels on
+wires; Bolt, Hedges and Zahn's Bayesian open games are optics, the lens
+rebuilt for the non-cartesian category of stochastic maps, where private
+values live.
 
-`compositional-game-theory` repays twice. It is the ACT example in which
+`compositional-game-theory` repays twice. It is the ACT example where
 compositionality is a theorem, not a definition: payoffs compose, Nash
 equilibria do not (pitch problem 2 there), so the invariant that does, "σ is
 an equilibrium against the continuation k : Y → R", had to be found. Second,
-the same lens is the shape of gradient descent, Bayesian updating and feedback
-control, which Capucci, Gavranović, Hedges and Rischel unified as parametrised
-lenses with feedback: categorical cybernetics, now an ACT subject.
+the same lens shapes gradient descent, Bayesian updating and feedback
+control, unified by Capucci, Gavranović, Hedges and Rischel as parametrised
+lenses with feedback: categorical cybernetics.
 
 ## The lens law, on the auction
 
@@ -39,14 +38,14 @@ open game is such a lens for each strategy σ ∈ Σ, plus the equilibrium
 predicate.
 
 A bidder with strategy β is the lens v ↦ β(v) forwards, (v, (w, p)) ↦ w·(v − p)
-backwards, w ∈ {0, 1} a win and p the price; scoring needs v, which is why u
-takes X × R, not R. The allocation box sends (b₁, b₂) forwards to the winner at
+backwards, w ∈ {0, 1} a win and p the price; scoring needs v, hence u takes
+X × R, not R. The allocation box sends (b₁, b₂) forwards to the winner at
 p = max(b₁, b₂) and (wᵢ, p) back along each bid wire; the law hands bidder i
 the coutility wᵢ·(vᵢ − p). If Bob plays β(w) = w/2 on a uniform value, Alice
 bidding b ≤ ½ wins with probability 2b and expects (v − b)·2b, maximal at
 b = v/2: β is a best response to itself (pitch problem 3). Swap in
-p = min(b₁, b₂) and the bidders stand: truthful bidding, expected price 1/3
-either way.
+p = min(b₁, b₂), bidder boxes untouched: truthful bidding is now the
+equilibrium, and the expected price is 1/3 either way.
 
 <svg viewBox="0 0 560 225" width="100%" style="max-width:560px" role="img" aria-label="Two bidder boxes feed an allocation box; values and bids flow forwards on solid wires, win and price flow backwards on dashed wires">
   <rect x="110" y="20" width="110" height="50" fill="none" stroke="currentColor"/>
@@ -76,7 +75,6 @@ either way.
 ## Where to see it
 
 On `applied-category-theory`, Fong and Spivak's *Seven Sketches*, chapter 5,
-draws open systems with feedback as string diagrams; Fritz's paper is the
-probability on the wires. On `compositional-game-theory`, Ghani, Hedges,
-Winschel and Zahn define lens and predicate; Bolt, Hedges and Zahn wire up
-this auction.
+reads signal-flow graphs as string diagrams; Fritz's paper is the probability
+on the wires. On `compositional-game-theory`, Ghani, Hedges, Winschel and
+Zahn define lens and predicate; Bolt, Hedges and Zahn wire up this auction.

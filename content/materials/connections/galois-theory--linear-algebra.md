@@ -1,20 +1,20 @@
 ---
 between: [galois-theory, linear-algebra]
-tagline: Galois theory borrows dimension counting for every degree and impossibility argument; linear algebra gets back a finite group of matrices whose eigenvectors are radicals.
+tagline: Galois theory borrows dimension counting for every degree and impossibility argument; linear algebra gets back Galois groups as matrix groups whose eigenvectors are radicals.
 strength: 2
 status: draft
 ai_generated: true
 ---
 
-A field extension L/K is a vector space over K — closed under addition and
-scaling by K — with a multiplication that linear algebra does not see. Its
-degree [L:K] is dim_K L, Gal(L/K) is a finite subgroup of GL_K(L), and nearly
-every finiteness statement in `galois-theory` is a dimension count.
+A finite field extension L/K is a vector space over K with a multiplication
+that linear algebra does not see. Its degree [L:K] is dim_K L, Gal(L/K) is a
+finite subgroup of GL_K(L), and nearly every finiteness statement in
+`galois-theory` is a dimension count.
 
 ## What each side lends
 
-Linear algebra supplies the counting. If α is algebraic over K, the powers
-1, α, α², … cannot stay independent in a finite-dimensional space; the first
+Linear algebra supplies the counting. In a finite extension every α is
+algebraic, since the powers 1, α, α², … cannot stay independent; the first
 dependence is the minimal polynomial, so [K(α):K] is its degree, and as it is
 also the characteristic polynomial of multiplication by α, the norm and trace
 of α are a determinant and a trace. The tower law [M:K] = [M:L][L:K] is a
@@ -53,8 +53,7 @@ Milne's first chapter does degree, the tower law and constructibility; Artin
 builds the subject from the linear-algebra side, proving the fundamental
 theorem through independence of characters; Stewart draws the constructions;
 Axler's chapters on eigenvalues and the minimal polynomial cover what the
-Galois action needs. The table is a phrasebook between `galois-theory` and
-`linear-algebra`.
+Galois action needs. The table is a phrasebook.
 
 | Galois theory | Linear algebra |
 |---|---|

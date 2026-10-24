@@ -6,10 +6,10 @@ status: draft
 ai_generated: true
 ---
 
-Martin-Löf's identity type a = b has one rule, J: to prove something about
-every p : a = b it is enough to prove it for refl_a. Nothing says two proofs
-of a = b are equal, and iterating gives a tower — paths p = q between paths,
-then paths between those, without end. Grothendieck's homotopy hypothesis
+Martin-Löf's identity type a = b has one elimination rule, J: to prove
+something about every p : a = b it is enough to prove it for refl_a. Nothing
+says two proofs of a = b are equal, and iterating gives a tower — paths p = q
+between paths, then paths between those, without end. Grothendieck's homotopy hypothesis
 says an ∞-groupoid is a space; homotopy type theory reads the tower as
 exactly that: a type is a space, a term a point, an equality a path.
 

@@ -15,13 +15,13 @@ over the whole space are fixed by its shape.
 ## What each side lends
 
 Topology supplies stage and obstructions. Lee's *Introduction to
-Topological Manifolds* builds the manifold with the script's point-set tools,
-and the script's Urysohn's lemma gives the ring C(X) of pitch problem 3 on
-`geometry` enough functions to recover a compact Hausdorff X from its
-maximal ideals. The classification of surfaces, every compact orientable
-surface a sphere with g handles and χ = 2 − 2g, lists the spaces a metric
-must live on, and χ obstructs: χ(S²) ≠ 0 forbids a nowhere-zero tangent
-field on S² (Poincaré–Hopf).
+Topological Manifolds* builds the manifold with the point-set tools of the
+MatSek script, and the script's Urysohn's lemma gives the ring C(X) of pitch
+problem 3 on `geometry` enough functions to recover a compact Hausdorff X
+from its maximal ideals. The classification of surfaces, every compact
+connected orientable surface a sphere with g handles and χ = 2 − 2g, lists
+the spaces a metric must live on, and χ obstructs: χ(S²) ≠ 0 forbids a
+nowhere-zero tangent field on S² (Poincaré–Hopf).
 
 Geometry repays with calculus that counts holes. De Rham cohomology is
 closed k-forms (dω = 0) modulo exact ones (ω = dη); on ℝ² ∖ {0} the form
@@ -29,8 +29,8 @@ closed k-forms (dω = 0) modulo exact ones (ω = dη); on ℝ² ∖ {0} the form
 so it is not exact; H¹ records the hole, the winding number of
 `complex-analysis` made linear. De Rham's theorem makes these dimensions the
 Betti numbers, so differentiation computes a homeomorphism invariant; the
-Poincaré lemma, closed implies exact on a star-shaped domain, is the
-converse.
+Poincaré lemma, closed implies exact on a star-shaped domain, is the case
+with no hole.
 
 ## Gauss–Bonnet
 
@@ -51,7 +51,7 @@ Armstrong's *Basic Topology*, on `topology`, runs from Euler's formula for
 polyhedra to the classification of surfaces; Lee's *Topological Manifolds*
 proves it. On `geometry`, Needham's *Visual Differential Geometry and Forms*
 draws curvature and Gauss–Bonnet; Lee's *Introduction to Smooth Manifolds*
-closes with de Rham cohomology. The table is a phrasebook.
+has two chapters on de Rham cohomology. The table is a phrasebook.
 
 | Topology | Geometry |
 |---|---|

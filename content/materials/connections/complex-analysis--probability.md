@@ -9,8 +9,9 @@ ai_generated: true
 A law μ on ℝ is read through its transforms: the characteristic function
 φ(t) = E[e^(itX)] = ∫ e^(itx) dμ(x), the Fourier transform of μ, and the
 moment generating function M(s) = E[e^(sX)]. Independence turns the transform
-of a sum into a product, so a theorem about X₁ + ⋯ + Xₙ is a theorem about
-φⁿ, and the rigidity of holomorphic functions does the rest.
+of a sum into a product, so a theorem about a sum of i.i.d. variables is a
+theorem about the power φⁿ, and the rigidity of holomorphic functions does
+the rest.
 
 ## What each side lends
 
@@ -22,8 +23,8 @@ with φ(t) = M(it) and E[Xᵏ] = M⁽ᵏ⁾(0), so by the identity theorem the m
 determine the law; the lognormal, with no strip, shares its moments with other
 laws. Random matrices enter through the Stieltjes transform
 s(z) = ∫ dμ(λ)/(λ − z) of the eigenvalue distribution, holomorphic off ℝ:
-Wigner's semicircle law says s² + zs + 1 → 0, and Stieltjes inversion reads
-√(4 − x²)/(2π) off the root.
+for a Wigner matrix the resolvent identity forces s² + zs + 1 → 0, and
+Stieltjes inversion reads Wigner's semicircle √(4 − x²)/(2π) off the root.
 
 Probability repays through planar Brownian motion. Lévy: for f holomorphic and
 non-constant, f(B_t) is a Brownian motion on a different clock. Kakutani:
@@ -39,18 +40,18 @@ characteristic function of Sₙ/√n is φ(t/√n)ⁿ.
 The bound |e^(ix) − 1 − ix + x²/2| ≤ min(|x|³/6, x²), integrated against μ,
 gives φ(s) = 1 − s²/2 + o(s²), so φ(t/√n)ⁿ = (1 − t²/2n + o(1/n))ⁿ → e^(−t²/2).
 That is N(0, 1)'s characteristic function: completing the square in
-∫ e^(itx) e^(−x²/2) dx/√(2π) leaves ∫ e^(−w²/2) dw along Im w = −t, and
-Cauchy's theorem slides the line onto ℝ. Lévy continuity finishes. For a fair
+∫ e^(itx) e^(−x²/2) dx/√(2π) leaves e^(−t²/2) times ∫ e^(−w²/2) dw/√(2π)
+along the line Im w = −t, and Cauchy's theorem slides that line onto ℝ,
+where the integral is 1. Lévy continuity finishes. For a fair
 coin X = ±1, φ(s) = cos s and n log cos(t/√n) = n(−t²/2n + O(n⁻²)) → −t²/2:
 de Moivre–Laplace in one line.
 
 ## Where to see it
 
-Durrett's third chapter is this page at book length, from Lévy inversion to
-stable laws; Williams's last chapter proves the CLT the same way;
-Stein & Shakarchi do the Gaussian integral above over a rectangle in their
-Cauchy's-theorem chapter. The table is a phrasebook between `probability` and
-`complex-analysis`.
+On `probability`, Durrett's third chapter is this page at book length, from
+Lévy inversion to stable laws, and Williams's last chapter proves the CLT the
+same way; on `complex-analysis`, Stein & Shakarchi do the Gaussian integral
+above over a rectangle in their Cauchy's-theorem chapter.
 
 | Probability | Complex analysis |
 |---|---|
@@ -59,7 +60,7 @@ Cauchy's-theorem chapter. The table is a phrasebook between `probability` and
 | moments E[Xᵏ] | M⁽ᵏ⁾(0); they determine the law by the identity theorem |
 | sum of independent variables | product of transforms |
 | convergence in distribution | pointwise convergence of φₙ to a φ continuous at 0 (Lévy) |
-| integer-valued X | G(z) = E[z^X] holomorphic on the unit disc; P(X = k) = G⁽ᵏ⁾(0)/k! |
+| X with values in ℕ | G(z) = E[z^X] holomorphic on the unit disc; P(X = k) = G⁽ᵏ⁾(0)/k! |
 | extinction probability of a branching process | smallest fixed point of G in [0, 1] |
 | infinitely divisible law | zero-free φ = e^ψ (Lévy–Khintchine) |
 | eigenvalue distribution of a Hermitian random matrix | Stieltjes transform s(z) = ∫ dμ(λ)/(λ − z); density (1/π) lim Im s(x + iε) |

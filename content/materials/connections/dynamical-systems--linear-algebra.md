@@ -8,20 +8,20 @@ ai_generated: true
 
 A differential equation x′ = f(x) is hard because f is arbitrary; a matrix is
 easy because it is linear. Near an equilibrium x* the two agree to first
-order, f(x) ≈ Df(x*)(x − x*), so, barring one borderline case, "what do orbits near x* do?" becomes
-"what does A = Df(x*) do to vectors?", which linear algebra answers in full.
+order, f(x) ≈ Df(x*)(x − x*), so, barring one borderline case, "what do
+orbits near x* do?" becomes "what does A = Df(x*) do to vectors?", which
+linear algebra answers.
 
 Linear algebra's gift is the solution of x′ = Ax: x(t) = exp(tA)x₀, and
-with A = PJP⁻¹ in Jordan form, exp(tA) = P exp(tJ) P⁻¹, so every coordinate
-of every solution combines terms tᵏ exp(λt), λ an eigenvalue, k smaller than
-the size of λ's largest Jordan block.
-Stability is the sign of Re λ; planar portraits follow from trace and
-determinant alone. The tᵏ factors are resonance: adjoin the forcing's own
-equation u″ + ω²u = 0 to x″ + ω²x = cos ωt and ±iω acquire Jordan blocks of size two, so
-the amplitude grows like t.
+with A = PJP⁻¹ in Jordan form, exp(tA) = P exp(tJ) P⁻¹, so every solution
+combines terms tᵏ exp(λt), λ an eigenvalue, k smaller than the size of λ's
+largest Jordan block. Stability is the sign of Re λ; planar portraits follow
+from trace and determinant alone. The tᵏ factors are resonance: adjoin the
+forcing's own equation u″ + ω²u = 0 to x″ + ω²x = cos ωt and ±iω acquire
+Jordan blocks of size two, so the amplitude grows like t.
 
-Dynamics repays this with meaning. exp(tA) is no longer a formal series but
-the time-t map of a flow, A its generator; a Jordan block is the
+Dynamics repays with meaning. exp(tA) is not a formal series but the time-t
+map of a flow, A its generator; a Jordan block is the
 obstruction to decoupling; Floquet theory makes a periodic coefficient matrix
 constant after a periodic change of variables. Two `linear-algebra` pitch
 problems are discrete dynamical systems: Fibonacci iterates a 2×2
@@ -52,8 +52,9 @@ At (0, 0) the Jacobian is [[0, 1], [−1, −γ]], eigenvalues
 sign: a saddle whose stable eigenvector is tangent to the two orbits ending
 balanced upright.
 
-The hypothesis matters. For foxes and rabbits, x′ = x(a − by),
-y′ = y(cx − d), the Jacobian at (d/c, a/b) has eigenvalues ±i√(ad):
+The hypothesis matters. For pitch problem 3's foxes and rabbits,
+x′ = x(a − by), y′ = y(cx − d), the Jacobian at (d/c, a/b) has eigenvalues
+±i√(ad):
 Hartman–Grobman is silent, and a conserved quantity, not the matrix, decides
 whether orbits close or spiral.
 

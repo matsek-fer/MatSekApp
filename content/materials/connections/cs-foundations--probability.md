@@ -9,51 +9,51 @@ ai_generated: true
 An algorithm that tosses coins is a random variable: running time, output and
 mistakes are functions of coins and input, so the questions
 `cs-foundations` asks — how long, how often wrong, how many bits — become an
-expectation, a tail probability and an entropy. In return a theorem of
-`probability` acquires a procedure that runs it.
+expectation, a tail probability and an entropy. In return `probability`
+gets algorithms that run its theorems.
 
 ## What each side lends
 
 Probability lends the calculus. Independence amplifies: an odd composite
 passes one round of Miller–Rabin with probability at most ¼, so twenty
-independent rounds err with probability below 4⁻²⁰ < 10⁻¹². Balls in bins
-price hashing: in a universal family (Carter–Wegman, 1979) two distinct keys
-collide with probability at most 1/m, so a search among n keys in m slots
-touches 1 + n/m slots on average, whatever the keys.
+rounds err with probability below 4⁻²⁰ < 10⁻¹². Universal hashing
+(Carter–Wegman, 1979) makes two distinct keys collide with probability at
+most 1/m, so a chained search among n keys in m slots examines on average at
+most 1 + n/m keys, whatever they are.
 
 Computer science repays with meaning. Shannon's source coding theorem gives
 entropy its unit: for independent symbols with distribution p, no uniquely
-decodable code averages below H(p) = −∑ pᵢ log₂ pᵢ bits per symbol, Huffman's
-code is within one bit, and the proof is the weak law of large numbers
-applied to −log₂ p(Xᵢ): only about 2^(nH) n-symbol strings are typical, so nH
-bits name them. The probabilistic method becomes an algorithm: a random
-two-colouring cuts half a graph's edges on average and needs only pairwise
-independent vertex bits, which ⌈log₂(n+1)⌉ fair bits supply as parities of
-their non-empty subsets, so trying every seed finds one deterministically.
+decodable code averages below H(p) = −∑ pᵢ log₂ pᵢ bits per symbol (Kraft's
+inequality plus Gibbs'), Huffman's is within one bit, and blocks of n
+symbols approach H: by the weak law of large numbers for −log₂ p(Xᵢ), only
+about 2^(nH) strings are typical, so nH bits name them. The probabilistic
+method becomes an algorithm: a random two-colouring cuts half a graph's
+edges on average using only pairwise independence, which ⌈log₂(n+1)⌉ fair
+bits supply as parities of their non-empty subsets, so trying every seed
+finds one deterministically.
 
 ## Randomised quicksort
 
 Choose a pivot uniformly at random, split, recurse. Theorem: for every input
 order of n distinct keys the expected number of comparisons is
 2(n+1)Hₙ − 4n ≈ 1.39 n log₂ n, Hₙ = 1 + ½ + … + 1/n. In sorted order
-z₁ < … < zₙ, keys zᵢ and zⱼ are compared exactly when the first pivot drawn
+z₁ < … < zₙ, zᵢ and zⱼ are compared exactly when the first pivot drawn
 from {zᵢ, …, zⱼ} is one of them — a pivot strictly between separates them —
 and each of the j − i + 1 keys is equally likely, so the probability is
-2/(j − i + 1). Linearity of expectation, over dependent events, gives
+2/(j − i + 1). Linearity of expectation, indifferent to dependence, gives
 E[C] = ∑_{k=1}^{n−1} 2(n − k)/(k + 1) = 2(n+1)Hₙ − 4n. For n = 4: three pairs
 at distance 1 contribute 1 each, two at distance 2 contribute ⅔, one at
 distance 3 contributes ½: 29/6 ≈ 4.83 against 6 in the worst case.
-Randomising the pivot moves the probability from the input, which an
+Randomising the pivot moves the randomness from the input, which an
 adversary controls, to the algorithm.
 
 ## Where to see it
 
-CLRS proves this bound in its quicksort chapter and universal hashing in its
-hashing chapter; Erickson's extra notes cover hashing and treaps;
-Arora–Barak cover randomised computation and derandomisation. From
-`probability`, Blitzstein and Hwang's birthday problem is a hash collision
-and Errichto's "contribution to the sum" is the pair argument above. The
-table is a phrasebook between `cs-foundations` and `probability`.
+CLRS proves this bound and universal hashing in its quicksort and hashing
+chapters; Erickson's extra notes do hashing and treaps, Arora–Barak
+randomised computation and derandomisation. On `probability`, Blitzstein
+and Hwang's birthday problem is a hash collision and Errichto's
+"contribution to the sum" is the pair argument above.
 
 | Computer science | Probability |
 |---|---|

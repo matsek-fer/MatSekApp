@@ -7,19 +7,19 @@ ai_generated: true
 ---
 
 Klein's dictum on `geometry` — a geometry is a space with a group, its
-theorems the group's invariants — is also the fundamental theorem of
-`galois-theory`: the base field is exactly what Gal(L/K) fixes, so a Galois
-group is the transformation group of a geometry of algebraic numbers. Read a
-field as the functions on a space, as Grothendieck does, and the slogan is a
-theorem: extensions are coverings, Galois groups deck groups, the
-correspondence the classification of covers.
+theorems the group's invariants — has a twin in `galois-theory`: the base
+field is exactly what Gal(L/K) fixes, intermediate fields what its subgroups
+fix, so a Galois group is the transformation group of a geometry of
+algebraic numbers. Read a field, with Grothendieck, as the functions on a
+space, and the slogan is a theorem: extensions are coverings, Galois groups
+deck groups, the correspondence the classification of covers.
 
 ## What each side lends
 
 Galois theory gives Euclidean geometry its impossibility proofs: a
 ruler-and-compass step meets lines and circles over the field so far, so
 adjoins a root of a linear or quadratic equation, and a constructible
-length has degree 2ʲ over ℚ. The converse needs the correspondence:
+length has degree 2ʲ over ℚ. Constructibility needs the correspondence:
 Gal(ℚ(ζ₁₇)/ℚ) is cyclic of order 16, its chain of index-2 subgroups a chain
 of quadratic extensions, so the 17-gon is constructible — the regular n-gon
 exactly when φ(n) is a power of 2 (Gauss–Wantzel).
@@ -31,29 +31,27 @@ every finite group is a Galois group over ℂ(z). Over Spec ℤ (pitch problem 3
 on `geometry`) a number field is a cover branched at the primes dividing its
 discriminant, Frobenius at p is the monodromy around p, and Dedekind's
 theorem — the factors of f mod p have the cycle lengths of that Frobenius as
-degrees — is why reducing mod 5 and mod 2 in pitch problem 3 on
-`galois-theory` gives a 5-cycle and an element of type (2, 3).
+degrees — is why pitch problem 3 on `galois-theory` finds a 5-cycle mod 5
+and an element of type (2, 3) mod 2.
 
 ## √z as a covering
 
 Riemann existence: finite extensions L of ℂ(z) correspond to connected
 finite branched covers Y → Ĉ with ℂ(Y) = L; the degree counts sheets and,
 for Galois L, Gal(L/ℂ(z)) is the deck group of Y acting on functions by
-pullback. Take w² = z: the cover w ↦ w² has two sheets, ℂ(z)
-sits in ℂ(w) as z = w², and the deck transformation w ↦ −w is the
-automorphism σ(w) = −w, so Gal(ℂ(w)/ℂ(z)) = {id, σ} ≅ ℤ/2. Monodromy
-realises σ: the loop z = e^{it}, 0 ≤ t ≤ 2π, lifts from w = 1 to
-w = e^{it/2}, ending at −1; one turn around the branch point 0 is the Galois
-automorphism.
+pullback. Take w² = z: the cover w ↦ w² has two sheets, ℂ(z) sits in ℂ(w)
+as z = w², and the deck transformation σ: w ↦ −w fixes z, so
+Gal(ℂ(w)/ℂ(z)) = {id, σ} ≅ ℤ/2. Monodromy realises σ: the loop z = e^{it},
+0 ≤ t ≤ 2π, lifts from w = 1 to w = e^{it/2}, ending at −1; one turn around
+the branch point 0 is the Galois automorphism.
 
 ## Where to see it
 
 On `galois-theory`, Keith Conrad's 17-gon note and Cox's chapters on
 cyclotomic fields and geometric constructions build the tower. On
 `geometry`, Stillwell's *Four Pillars* opens with straightedge-and-compass
-constructions; Vakil's *Rising Sea* starts from Spec ℤ and matches finite
-maps of curves with extensions of function fields. The table is a
-phrasebook.
+constructions; Vakil's *Rising Sea* has Spec ℤ among its first schemes and
+matches finite maps of curves with extensions of function fields.
 
 | Galois theory | Geometry |
 |---|---|
