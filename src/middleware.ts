@@ -2,40 +2,27 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Middleware: refreshes the Supabase session on every request.
- * Protects /dashboard/* routes (redirect to /login if unauthenticated).
- * Protects /admin/* routes (redirect to / if not admin).
+ * The session guard for the pages that need one.
+ *
+ * The pages are listed, not the public ones: everything else — the calendar,
+ * the materials, the auth pages, and any URL that does not exist — passes
+ * through, so a mistyped address gets the 404 page rather than a redirect
+ * to the login form. The data behind every page is guarded by RLS in any
+ * case; this only decides who sees the forms.
+ *
+ * The API routes check the session themselves and answer 401, which a fetch
+ * can act on; a redirect to an HTML page would not be.
  */
+const PROTECTED = ["/activities/new", "/admin", "/notifications", "/profile"];
+
+function isProtected(pathname: string) {
+  return PROTECTED.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Routes that need a session even though they sit under a public prefix.
-  const isProtectedException = pathname === "/activities/new";
-
-  // Allow public routes and static assets
-  if (
-    !isProtectedException &&
-    (pathname.startsWith("/api") ||
-      pathname === "/" ||
-      pathname === "/calendar" ||
-      // The tools guide is documentation — readable before anyone registers.
-      pathname === "/tools" ||
-      // The materials are a public reading list, the same as the guide.
-      pathname.startsWith("/materials") ||
-      pathname.startsWith("/activities") ||
-      pathname.startsWith("/login") ||
-      pathname.startsWith("/register") ||
-      pathname.startsWith("/verify") ||
-      // Both halves of the password reset have to be reachable signed out —
-      // that is the whole situation the user is in.
-      pathname.startsWith("/forgot-password") ||
-      pathname.startsWith("/reset-password") ||
-      pathname.startsWith("/_next") ||
-      pathname.startsWith("/favicon") ||
-      /\.(png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|eot|mp4|webm)$/.test(pathname))
-  ) {
-    return NextResponse.next();
-  }
+  if (!isProtected(pathname)) return NextResponse.next();
 
   const supabase = createServerClient();
   const {
@@ -66,5 +53,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // Only the guarded prefixes, so the Supabase client is not built for every
+  // request to a public page or a static file.
+  matcher: ["/activities/new", "/admin/:path*", "/notifications/:path*", "/profile/:path*"],
 };

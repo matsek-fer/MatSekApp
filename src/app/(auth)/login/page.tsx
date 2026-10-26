@@ -37,7 +37,9 @@ export default function LoginPage() {
     // unauthenticated request here. Read it off the URL rather than with
     // useSearchParams so this page can stay statically rendered.
     const next = new URLSearchParams(window.location.search).get("next");
-    router.push(next?.startsWith("/") ? next : "/calendar");
+    // Only a path on this site: "//evil.example" starts with a slash too and
+    // the browser would read it as a protocol-relative URL.
+    router.push(next && /^\/(?![\/\\])/.test(next) ? next : "/calendar");
     router.refresh();
   }
 
