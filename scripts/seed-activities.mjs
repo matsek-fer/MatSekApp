@@ -30,11 +30,24 @@ function env(name) {
   throw new Error(`${name} is not set (env or .env.local)`);
 }
 
-const db = createClient(
-  env("NEXT_PUBLIC_SUPABASE_URL"),
-  env("SUPABASE_SERVICE_ROLE_KEY"),
-  { auth: { persistSession: false } }
-);
+// The service role key bypasses RLS on whatever project .env.local points
+// at, and nothing distinguishes a development project from the real one
+// except its ref. So the ref must be named explicitly, every run.
+const url = env("NEXT_PUBLIC_SUPABASE_URL");
+const ref = new URL(url).hostname.split(".")[0];
+const allowed = process.env.SEED_PROJECT_REF;
+if (!allowed || allowed !== ref) {
+  console.error(
+    `Refusing to seed ${url}.\n` +
+      `Set SEED_PROJECT_REF=${ref} to confirm this is the development project.`
+  );
+  process.exit(1);
+}
+console.log(`Seeding project ${ref}`);
+
+const db = createClient(url, env("SUPABASE_SERVICE_ROLE_KEY"), {
+  auth: { persistSession: false },
+});
 
 const TITLES = [
   ["Uvod u teoriju grafova", "lecture", "A211"],
