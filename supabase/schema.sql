@@ -175,15 +175,30 @@ CREATE POLICY "Users can view own activities"
   ON public.activities FOR SELECT
   USING (auth.uid() = created_by);
 
+-- The admin test the policies below share. It is SECURITY DEFINER on purpose:
+-- a policy's sub-select runs with the privileges of whoever is querying, and
+-- an anonymous visitor may read only `id` and `full_name` from profiles (the
+-- column grant in section 6), so a policy that looked at `profiles.role`
+-- inline would fail the entire statement for them with "permission denied" —
+-- an empty public calendar. Running the test as the function's owner keeps
+-- `role` private and the policies working for every role.
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
+  )
+$$;
+REVOKE ALL ON FUNCTION public.is_admin() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_admin() TO anon, authenticated;
+
 -- Admins can read ALL activities (for dashboard moderation)
 CREATE POLICY "Admins can view all activities"
   ON public.activities FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin());
 
 -- Authenticated users can create activities, and what they create is a
 -- proposal: the row must arrive as 'pending' with the review columns empty,
@@ -199,21 +214,25 @@ CREATE POLICY "Users can create activities"
     AND admin_comment IS NULL
   );
 
--- Users can update their OWN activities only if still 'pending'
+-- Users can update their OWN activities only if still 'pending' — and the
+-- review columns stay empty, as on insert: the API strips them, but a
+-- member's token works against PostgREST directly, and a forged
+-- admin_comment would be shown as the admin's words.
 CREATE POLICY "Users can update own pending activities"
   ON public.activities FOR UPDATE
   USING (auth.uid() = created_by AND status = 'pending')
-  WITH CHECK (auth.uid() = created_by AND status = 'pending');
+  WITH CHECK (
+    auth.uid() = created_by
+    AND status = 'pending'
+    AND reviewed_by IS NULL
+    AND reviewed_at IS NULL
+    AND admin_comment IS NULL
+  );
 
 -- Admins can update any activity (approve / deny / edit)
 CREATE POLICY "Admins can update any activity"
   ON public.activities FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin());
 
 -- Users can delete their OWN activities only if still 'pending'
 CREATE POLICY "Users can delete own pending activities"
@@ -223,12 +242,7 @@ CREATE POLICY "Users can delete own pending activities"
 -- Admins can delete any activity
 CREATE POLICY "Admins can delete any activity"
   ON public.activities FOR DELETE
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin());
 
 -- ---------------------------------------------------------------------------
 -- NOTIFICATIONS POLICIES
@@ -242,12 +256,7 @@ CREATE POLICY "Users can view own notifications"
 -- Admins can see all notifications
 CREATE POLICY "Admins can view all notifications"
   ON public.notifications FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin());
 
 -- Insert is allowed for the recipient (system/service_role inserts, but RLS
 -- is bypassed by service_role key.  This policy is for completeness.)
@@ -274,6 +283,27 @@ CREATE POLICY "Users can update own notifications"
 --   CREATE POLICY "Users can create activities" ON public.activities FOR INSERT
 --     WITH CHECK (auth.uid() = created_by AND status = 'pending'
 --       AND reviewed_by IS NULL AND reviewed_at IS NULL AND admin_comment IS NULL);
+--   DROP POLICY IF EXISTS "Users can update own pending activities" ON public.activities;
+--   CREATE POLICY "Users can update own pending activities" ON public.activities FOR UPDATE
+--     USING (auth.uid() = created_by AND status = 'pending')
+--     WITH CHECK (auth.uid() = created_by AND status = 'pending'
+--       AND reviewed_by IS NULL AND reviewed_at IS NULL AND admin_comment IS NULL);
+--   CREATE OR REPLACE FUNCTION public.is_admin()
+--   RETURNS boolean
+--   LANGUAGE sql STABLE SECURITY DEFINER
+--   SET search_path = public
+--   AS $$
+--     SELECT EXISTS (
+--       SELECT 1 FROM public.profiles
+--       WHERE id = auth.uid() AND role = 'admin'
+--     )
+--   $$;
+--   REVOKE ALL ON FUNCTION public.is_admin() FROM PUBLIC;
+--   GRANT EXECUTE ON FUNCTION public.is_admin() TO anon, authenticated;
+--   ALTER POLICY "Admins can view all activities" ON public.activities USING (public.is_admin());
+--   ALTER POLICY "Admins can update any activity" ON public.activities USING (public.is_admin());
+--   ALTER POLICY "Admins can delete any activity" ON public.activities USING (public.is_admin());
+--   ALTER POLICY "Admins can view all notifications" ON public.notifications USING (public.is_admin());
 -- ---------------------------------------------------------------------------
 
 -- ============================================================================

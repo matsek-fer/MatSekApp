@@ -70,6 +70,9 @@ export async function POST(
         status: "approved",
         reviewed_by: session.user.id,
         reviewed_at: new Date().toISOString(),
+        // Shown on the public page as the admin's words, so nothing a
+        // member managed to leave in it survives approval.
+        admin_comment: null,
       })
       .eq("id", id)
       .select("*, creator:profiles!created_by(id, email, full_name)")
