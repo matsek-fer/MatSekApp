@@ -1,5 +1,5 @@
 import { createClient as createServerClient, createAdminClient } from "@/lib/supabase/server";
-import { activityStatusEmailTemplate, sendEmail } from "@/lib/email";
+import { activityStatusEmailTemplate, appUrl, sendEmail } from "@/lib/email";
 import { NextResponse, type NextRequest } from "next/server";
 import type { ApiResponse, Activity } from "@/types";
 
@@ -94,7 +94,7 @@ export async function POST(
     // Send email
     const creatorEmail = (activity.creator as any)?.email;
     if (creatorEmail) {
-      const activityUrl = `${process.env.NEXT_PUBLIC_APP_URL}/activities/${id}`;
+      const activityUrl = `${appUrl()}/activities/${id}`;
       await sendEmail({
         to: creatorEmail,
         subject: `[Math Club FER] Aktivnost odobrena: ${activity.title}`,

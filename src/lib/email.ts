@@ -5,17 +5,43 @@ let transporter: nodemailer.Transporter | null = null;
 function getTransporter(): nodemailer.Transporter {
   if (transporter) return transporter;
 
+  const port = Number(process.env.SMTP_PORT) || 587;
   transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST!,
-    port: Number(process.env.SMTP_PORT) || 587,
-    secure: Number(process.env.SMTP_PORT) === 465,
+    port,
+    secure: port === 465,
+    // STARTTLS on 587 is opportunistic by default: a relay that does not
+    // offer it would get the password in clear. Insist, so a downgrade
+    // fails loudly instead of leaking SMTP_PASS.
+    requireTLS: port !== 465,
     auth: {
       user: process.env.SMTP_USER!,
       pass: process.env.SMTP_PASS!,
     },
+    // An unreachable relay must not hang an approval for the two minutes
+    // the OS allows; the approval has already committed by the time the
+    // mail goes out, and the admin UI reports the failure.
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
   });
 
   return transporter;
+}
+
+/** The site's own origin, for links in emails. No trailing slash. */
+export function appUrl(): string {
+  return (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/+$/, "");
+}
+
+/** The templates interpolate names and titles members typed; HTML in them is text, not markup. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 interface SendEmailParams {
@@ -42,28 +68,6 @@ export async function sendEmail({ to, subject, html }: SendEmailParams): Promise
 
 // ── Pre-built templates ────────────────────────────────────────────────────
 
-export function verificationEmailTemplate(
-  fullName: string,
-  verifyUrl: string
-): string {
-  return `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #364fc7;">Dobrodošli u Math Club FER!</h2>
-      <p>Bok ${fullName},</p>
-      <p>Hvala ti na registraciji. Klikni na donji link kako bi verificirao/la svoj račun:</p>
-      <a href="${verifyUrl}"
-         style="display: inline-block; background: #4c6ef5; color: white;
-                padding: 12px 24px; text-decoration: none; border-radius: 6px;
-                margin: 16px 0;">
-        Verificiraj račun
-      </a>
-      <p style="color: #666; font-size: 14px;">
-        Ako nisi ti registrirao/la ovaj račun, možeš ignorirati ovaj mail.
-      </p>
-    </div>
-  `;
-}
-
 export function activityStatusEmailTemplate(
   fullName: string,
   activityTitle: string,
@@ -73,6 +77,9 @@ export function activityStatusEmailTemplate(
 ): string {
   const statusText = status === "approved" ? "ODOBRENA" : "ODBIJENA";
   const color = status === "approved" ? "#2b8a3e" : "#c92a2a";
+  fullName = escapeHtml(fullName);
+  activityTitle = escapeHtml(activityTitle);
+  adminComment = escapeHtml(adminComment);
 
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

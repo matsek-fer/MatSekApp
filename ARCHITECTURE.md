@@ -248,11 +248,7 @@ The utility at `src/lib/email.ts`:
 
 - **Transport:** Singleton `nodemailer.createTransport` with `host`, `port`, `auth` from environment variables.
 - **TLS:** Automatic — `secure: true` if port 465, otherwise `STARTTLS`.
-- **Templates:** Two pre-built HTML templates:
-  - `verificationEmailTemplate(fullName, verifyUrl)`
-  - `activityStatusEmailTemplate(fullName, activityTitle, status, comment, url)`
-
-Both templates use inline CSS with the brand color palette. Croatian text (`hr` locale).
+- **Templates:** One HTML template, `activityStatusEmailTemplate(fullName, activityTitle, status, comment, url)`, with inline CSS in the brand palette and Croatian text. Verification mail is sent by Supabase Auth from its own template, so the app has none of its own. User-supplied strings are HTML-escaped before interpolation.
 
 ### 3.4 Standard API Response Envelope
 
