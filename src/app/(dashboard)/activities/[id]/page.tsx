@@ -38,7 +38,7 @@ export default async function ActivityDetailPage({
 
   const { data } = await supabase
     .from("activities")
-    .select("*, creator:profiles!created_by(id, email, full_name)")
+    .select("*, creator:profiles!created_by(id, full_name)")
     .eq("id", params.id)
     .single();
 
@@ -93,7 +93,7 @@ export default async function ActivityDetailPage({
         )}
 
         <p className="border-t border-border pt-4 text-xs text-fg-subtle">
-          Predložio/la: {activity.creator?.full_name || activity.creator?.email}
+          Predložio/la: {activity.creator?.full_name || "—"}
         </p>
       </Card>
     </div>

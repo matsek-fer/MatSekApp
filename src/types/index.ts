@@ -39,7 +39,8 @@ export interface Activity {
   updated_at: string;
 
   // Joined fields (not in DB)
-  creator?: Pick<Profile, "id" | "email" | "full_name">;
+  /** Embedded by the API. `email` is present only on admin-only paths. */
+  creator?: Pick<Profile, "id" | "full_name"> & Partial<Pick<Profile, "email">>;
 }
 
 export interface Notification {

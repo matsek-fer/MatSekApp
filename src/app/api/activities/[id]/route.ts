@@ -19,7 +19,7 @@ export async function GET(
 
     const { data: activity, error } = await supabase
       .from("activities")
-      .select("*, creator:profiles!created_by(id, email, full_name)")
+      .select("*, creator:profiles!created_by(id, full_name)")
       .eq("id", id)
       .single();
 

@@ -136,26 +136,30 @@ ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 -- PROFILES POLICIES
 -- ---------------------------------------------------------------------------
 
--- Everyone can read profiles (needed for showing creator names)
+-- Everyone can read profiles (the public calendar shows who proposed an
+-- activity) — but a visitor without a session may read only the name. The
+-- column grants below are checked before any policy, so an anonymous query
+-- that names `email` or `role` is refused outright; signed-in members keep
+-- the whole row. Public queries therefore embed `profiles(id, full_name)`
+-- and nothing more.
 CREATE POLICY "Profiles are viewable by everyone"
   ON public.profiles FOR SELECT
   USING (true);
 
--- Users can update only their own profile
+REVOKE SELECT ON public.profiles FROM anon;
+GRANT SELECT (id, full_name) ON public.profiles TO anon;
+
+-- Users can update only their own profile, and only their name. Without the
+-- column grant a member could set their own `role` to admin with one
+-- PostgREST call, since the policy only checks whose row it is. Promotion to
+-- admin stays what section 8 documents: an UPDATE in the SQL editor.
 CREATE POLICY "Users can update own profile"
   ON public.profiles FOR UPDATE
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
 
--- Admins can update any profile (e.g. change roles)
-CREATE POLICY "Admins can update any profile"
-  ON public.profiles FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+REVOKE UPDATE ON public.profiles FROM anon, authenticated;
+GRANT UPDATE (full_name) ON public.profiles TO authenticated;
 
 -- ---------------------------------------------------------------------------
 -- ACTIVITIES POLICIES
@@ -181,10 +185,19 @@ CREATE POLICY "Admins can view all activities"
     )
   );
 
--- Authenticated users can create activities (status automatically 'pending')
+-- Authenticated users can create activities, and what they create is a
+-- proposal: the row must arrive as 'pending' with the review columns empty,
+-- or a member could insert an approved activity straight onto the public
+-- calendar. Approval only ever happens through the admin UPDATE policy.
 CREATE POLICY "Users can create activities"
   ON public.activities FOR INSERT
-  WITH CHECK (auth.uid() = created_by);
+  WITH CHECK (
+    auth.uid() = created_by
+    AND status = 'pending'
+    AND reviewed_by IS NULL
+    AND reviewed_at IS NULL
+    AND admin_comment IS NULL
+  );
 
 -- Users can update their OWN activities only if still 'pending'
 CREATE POLICY "Users can update own pending activities"
@@ -247,6 +260,21 @@ CREATE POLICY "Users can update own notifications"
   ON public.notifications FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
+
+-- ---------------------------------------------------------------------------
+-- Applying the hardening above to a database that ran an earlier version of
+-- this file (the statements are safe to repeat):
+--
+--   REVOKE SELECT ON public.profiles FROM anon;
+--   GRANT SELECT (id, full_name) ON public.profiles TO anon;
+--   REVOKE UPDATE ON public.profiles FROM anon, authenticated;
+--   GRANT UPDATE (full_name) ON public.profiles TO authenticated;
+--   DROP POLICY IF EXISTS "Admins can update any profile" ON public.profiles;
+--   DROP POLICY IF EXISTS "Users can create activities" ON public.activities;
+--   CREATE POLICY "Users can create activities" ON public.activities FOR INSERT
+--     WITH CHECK (auth.uid() = created_by AND status = 'pending'
+--       AND reviewed_by IS NULL AND reviewed_at IS NULL AND admin_comment IS NULL);
+-- ---------------------------------------------------------------------------
 
 -- ============================================================================
 -- 7. DOMAIN LOCK — restrict registration to @fer.hr / @student.fer.hr

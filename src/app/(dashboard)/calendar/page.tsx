@@ -16,10 +16,14 @@ export default async function CalendarPage() {
 
   const now = new Date().toISOString();
 
+  // Anonymous visitors may read only `id` and `full_name` from profiles (a
+  // column-level grant in schema.sql), and PostgREST fails the whole query if
+  // the embed names a column the role cannot see — so no `email` here, nor on
+  // any other path an anonymous visitor can reach.
   const [{ data: ahead }, { data: before }, { data: auth }] = await Promise.all([
     supabase
       .from("activities")
-      .select("*, creator:profiles!created_by(id, email, full_name)")
+      .select("*, creator:profiles!created_by(id, full_name)")
       .eq("status", "approved")
       // The page leads with what is still ahead — a calendar headed by last
       // term's events is noise.
@@ -28,7 +32,7 @@ export default async function CalendarPage() {
       .limit(UPCOMING_LIMIT),
     supabase
       .from("activities")
-      .select("*, creator:profiles!created_by(id, email, full_name)")
+      .select("*, creator:profiles!created_by(id, full_name)")
       .eq("status", "approved")
       .lt("end_time", now)
       // Newest first *for the query*, so the limit keeps the most recent slice

@@ -147,7 +147,7 @@ export default function AdminReviewPage({
         )}
 
         <p className="border-t border-border pt-4 text-xs text-fg-subtle">
-          Predložio/la: {activity.creator?.full_name || activity.creator?.email}
+          Predložio/la: {activity.creator?.full_name || "—"}
         </p>
       </Card>
 

@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from("activities")
-      .select("*, creator:profiles!created_by(id, email, full_name)")
+      .select("*, creator:profiles!created_by(id, full_name)")
       .order("start_time", { ascending: true })
       .limit(limit);
 
