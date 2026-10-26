@@ -88,7 +88,7 @@ export function activityStatusEmailTemplate(
       <p>Tvoja aktivnost <strong>"${activityTitle}"</strong> je <strong>${statusText.toLowerCase()}</strong>.</p>
       ${
         adminComment
-          ? `<p><strong>Komentar admina:</strong> ${adminComment}</p>`
+          ? `<p style="white-space: pre-wrap;"><strong>Komentar admina:</strong> ${adminComment}</p>`
           : ""
       }
       <a href="${activityUrl}"
