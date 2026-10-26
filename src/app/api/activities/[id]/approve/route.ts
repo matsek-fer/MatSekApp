@@ -1,7 +1,7 @@
 import { createClient as createServerClient, createAdminClient } from "@/lib/supabase/server";
 import { activityStatusEmailTemplate, appUrl, sendEmail } from "@/lib/email";
 import { NextResponse, type NextRequest } from "next/server";
-import type { ApiResponse, Activity } from "@/types";
+import type { ApiResponse, Activity, ReviewResult } from "@/types";
 
 /**
  * POST /api/activities/[id]/approve
@@ -93,9 +93,12 @@ export async function POST(
 
     // Send email
     const creatorEmail = (activity.creator as any)?.email;
+    // Reported back rather than swallowed: the admin should know when the
+    // proposer did not hear about the decision and tell them another way.
+    let emailSent = false;
     if (creatorEmail) {
       const activityUrl = `${appUrl()}/activities/${id}`;
-      await sendEmail({
+      emailSent = await sendEmail({
         to: creatorEmail,
         subject: `[Math Club FER] Aktivnost odobrena: ${activity.title}`,
         html: activityStatusEmailTemplate(
@@ -108,8 +111,8 @@ export async function POST(
       });
     }
 
-    return NextResponse.json<ApiResponse<Activity>>(
-      { success: true, data: updated },
+    return NextResponse.json<ApiResponse<ReviewResult>>(
+      { success: true, data: { ...updated, email_sent: emailSent } },
       { status: 200 }
     );
   } catch (err) {

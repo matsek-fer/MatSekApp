@@ -25,6 +25,7 @@ export default function AdminReviewPage({
   const [comment, setComment] = useState("");
   const [pendingAction, setPendingAction] = useState<Action>(null);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -59,6 +60,19 @@ export default function AdminReviewPage({
         if (!json.success) {
           setError(json.error || "Greška.");
           setPendingAction(null);
+          return;
+        }
+
+        if (json.data?.email_sent === false) {
+          // The decision is saved; only the email failed. Keep the admin here
+          // so they see it and can reach the proposer some other way.
+          setActivity(json.data);
+          setPendingAction(null);
+          setNotice(
+            action === "approve"
+              ? "Aktivnost je odobrena, ali e-mail predlagaču nije poslan."
+              : "Aktivnost je odbijena, ali e-mail predlagaču nije poslan."
+          );
           return;
         }
 
@@ -97,6 +111,7 @@ export default function AdminReviewPage({
       <h1 className="text-2xl font-bold text-fg">Pregled aktivnosti</h1>
 
       <Alert tone="error">{error}</Alert>
+      <Alert tone="info">{notice}</Alert>
 
       <Card className="space-y-5 p-6">
         <div className="flex items-start justify-between gap-4">

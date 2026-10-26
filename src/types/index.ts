@@ -20,6 +20,9 @@ export interface Profile {
   updated_at: string;
 }
 
+/** What approve/deny return: the row plus whether the proposer was emailed. */
+export type ReviewResult = Activity & { email_sent: boolean };
+
 export interface Activity {
   id: string;
   created_by: string;
