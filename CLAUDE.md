@@ -38,7 +38,7 @@ src/
 │   └── notifications/         NotificationBell
 ├── lib/
 │   ├── ascii-tree.ts          Procedural tree generator (the largest file here)
-│   ├── supabase/              server.ts (RLS + admin) · client.ts (browser)
+│   ├── supabase/              server.ts (RLS + admin) · middleware.ts · client.ts
 │   ├── validation.ts          Domain lock, enum guards, writable-field whitelist
 │   ├── theme.ts               Dark mode, applied before first paint
 │   └── email.ts               Nodemailer transport + Croatian HTML templates
@@ -75,19 +75,24 @@ Croatian. Enum labels live in `ACTIVITY_TYPE_LABELS` /
 conventional status codes (400 validation, 401 unauthenticated, 403 wrong role,
 404, 500). The `error` string is shown to the user, so write it in Croatian.
 
-**Two Supabase clients, deliberately.** `createClient()` from
+**Three Supabase clients, deliberately.** `createClient()` from
 `lib/supabase/server` uses the anon key plus the session cookie and is subject
-to RLS — that is the default everywhere. `createAdminClient()` uses the
-service-role key and bypasses RLS entirely; it exists only so the approve and
-deny routes can insert a notification for another user. Don't reach for it to
-make a query easier.
+to RLS — that is the default everywhere. `lib/supabase/middleware` builds the
+same client bound to a request, because middleware cannot write through
+`cookies()`: a refreshed session goes onto the request and onto the response
+it returns (`redirectWith()` carries it onto a redirect). `createAdminClient()`
+uses the service-role key and bypasses RLS entirely; it exists only so the
+approve and deny routes can insert a notification for another user. Don't
+reach for it to make a query easier. On the server, read the user with
+`getUser()`, never from `getSession()`: the session is parsed from the cookie
+without verification, and touching its user logs a warning per request.
 
 **Never trust a request body's shape.** Client input is filtered through
 `pickActivityFields()` so server-owned columns (`status`, `reviewed_by`,
 `admin_comment`, …) can't be written, and any value interpolated into a
-PostgREST filter is checked against its enum first (`isActivityStatus`). Zod is
-in the dependencies but unused; the hand-written guards in `lib/validation.ts`
-are the current pattern.
+PostgREST filter is checked against its enum first (`isActivityStatus`), or
+its shape (`isUuid`). No schema library is installed; the hand-written guards
+in `lib/validation.ts` are the pattern.
 
 **Server Components by default.** Pages fetch with the server client directly.
 `"use client"` is for forms, and for anything with pointer interaction or

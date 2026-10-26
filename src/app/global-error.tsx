@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { startTransition, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
@@ -25,10 +26,17 @@ export default function GlobalError({
 }) {
   const lang = useDocumentLang();
   const t = CHROME[lang];
+  const router = useRouter();
 
   useEffect(() => {
     console.error(error);
   }, [error]);
+
+  const retry = () =>
+    startTransition(() => {
+      router.refresh();
+      reset();
+    });
 
   return (
     <html lang={lang} suppressHydrationWarning>
@@ -38,7 +46,7 @@ export default function GlobalError({
       <body className={inter.className}>
         <main className="min-h-screen bg-bg px-4">
           <ErrorScreen title={t.errorTitle} body={t.errorBody}>
-            <Button onClick={reset}>{t.retry}</Button>
+            <Button onClick={retry}>{t.retry}</Button>
             <ButtonLink href="/" variant="secondary">
               {t.backHome}
             </ButtonLink>
