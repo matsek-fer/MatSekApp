@@ -136,7 +136,7 @@ const enMaterials = (n: number) => enN(n, "material", "materials");
 
 const hr: MaterialsCopy = {
   meta: {
-    title: "Materijali — MATSEK",
+    title: "Materijali",
     description:
       "Pregled tema i materijala za učenje matematike: od klasičnih područja preko teorije kategorija do naprednih tema.",
   },
@@ -256,7 +256,7 @@ const hr: MaterialsCopy = {
 
 const en: MaterialsCopy = {
   meta: {
-    title: "Materials — MATSEK",
+    title: "Materials",
     description:
       "A map of topics and materials for learning mathematics: from the classical fields through category theory to advanced topics.",
   },

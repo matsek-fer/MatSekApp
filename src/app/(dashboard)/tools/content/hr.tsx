@@ -19,7 +19,7 @@ import {
 const lang = "hr" as const;
 
 export const meta = {
-  title: "Alati — MatSek",
+  title: "Alati",
   description:
     "Čemu služe MatSekovi AI alati, kako se koriste Šuma, tutor i pisač blogova, te kako zajednička knjižnica ostaje legalna i besplatna.",
   heading: "Alati za dijeljenje razumijevanja",

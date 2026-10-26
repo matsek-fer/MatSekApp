@@ -19,7 +19,7 @@ import {
 const lang = "en" as const;
 
 export const meta = {
-  title: "Tools — MatSek",
+  title: "Tools",
   description:
     "What the MatSek AI tools are for, how to use the Forest, the tutor and the blog writer, and how the shared library stays legal and free.",
   heading: "Tools for sharing understanding",

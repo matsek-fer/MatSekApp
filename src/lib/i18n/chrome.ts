@@ -24,6 +24,13 @@ export const CHROME = {
     loading: "Učitavanje…",
     logout: "Odjavi se",
     loggingOut: "Odjava…",
+    notFoundTitle: "Stranica nije pronađena",
+    notFoundBody: "Ta stranica ne postoji ili je premještena.",
+    errorTitle: "Nešto je pošlo po zlu",
+    errorBody: "Greška je zabilježena. Pokušaj ponovno ili se vrati na početnu stranicu.",
+    retry: "Pokušaj ponovno",
+    backHome: "Na početnu stranicu",
+    toCalendar: "Na kalendar",
   },
   en: {
     siteTitle: "MATSEK — Mathematics Section FER",
@@ -44,6 +51,13 @@ export const CHROME = {
     loading: "Loading…",
     logout: "Sign out",
     loggingOut: "Signing out…",
+    notFoundTitle: "Page not found",
+    notFoundBody: "That page doesn't exist or has moved.",
+    errorTitle: "Something went wrong",
+    errorBody: "The error has been logged. Try again, or go back to the home page.",
+    retry: "Try again",
+    backHome: "Back to the home page",
+    toCalendar: "To the calendar",
   },
 } satisfies Record<Lang, Record<string, string>>;
 

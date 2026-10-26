@@ -13,7 +13,13 @@ const inter = Inter({
 
 export function generateMetadata(): Metadata {
   const t = CHROME[getLang()];
-  return { title: t.siteTitle, description: t.siteDescription };
+  return {
+    // Absolute URLs for Open Graph and canonical links come from here; the
+    // production value is enforced at boot by src/instrumentation.ts.
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+    title: { default: t.siteTitle, template: "%s — MATSEK" },
+    description: t.siteDescription,
+  };
 }
 
 export default function RootLayout({
