@@ -19,6 +19,20 @@ const ACTIVITY_TYPES: ActivityType[] = [
   "problem_solving_session",
 ];
 
+/**
+ * The session cookie is parsed, not verified, before it reaches a handler:
+ * `session.user.id` is whatever the cookie says. RLS confines what such a
+ * token can read, but an id that is interpolated into a PostgREST filter
+ * string must at least be a UUID, or the filter grammar is in the caller's
+ * hands.
+ */
+export function isUuid(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+  );
+}
+
 export function isActivityStatus(value: unknown): value is ActivityStatus {
   return ACTIVITY_STATUSES.includes(value as ActivityStatus);
 }

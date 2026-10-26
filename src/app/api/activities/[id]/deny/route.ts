@@ -19,9 +19,9 @@ export async function POST(
 
     // Authenticate
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session) {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Nisi prijavljen/a." },
         { status: 401 }
@@ -32,7 +32,7 @@ export async function POST(
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
-      .eq("id", session.user.id)
+      .eq("id", user.id)
       .single();
 
     if (profile?.role !== "admin") {
@@ -78,7 +78,7 @@ export async function POST(
       .update({
         status: "rejected",
         admin_comment: admin_comment.trim(),
-        reviewed_by: session.user.id,
+        reviewed_by: user.id,
         reviewed_at: new Date().toISOString(),
       })
       .eq("id", id)

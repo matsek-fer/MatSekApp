@@ -15,17 +15,17 @@ export default async function ProfilePage() {
   const supabase = await createServerClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!session) redirect("/login");
+  if (!user) redirect("/login");
 
   const [{ data: profile }, { data: activities }] = await Promise.all([
-    supabase.from("profiles").select("*").eq("id", session.user.id).single(),
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
     supabase
       .from("activities")
       .select("id, title, status, start_time, activity_type")
-      .eq("created_by", session.user.id)
+      .eq("created_by", user.id)
       .order("created_at", { ascending: false })
       .limit(20),
   ]);
@@ -45,7 +45,7 @@ export default async function ProfilePage() {
           <div className="min-w-0">
             <dt className="text-fg-subtle">Email</dt>
             <dd className="truncate text-fg">
-              {me?.email || session.user.email}
+              {me?.email || user.email}
             </dd>
           </div>
           <div>

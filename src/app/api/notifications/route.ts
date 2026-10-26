@@ -15,10 +15,10 @@ export async function GET(request: NextRequest) {
     const supabase = await createServerClient();
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Nisi prijavljen/a." },
         { status: 401 }
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from("notifications")
       .select("*, activity:activities(id, title, status)")
-      .eq("user_id", session.user.id)
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(limit);
 
@@ -73,10 +73,10 @@ export async function PATCH(request: NextRequest) {
     const supabase = await createServerClient();
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Nisi prijavljen/a." },
         { status: 401 }
@@ -89,7 +89,7 @@ export async function PATCH(request: NextRequest) {
       const { error } = await supabase
         .from("notifications")
         .update({ is_read: true })
-        .eq("user_id", session.user.id)
+        .eq("user_id", user.id)
         .eq("is_read", false);
 
       if (error) {
@@ -103,7 +103,7 @@ export async function PATCH(request: NextRequest) {
         .from("notifications")
         .update({ is_read: true })
         .in("id", body.notification_ids)
-        .eq("user_id", session.user.id);
+        .eq("user_id", user.id);
 
       if (error) {
         return NextResponse.json<ApiResponse>(

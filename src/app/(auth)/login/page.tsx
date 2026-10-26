@@ -35,11 +35,24 @@ export default function LoginPage() {
 
     // Middleware parks the original destination on `?next=` when it bounces an
     // unauthenticated request here. Read it off the URL rather than with
-    // useSearchParams so this page can stay statically rendered.
+    // useSearchParams, which would want a Suspense boundary for one read.
     const next = new URLSearchParams(window.location.search).get("next");
-    // Only a path on this site: "//evil.example" starts with a slash too and
-    // the browser would read it as a protocol-relative URL.
-    router.push(next && /^\/(?![\/\\])/.test(next) ? next : "/calendar");
+    // Resolve it the way the router will and keep it only if it stays on this
+    // origin. Checking the string instead is a losing game: "//evil.example"
+    // and "/\\evil.example" are protocol-relative, and "/\t/evil.example"
+    // becomes one once the URL parser strips the tab.
+    let target = "/calendar";
+    if (next) {
+      try {
+        const url = new URL(next, window.location.origin);
+        if (url.origin === window.location.origin) {
+          target = url.pathname + url.search + url.hash;
+        }
+      } catch {
+        // Unparseable: fall through to the calendar.
+      }
+    }
+    router.push(target);
     router.refresh();
   }
 

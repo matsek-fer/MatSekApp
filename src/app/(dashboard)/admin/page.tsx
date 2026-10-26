@@ -14,14 +14,14 @@ export default async function AdminDashboardPage() {
   const supabase = await createServerClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) redirect("/login");
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
-    .eq("id", session.user.id)
+    .eq("id", user.id)
     .single();
 
   if (profile?.role !== "admin") redirect("/calendar");

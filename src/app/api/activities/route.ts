@@ -1,6 +1,6 @@
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
-import { isActivityStatus, pickActivityFields } from "@/lib/validation";
+import { isActivityStatus, isUuid, pickActivityFields } from "@/lib/validation";
 import type { ApiResponse, Activity } from "@/types";
 
 /**
@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
     const status = rawStatus ?? undefined;
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
     let query = supabase
       .from("activities")
@@ -41,12 +41,19 @@ export async function GET(request: NextRequest) {
       .order("start_time", { ascending: true })
       .limit(limit);
 
-    if (session) {
+    if (user) {
+      // The id is about to be interpolated into a filter; see isUuid().
+      if (!isUuid(user.id)) {
+        return NextResponse.json<ApiResponse>(
+          { success: false, error: "Neispravna sesija." },
+          { status: 401 }
+        );
+      }
       // Check if admin
       const { data: profile } = await supabase
         .from("profiles")
         .select("role")
-        .eq("id", session.user.id)
+        .eq("id", user.id)
         .single();
 
       if (profile?.role === "admin") {
@@ -58,11 +65,11 @@ export async function GET(request: NextRequest) {
         // Regular user: approved + own
         if (status) {
           query = query.or(
-            `status.eq.${status},and(created_by.eq.${session.user.id},status.eq.${status})`
+            `status.eq.${status},and(created_by.eq.${user.id},status.eq.${status})`
           );
         } else {
           query = query.or(
-            `status.eq.approved,created_by.eq.${session.user.id}`
+            `status.eq.approved,created_by.eq.${user.id}`
           );
         }
       }
@@ -106,10 +113,10 @@ export async function POST(request: NextRequest) {
     const supabase = await createServerClient();
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Nisi prijavljen/a." },
         { status: 401 }
@@ -143,7 +150,7 @@ export async function POST(request: NextRequest) {
         prerequisites: body.prerequisites || "",
         target_audience: body.target_audience || "",
         // Server-owned: a proposal always starts unreviewed.
-        created_by: session.user.id,
+        created_by: user.id,
         status: "pending",
       })
       .select()

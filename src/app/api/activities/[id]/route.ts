@@ -58,10 +58,10 @@ export async function PATCH(
     const { id } = await params;
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Nisi prijavljen/a." },
         { status: 401 }
@@ -89,11 +89,11 @@ export async function PATCH(
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
-      .eq("id", session.user.id)
+      .eq("id", user.id)
       .single();
 
     const isAdmin = profile?.role === "admin";
-    const isOwner = session.user.id === existing.created_by;
+    const isOwner = user.id === existing.created_by;
 
     if (!isAdmin && !isOwner) {
       return NextResponse.json<ApiResponse>(
@@ -165,10 +165,10 @@ export async function DELETE(
     const { id } = await params;
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Nisi prijavljen/a." },
         { status: 401 }
@@ -192,12 +192,12 @@ export async function DELETE(
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
-      .eq("id", session.user.id)
+      .eq("id", user.id)
       .single();
 
     const isAdmin = profile?.role === "admin";
 
-    if (!isAdmin && session.user.id !== existing.created_by) {
+    if (!isAdmin && user.id !== existing.created_by) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Nemaš dozvolu." },
         { status: 403 }

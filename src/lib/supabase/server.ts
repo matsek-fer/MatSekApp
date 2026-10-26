@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { SESSION_COOKIE_OPTIONS } from "./cookie-options";
 
 /**
  * Supabase server client — for Server Components, Route Handlers and
@@ -14,6 +15,7 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: SESSION_COOKIE_OPTIONS,
       cookies: {
         getAll() {
           return cookieStore.getAll();
@@ -25,8 +27,8 @@ export async function createClient() {
             );
           } catch {
             // Called from a Server Component, which cannot write cookies.
-            // Harmless: the middleware and the route handlers refresh the
-            // session and do write it back.
+            // Harmless: the middleware runs on every page and writes a
+            // refreshed session back before this is reached.
           }
         },
       },

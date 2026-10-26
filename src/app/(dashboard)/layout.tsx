@@ -17,16 +17,16 @@ export default async function DashboardLayout({
 }) {
   const supabase = await createServerClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
   let profile: { role: string; full_name: string } | null = null;
 
-  if (session) {
+  if (user) {
     const { data } = await supabase
       .from("profiles")
       .select("role, full_name")
-      .eq("id", session.user.id)
+      .eq("id", user.id)
       .single();
     profile = data;
   }
@@ -62,7 +62,7 @@ export default async function DashboardLayout({
                 <VoronoiNavbarLink href="/materials">{t.materials}</VoronoiNavbarLink>
                 <VoronoiNavbarLink href="/library">{t.library}</VoronoiNavbarLink>
                 <VoronoiNavbarLink href="/tools">{t.tools}</VoronoiNavbarLink>
-                {session && (
+                {user && (
                   <VoronoiNavbarLink href="/activities/new">
                     {t.propose}
                   </VoronoiNavbarLink>
@@ -82,14 +82,14 @@ export default async function DashboardLayout({
                 <LanguageToggle lang={lang} label={t.toggleLang} />
               </div>
               <ThemeToggle label={t.toggleTheme} />
-              {session ? (
+              {user ? (
                 <>
                   <NotificationBell />
                   <VoronoiNavbarLink
                     href="/profile"
                     className="hidden max-w-[16ch] self-stretch truncate sm:inline-flex"
                   >
-                    {profile?.full_name || session.user.email}
+                    {profile?.full_name || user.email}
                   </VoronoiNavbarLink>
                   <LogoutButton label={t.logout} pendingLabel={t.loggingOut} />
                 </>
@@ -118,12 +118,12 @@ export default async function DashboardLayout({
             <VoronoiNavbarLink href="/tools" className="!py-2">
               {t.tools}
             </VoronoiNavbarLink>
-            {session && (
+            {user && (
               <VoronoiNavbarLink href="/activities/new" className="!py-2">
                 {t.proposeShort}
               </VoronoiNavbarLink>
             )}
-            {session && (
+            {user && (
               <VoronoiNavbarLink href="/profile" className="!py-2">
                 {t.profile}
               </VoronoiNavbarLink>
