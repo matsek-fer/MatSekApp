@@ -12,6 +12,14 @@
    ========================================================================== */
 
 @layer base {
+  /* The topic maps are SVG, whose focusable <g> nodes get no ring from the
+     browser's default stylesheet; draw the same ring the inputs use. */
+  svg [tabindex]:focus-visible {
+    outline: 2px solid rgb(var(--ring));
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
   :root {
     /* Surfaces */
     --bg: 249 250 251; /* page background */
@@ -22,19 +30,19 @@
     /* Text */
     --fg: 17 24 39; /* primary copy */
     --fg-muted: 107 114 128; /* labels, metadata */
-    --fg-subtle: 156 163 175; /* timestamps, placeholders */
+    --fg-subtle: 100 116 139; /* timestamps, placeholders — 4.8:1 on white; the old gray-400 was 2.5:1 */
 
     /* Lines */
     --border: 229 231 235;
     --border-strong: 209 213 219;
 
     /* Brand + focus */
-    --brand: 76 110 245; /* brand-600 */
+    --brand: 66 99 235; /* brand-600, nudged darker: 5.0:1 on white as link text, where the original was 4.3:1 */
     --brand-fg: 255 255 255;
     --ring: 92 124 250; /* brand-500 */
 
     /* Status */
-    --success: 22 163 74;
+    --success: 21 128 61; /* green-700 — white button text reads at 5.0:1; green-600 gave 3.3:1 */
     --success-bg: 220 252 231;
     --success-fg: 22 101 52;
     --warning: 202 138 4;
@@ -56,7 +64,7 @@
 
     --fg: 230 237 243;
     --fg-muted: 139 148 158;
-    --fg-subtle: 110 118 129;
+    --fg-subtle: 130 138 149; /* 5.0:1 on the card surface; the old value was 3.8:1 */
 
     --border: 48 54 61;
     --border-strong: 68 76 86;

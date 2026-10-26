@@ -170,7 +170,7 @@ export default function ConnectionsMap({
           width="100%"
           style={{ minWidth: 560, maxWidth: W }}
           className="mx-auto block"
-          role="img"
+          role="group"
           aria-label={t.connectionsAria}
         >
           <g fill="none">
@@ -220,6 +220,8 @@ export default function ConnectionsMap({
                 opacity={faded ? 0.3 : on ? 1 : 0.25}
                 onMouseEnter={() => setHoverNode(topic.id)}
                 onMouseLeave={() => setHoverNode(null)}
+                onFocus={() => setHoverNode(topic.id)}
+                onBlur={() => setHoverNode(null)}
                 onClick={(ev) => {
                   ev.stopPropagation();
                   setSelectedEdge(null);

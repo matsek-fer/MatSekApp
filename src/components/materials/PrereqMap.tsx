@@ -214,7 +214,9 @@ export default function PrereqMap({
           viewBox={`0 0 ${g.width} ${g.height}`}
           width="100%"
           style={{ minWidth: Math.min(g.width, 1100) }}
-          role="img"
+          // `group`, not `img`: an image role hides its children from
+          // assistive tech, and the nodes below are focusable buttons.
+          role="group"
           aria-label={t.mapAria}
         >
           <defs>
@@ -264,6 +266,8 @@ export default function PrereqMap({
                 opacity={faded ? 0.3 : 1}
                 onMouseEnter={() => setHover(topic.id)}
                 onMouseLeave={() => setHover(null)}
+                onFocus={() => setHover(topic.id)}
+                onBlur={() => setHover(null)}
                 onClick={(ev) => {
                   ev.stopPropagation();
                   if (selected === topic.id) open(topic.id);
