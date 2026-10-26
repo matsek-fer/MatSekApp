@@ -66,11 +66,6 @@ export default async function DashboardLayout({
                     {t.propose}
                   </VoronoiNavbarLink>
                 )}
-                {session && (
-                  <VoronoiNavbarLink href="/documents">
-                    {t.documents}
-                  </VoronoiNavbarLink>
-                )}
                 {isAdmin && (
                   <VoronoiNavbarLink href="/admin" className="text-brand">
                     {t.admin}
@@ -122,11 +117,6 @@ export default async function DashboardLayout({
             {session && (
               <VoronoiNavbarLink href="/activities/new" className="!py-2">
                 {t.proposeShort}
-              </VoronoiNavbarLink>
-            )}
-            {session && (
-              <VoronoiNavbarLink href="/documents" className="!py-2">
-                {t.documents}
               </VoronoiNavbarLink>
             )}
             {session && (

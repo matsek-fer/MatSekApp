@@ -32,10 +32,6 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith("/reset-password") ||
       pathname.startsWith("/_next") ||
       pathname.startsWith("/favicon") ||
-      // pdf.js fetches its worker from the page. It is a library file with
-      // nothing of anyone's in it, and redirecting it to /login breaks the
-      // reader for a member who is in fact signed in.
-      pathname === "/pdf.worker.min.mjs" ||
       /\.(png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|eot|mp4|webm)$/.test(pathname))
   ) {
     return NextResponse.next();
