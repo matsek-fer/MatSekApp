@@ -28,7 +28,7 @@ export default async function AdminDashboardPage() {
 
   const { data } = await supabase
     .from("activities")
-    .select("*, creator:profiles!created_by(id, email, full_name)")
+    .select("*, creator:profiles!created_by(id, full_name)")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
@@ -70,7 +70,7 @@ export default async function AdminDashboardPage() {
                     {a.location && ` · ${a.location}`}
                   </p>
                   <p className="text-xs text-fg-subtle">
-                    Predložio/la: {a.creator?.full_name || a.creator?.email}
+                    Predložio/la: {a.creator?.full_name || "—"}
                   </p>
                 </div>
                 <ButtonLink href={`/admin/review/${a.id}`} size="sm">

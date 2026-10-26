@@ -82,8 +82,10 @@ same client bound to a request, because middleware cannot write through
 `cookies()`: a refreshed session goes onto the request and onto the response
 it returns (`redirectWith()` carries it onto a redirect). `createAdminClient()`
 uses the service-role key and bypasses RLS entirely; it exists only so the
-approve and deny routes can insert a notification for another user. Don't
-reach for it to make a query easier. On the server, read the user with
+approve and deny routes, after their own admin check, can insert a
+notification for another user and read the proposer's e-mail for the
+decision mail — members cannot read each other's e-mail through the RLS
+client. Don't reach for it to make a query easier. On the server, read the user with
 `getUser()`, never from `getSession()`: the session is parsed from the cookie
 without verification, and touching its user logs a warning per request.
 

@@ -21,7 +21,7 @@ export default async function ProfilePage() {
   if (!user) redirect("/login");
 
   const [{ data: profile }, { data: activities }] = await Promise.all([
-    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    supabase.from("profiles").select("id, full_name, role, created_at, updated_at").eq("id", user.id).single(),
     supabase
       .from("activities")
       .select("id, title, status, start_time, activity_type")
@@ -30,7 +30,7 @@ export default async function ProfilePage() {
       .limit(20),
   ]);
 
-  const me = profile as Profile | null;
+  const me = profile as Omit<Profile, "email"> | null;
   const myActivities = (activities ?? []) as Activity[];
 
   return (
@@ -45,7 +45,7 @@ export default async function ProfilePage() {
           <div className="min-w-0">
             <dt className="text-fg-subtle">Email</dt>
             <dd className="truncate text-fg">
-              {me?.email || user.email}
+              {user.email}
             </dd>
           </div>
           <div>

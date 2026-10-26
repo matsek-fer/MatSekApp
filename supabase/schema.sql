@@ -137,17 +137,21 @@ ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 -- ---------------------------------------------------------------------------
 
 -- Everyone can read profiles (the public calendar shows who proposed an
--- activity) — but a visitor without a session may read only the name. The
--- column grants below are checked before any policy, so an anonymous query
--- that names `email` or `role` is refused outright; signed-in members keep
--- the whole row. Public queries therefore embed `profiles(id, full_name)`
--- and nothing more.
+-- activity) — but only the name. The column grants below are checked before
+-- any policy, so a query that names a column its role cannot read is refused
+-- outright: anonymous visitors get `id` and `full_name`, signed-in members
+-- `role` as well, because every page reads its own row's role and a column
+-- grant cannot depend on the row. Nobody reads another member's e-mail
+-- through this client; the two routes that mail a proposer fetch it with the
+-- service-role client after their own admin check. Queries therefore embed
+-- `profiles(id, full_name)` and nothing more.
 CREATE POLICY "Profiles are viewable by everyone"
   ON public.profiles FOR SELECT
   USING (true);
 
-REVOKE SELECT ON public.profiles FROM anon;
+REVOKE SELECT ON public.profiles FROM anon, authenticated;
 GRANT SELECT (id, full_name) ON public.profiles TO anon;
+GRANT SELECT (id, full_name, role) ON public.profiles TO authenticated;
 
 -- Users can update only their own profile, and only their name. Without the
 -- column grant a member could set their own `role` to admin with one
@@ -274,8 +278,9 @@ CREATE POLICY "Users can update own notifications"
 -- Applying the hardening above to a database that ran an earlier version of
 -- this file (the statements are safe to repeat):
 --
---   REVOKE SELECT ON public.profiles FROM anon;
+--   REVOKE SELECT ON public.profiles FROM anon, authenticated;
 --   GRANT SELECT (id, full_name) ON public.profiles TO anon;
+--   GRANT SELECT (id, full_name, role) ON public.profiles TO authenticated;
 --   REVOKE UPDATE ON public.profiles FROM anon, authenticated;
 --   GRANT UPDATE (full_name) ON public.profiles TO authenticated;
 --   DROP POLICY IF EXISTS "Admins can update any profile" ON public.profiles;
