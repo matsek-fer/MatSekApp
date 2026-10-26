@@ -44,11 +44,43 @@ though `.env.local` itself was never staged. Both are gitignored, and
 `.githooks/pre-commit` blocks them plus any Supabase key or private key found in
 staged content. Enable it once per clone with the `git config` line above.
 
-For deployment, set the variables in the host's dashboard (Vercel → Settings →
-Environment Variables), not in the repository.
+For deployment, set the variables on the server (`deploy/.env`, see below),
+never in the repository.
 
 If a secret is ever exposed, rotate it in the Supabase dashboard — removing the
 commit is not enough, since anyone may already have copied it.
+
+## Deploy
+
+The production build is a self-contained Node server (`output: "standalone"`
+in `next.config.js`) packaged by the `Dockerfile`; `docker-compose.yml` runs it
+behind Caddy, which obtains and renews the TLS certificate. The step-by-step
+server setup is in [deploy/README.md](./deploy/README.md).
+
+The server refuses to start (see `src/instrumentation.ts`) unless every
+variable below is set and `NEXT_PUBLIC_APP_URL` is an `https://` address, so a
+half-configured deployment fails loudly at boot rather than with a broken
+e-mail link a week later.
+
+| Variable | Where it comes from |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API (**secret**) |
+| `NEXT_PUBLIC_APP_URL` | The public address, e.g. `https://matsek.example.hr` — used in e-mail links and metadata |
+| `SMTP_HOST`, `SMTP_PORT` | The mail provider; port 465 is implicit TLS, anything else must offer STARTTLS |
+| `SMTP_USER`, `SMTP_PASS` | Mail credentials (`SMTP_PASS` is **secret**) |
+| `SMTP_FROM` | The sender address, e.g. `MatSek <noreply@example.hr>` |
+
+Two things live outside the repository and are easy to forget:
+
+- **Supabase Auth** has its own SMTP settings and e-mail templates
+  (Authentication → Email Templates). Point its Site URL and redirect list at
+  the production address, and configure custom SMTP there as well — the
+  built-in sender is rate-limited to a handful of messages an hour.
+- **The schema.** Run `supabase/schema.sql` on a fresh project. On a project
+  that ran an earlier version, apply the statements listed in the
+  "Applying the hardening above" comment near the end of the file instead.
 
 ## Scripts
 

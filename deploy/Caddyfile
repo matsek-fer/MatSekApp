@@ -1,0 +1,10 @@
+# Caddy terminates TLS (Let's Encrypt, automatic) and hands everything to
+# the app container. DOMAIN comes from the environment in docker-compose.
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:3000
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains"
+		-Server
+	}
+}

@@ -1,0 +1,37 @@
+# One VPS, two containers: the site and Caddy in front of it, which gets
+# and renews the TLS certificate on its own. Fill deploy/.env from
+# .env.local.example and set DOMAIN; then `docker compose up -d --build`.
+services:
+  app:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+    env_file: deploy/.env
+    restart: unless-stopped
+    expose: ["3000"]
+    healthcheck:
+      # /library renders without touching Supabase, so the check measures
+      # the container and not the database.
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/library').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [app]
+
+volumes:
+  caddy_data:
+  caddy_config:
