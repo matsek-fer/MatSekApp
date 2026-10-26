@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { hr } from "date-fns/locale";
 import { ACTIVITY_TYPE_LABELS } from "@/types";
@@ -14,11 +14,8 @@ import { StatusBadge } from "@/components/ui/Badge";
 
 type Action = "approve" | "deny" | null;
 
-export default function AdminReviewPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function AdminReviewPage() {
+  const params = useParams<{ id: string }>();
   const router = useRouter();
   const [activity, setActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(true);

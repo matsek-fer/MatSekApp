@@ -4,8 +4,8 @@ import { ButtonLink } from "@/components/ui/Button";
 import ErrorScreen from "@/components/ui/ErrorScreen";
 
 /** Unmatched URLs outside the dashboard — there is no navbar to show here. */
-export default function NotFound() {
-  const t = CHROME[getLang()];
+export default async function NotFound() {
+  const t = CHROME[await getLang()];
   return (
     <main className="min-h-screen bg-bg px-4">
       <ErrorScreen code="404" title={t.notFoundTitle} body={t.notFoundBody}>

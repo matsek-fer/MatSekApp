@@ -11,11 +11,11 @@ import type { ApiResponse, Activity } from "@/types";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createServerClient();
-    const { id } = params;
+    const supabase = await createServerClient();
+    const { id } = await params;
 
     const { data: activity, error } = await supabase
       .from("activities")
@@ -51,11 +51,11 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createServerClient();
-    const { id } = params;
+    const supabase = await createServerClient();
+    const { id } = await params;
 
     const {
       data: { session },
@@ -158,11 +158,11 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createServerClient();
-    const { id } = params;
+    const supabase = await createServerClient();
+    const { id } = await params;
 
     const {
       data: { session },

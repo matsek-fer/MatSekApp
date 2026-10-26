@@ -4,7 +4,7 @@ Termin organisation for the Mathematics Section (Matematička sekcija) at FER.
 Members propose activities, an admin approves or denies them, and approved ones
 appear on a public calendar. Everything users see is in Croatian.
 
-Next.js 14 (App Router) · TypeScript · Tailwind · Supabase (Postgres + Auth +
+Next.js 15 (App Router) · TypeScript · Tailwind · Supabase (Postgres + Auth +
 RLS) · Nodemailer.
 
 ## Commands

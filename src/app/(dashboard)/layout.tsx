@@ -15,7 +15,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -32,7 +32,7 @@ export default async function DashboardLayout({
   }
 
   const isAdmin = profile?.role === "admin";
-  const lang = getLang();
+  const lang = await getLang();
   const t = CHROME[lang];
 
   return (

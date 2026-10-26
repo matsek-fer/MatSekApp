@@ -12,7 +12,7 @@ const UPCOMING_LIMIT = 50;
 const PAST_LIMIT = 60;
 
 export default async function CalendarPage() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const now = new Date().toISOString();
 

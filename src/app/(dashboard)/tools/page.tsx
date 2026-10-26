@@ -12,13 +12,13 @@ import * as en from "./content/en";
  */
 const CONTENT = { hr, en } as const;
 
-export function generateMetadata(): Metadata {
-  const { meta } = CONTENT[getLang()];
+export async function generateMetadata(): Promise<Metadata> {
+  const { meta } = CONTENT[await getLang()];
   return { title: meta.title, description: meta.description };
 }
 
-export default function ToolsPage() {
-  const lang = getLang();
+export default async function ToolsPage() {
+  const lang = await getLang();
   const { meta, toc, default: Content } = CONTENT[lang];
 
   return (

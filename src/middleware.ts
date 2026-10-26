@@ -1,4 +1,4 @@
-import { createClient as createServerClient } from "@/lib/supabase/server";
+import { createClient as createMiddlewareClient, redirectWith } from "@/lib/supabase/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
@@ -24,7 +24,7 @@ export async function middleware(request: NextRequest) {
 
   if (!isProtected(pathname)) return NextResponse.next();
 
-  const supabase = createServerClient();
+  const { supabase, response } = createMiddlewareClient(request);
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -33,7 +33,7 @@ export async function middleware(request: NextRequest) {
   if (!session) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("next", pathname);
-    return NextResponse.redirect(loginUrl);
+    return redirectWith(response(), loginUrl);
   }
 
   // Admin route protection
@@ -45,11 +45,11 @@ export async function middleware(request: NextRequest) {
       .single();
 
     if (profile?.role !== "admin") {
-      return NextResponse.redirect(new URL("/calendar", request.url));
+      return redirectWith(response(), new URL("/calendar", request.url));
     }
   }
 
-  return NextResponse.next();
+  return response();
 }
 
 export const config = {

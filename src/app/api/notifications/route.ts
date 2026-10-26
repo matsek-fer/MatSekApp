@@ -12,7 +12,7 @@ import type { ApiResponse, Notification } from "@/types";
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const {
       data: { session },
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const {
       data: { session },

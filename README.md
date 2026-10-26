@@ -2,7 +2,7 @@
 
 Organizacija termina i ostalo — aplikacija Matematičke sekcije FER.
 
-Next.js 14 (App Router) · Tailwind · Supabase (PostgreSQL + Auth + RLS) · Nodemailer.
+Next.js 15 (App Router) · Tailwind · Supabase (PostgreSQL + Auth + RLS) · Nodemailer.
 Arhitektura je opisana u [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ## Setup

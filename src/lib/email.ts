@@ -1,12 +1,12 @@
-import nodemailer from "nodemailer";
+import { createTransport, type Transporter } from "nodemailer";
 
-let transporter: nodemailer.Transporter | null = null;
+let transporter: Transporter | null = null;
 
-function getTransporter(): nodemailer.Transporter {
+function getTransporter(): Transporter {
   if (transporter) return transporter;
 
   const port = Number(process.env.SMTP_PORT) || 587;
-  transporter = nodemailer.createTransport({
+  transporter = createTransport({
     host: process.env.SMTP_HOST!,
     port,
     secure: port === 465,

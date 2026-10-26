@@ -11,11 +11,11 @@ import type { ApiResponse, Activity, ReviewResult } from "@/types";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createServerClient();
-    const { id } = params;
+    const supabase = await createServerClient();
+    const { id } = await params;
 
     // Authenticate
     const {

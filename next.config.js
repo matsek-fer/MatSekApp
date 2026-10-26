@@ -4,10 +4,6 @@ const nextConfig = {
   // Vercel ignores this and traces on its own.
   output: "standalone",
   poweredByHeader: false,
-  experimental: {
-    // src/instrumentation.ts checks the environment once at boot.
-    instrumentationHook: true,
-  },
   async headers() {
     return [
       {

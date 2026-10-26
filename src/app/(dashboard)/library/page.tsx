@@ -41,13 +41,13 @@ const CONTENT = {
   },
 } satisfies Record<Lang, Record<string, string>>;
 
-export function generateMetadata(): Metadata {
-  const t = CONTENT[getLang()];
+export async function generateMetadata(): Promise<Metadata> {
+  const t = CONTENT[await getLang()];
   return { title: t.title, description: t.description };
 }
 
-export default function LibraryPage() {
-  const t = CONTENT[getLang()];
+export default async function LibraryPage() {
+  const t = CONTENT[await getLang()];
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <header className="space-y-3">

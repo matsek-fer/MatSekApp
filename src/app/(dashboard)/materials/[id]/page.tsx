@@ -18,23 +18,23 @@ import MaterialGroupList, {
   type MaterialGroupData,
 } from "@/components/materials/MaterialGroupList";
 
-export function generateMetadata({
+export async function generateMetadata({
   params,
 }: {
-  params: { id: string };
-}): Metadata {
-  const topic = getTopic(params.id);
-  const { meta } = MATERIALS[getLang()];
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const topic = getTopic((await params).id);
+  const { meta } = MATERIALS[await getLang()];
   return topic
     ? { title: `${topic.title} — ${meta.title}`, description: topic.tagline }
     : { title: meta.title };
 }
 
-export default function TopicPage({ params }: { params: { id: string } }) {
-  const topic = getTopic(params.id);
+export default async function TopicPage({ params }: { params: Promise<{ id: string }> }) {
+  const topic = getTopic((await params).id);
   if (!topic) notFound();
 
-  const lang = getLang();
+  const lang = await getLang();
   const t = MATERIALS[lang];
   const SECTION_TITLES = t.sections;
 

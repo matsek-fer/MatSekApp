@@ -1,5 +1,5 @@
 /**
- * Runs once when the server boots (next.config.js enables the hook).
+ * Runs once when the server boots.
  *
  * Every variable the app needs is read lazily at its point of use, so a
  * deployment with a missing or placeholder value starts fine and fails

@@ -194,7 +194,7 @@ export default function ActivityTimeline({ events }: { events: Activity[] }) {
     [span, inner]
   );
 
-  const frame = useRef<number>();
+  const frame = useRef<number | undefined>(undefined);
   const animate = useCallback((target: Span) => {
     if (frame.current) cancelAnimationFrame(frame.current);
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {

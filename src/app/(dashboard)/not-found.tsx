@@ -7,8 +7,8 @@ import ErrorScreen from "@/components/ui/ErrorScreen";
  * `notFound()` from a dashboard page — an unknown topic or activity id —
  * lands here, inside the dashboard layout, so the navbar stays put.
  */
-export default function DashboardNotFound() {
-  const t = CHROME[getLang()];
+export default async function DashboardNotFound() {
+  const t = CHROME[await getLang()];
   return (
     <ErrorScreen code="404" title={t.notFoundTitle} body={t.notFoundBody}>
       <ButtonLink href="/calendar">{t.toCalendar}</ButtonLink>

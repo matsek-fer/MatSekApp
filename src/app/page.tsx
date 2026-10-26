@@ -14,20 +14,21 @@ export const dynamic = "force-dynamic";
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: { seed?: string };
+  searchParams: Promise<{ seed?: string }>;
 }) {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  const lang = getLang();
+  const lang = await getLang();
   const t = CHROME[lang];
 
   // ?seed=123 pins the first tree, so a particular one can be looked at again
   // — otherwise checking a change to one species means reloading until it comes
   // up. Anything that is not a number falls through to a random tree.
-  const pinned = Number(searchParams.seed);
-  const firstSeed = Number.isFinite(pinned) && searchParams.seed
+  const { seed } = await searchParams;
+  const pinned = Number(seed);
+  const firstSeed = Number.isFinite(pinned) && seed
     ? Math.abs(Math.trunc(pinned))
     : randomSeed();
 

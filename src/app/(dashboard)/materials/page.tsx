@@ -12,24 +12,24 @@ import { getLang } from "@/lib/i18n/server";
 import { MATERIALS } from "@/lib/i18n/materials";
 import MaterialsExplorer from "@/components/materials/MaterialsExplorer";
 
-export function generateMetadata(): Metadata {
-  const { meta } = MATERIALS[getLang()];
+export async function generateMetadata(): Promise<Metadata> {
+  const { meta } = MATERIALS[await getLang()];
   return { title: meta.title, description: meta.description };
 }
 
-export default function MaterialsPage({
+export default async function MaterialsPage({
   searchParams,
 }: {
-  searchParams?: { view?: string };
+  searchParams?: Promise<{ view?: string }>;
 }) {
-  const lang = getLang();
+  const lang = await getLang();
   const t = MATERIALS[lang];
   const all = getAllTopics();
   const titles = getTopicShortTitles();
   const general = all.find((topic) => topic.category === "general");
   const topics = all.filter((topic) => topic.category !== "general").map(toSummary);
   const connections = getConnections().map(toConnectionSummary);
-  const view = searchParams?.view;
+  const view = (await searchParams)?.view;
   const initialView = VIEWS.includes(view as View) ? (view as View) : "grid";
 
   return (

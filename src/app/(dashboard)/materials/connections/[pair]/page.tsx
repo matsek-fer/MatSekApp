@@ -13,13 +13,13 @@ import Markdown from "@/components/materials/Markdown";
 import AiBand from "@/components/materials/AiBand";
 import StrengthDots from "@/components/materials/StrengthDots";
 
-export function generateMetadata({
+export async function generateMetadata({
   params,
 }: {
-  params: { pair: string };
-}): Metadata {
-  const c = getConnection(params.pair);
-  const { meta } = MATERIALS[getLang()];
+  params: Promise<{ pair: string }>;
+}): Promise<Metadata> {
+  const c = getConnection((await params).pair);
+  const { meta } = MATERIALS[await getLang()];
   if (!c) return { title: meta.title };
   const short = getTopicShortTitles();
   return {
@@ -29,11 +29,11 @@ export function generateMetadata({
 }
 
 /** One edge of the connections map: how two topics trade, at length. */
-export default function ConnectionPage({ params }: { params: { pair: string } }) {
-  const c = getConnection(params.pair);
+export default async function ConnectionPage({ params }: { params: Promise<{ pair: string }> }) {
+  const c = getConnection((await params).pair);
   if (!c) notFound();
 
-  const lang = getLang();
+  const lang = await getLang();
   const t = MATERIALS[lang];
   const titles = getTopicTitles();
   const short = getTopicShortTitles();

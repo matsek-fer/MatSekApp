@@ -32,14 +32,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default async function ActivityDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const supabase = createServerClient();
+  const { id } = await params;
+  const supabase = await createServerClient();
 
   const { data } = await supabase
     .from("activities")
     .select("*, creator:profiles!created_by(id, full_name)")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (!data) notFound();
