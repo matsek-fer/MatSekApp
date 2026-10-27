@@ -51,7 +51,7 @@ erDiagram
 | `id` | `UUID` PK | |
 | `created_by` | `UUID FK → profiles(id)` | Activity author |
 | `title` | `TEXT NOT NULL` | |
-| `activity_type` | `activity_type` enum | `lecture` / `discussion` / `problem_solving_session` |
+| `activity_type` | `activity_type` enum | `lecture` / `discussion` / `problem_solving_session` / `social` / `seminar` |
 | `start_time` | `TIMESTAMPTZ NOT NULL` | |
 | `end_time` | `TIMESTAMPTZ NOT NULL` | Constraint: `end_time > start_time` |
 | `location` | `TEXT` | Room / building |
@@ -66,6 +66,26 @@ erDiagram
 | `updated_at` | `TIMESTAMPTZ` | Auto (trigger) |
 
 **iCalendar future-proofing:** The rows contain all fields needed by the iCalendar standard (`DTSTART`, `DTEND`, `SUMMARY`, `DESCRIPTION`, `LOCATION`). Generating a `.ics` file is a matter of formatting these fields per RFC 5545.
+
+#### `activity_materials`
+
+Added with the proposal form's reading lists (schema section 13).
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | `UUID` PK | |
+| `activity_id` | `UUID FK → activities(id)` | Cascades on delete |
+| `phase` | `TEXT` | `before` (go through before the session) / `during` (covered at the session or follow-up) |
+| `kind` | `TEXT` | `library` (a `/materials/…` page or a book from it) / `link` (any URL) / `file` (upload) |
+| `title` | `TEXT NOT NULL` | |
+| `url` | `TEXT` | Library and link kinds |
+| `note` | `TEXT` | Secondary line, e.g. the library topic a book belongs to |
+| `storage_path` | `TEXT` | File kind: `{activity_id}/{material_id}/{file name}` in the private `activity-materials` bucket |
+| `file_name` / `content_type` / `byte_size` | | File kind |
+| `position` | `INTEGER` | Order within the phase |
+| `created_at` | `TIMESTAMPTZ` | Auto |
+
+**Design rationale:** visibility is tested through the parent activity, so the activities policies (approved for everyone, own for the author, all for admins) decide here too, for the rows and for the bucket objects alike. Link and library materials are inserted together with the activity by `POST /api/activities`; a file needs the activity's id for its path, so the form reserves it on `POST /api/activities/[id]/materials` and PUTs the bytes to a signed URL, the same handshake as documents. The activity page mints short-lived download URLs under the viewer's own permissions.
 
 #### `notifications`
 

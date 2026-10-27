@@ -3,11 +3,13 @@ import { notFound } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { hr } from "date-fns/locale";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { withDownloadUrls } from "@/lib/activity-materials";
 import { ACTIVITY_TYPE_LABELS } from "@/types";
 import type { Activity } from "@/types";
 import Card from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/Badge";
 import Alert from "@/components/ui/Alert";
+import ActivityMaterialsList from "@/components/activities/ActivityMaterialsList";
 
 export const dynamic = "force-dynamic";
 
@@ -38,12 +40,17 @@ export default async function ActivityDetailPage({
 
   const { data } = await supabase
     .from("activities")
-    .select("*, creator:profiles!created_by(id, email, full_name)")
+    .select(
+      "*, creator:profiles!created_by(id, email, full_name), materials:activity_materials(*)"
+    )
     .eq("id", params.id)
     .single();
 
   if (!data) notFound();
   const activity = data as Activity;
+  // Signed under the viewer's own permissions, so a file of an approved
+  // activity opens for everyone and a pending one only for its author.
+  const materials = await withDownloadUrls(supabase, activity.materials ?? []);
 
   const dateFmt = (iso: string) =>
     format(parseISO(iso), "dd.MM.yyyy. HH:mm", { locale: hr });
@@ -76,6 +83,15 @@ export default async function ActivityDetailPage({
         </dl>
 
         <Section title="Opis">{activity.description}</Section>
+
+        {materials.length > 0 && (
+          <div>
+            <h2 className="font-medium text-fg">Materijali</h2>
+            <div className="mt-2">
+              <ActivityMaterialsList materials={materials} />
+            </div>
+          </div>
+        )}
 
         {activity.prerequisites && (
           <Section title="Preduvjeti">{activity.prerequisites}</Section>

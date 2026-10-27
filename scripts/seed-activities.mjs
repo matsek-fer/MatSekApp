@@ -51,6 +51,8 @@ const TITLES = [
   ["Vjerojatnost i paradoksi", "discussion", "D2"],
   ["Uvod u kriptografiju", "lecture", "A211"],
   ["Geometrija bez koordinata", "problem_solving_session", "A103"],
+  ["Druženje uz pizzu i zagonetke", "social", "Klub studenata"],
+  ["Seminar: što je zapravo dokaz?", "seminar", "A201"],
 ];
 
 /** Evening slots, every few days, walking away from today in one direction. */

@@ -1,7 +1,12 @@
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
-import { isActivityStatus, pickActivityFields } from "@/lib/validation";
-import type { ApiResponse, Activity } from "@/types";
+import {
+  isActivityStatus,
+  MAX_ACTIVITY_MATERIALS,
+  parseActivityMaterial,
+  pickActivityFields,
+} from "@/lib/validation";
+import type { ActivityMaterialInput, ApiResponse, Activity } from "@/types";
 
 /**
  * GET /api/activities
@@ -98,7 +103,10 @@ export async function GET(request: NextRequest) {
  *
  * Body: CreateActivityPayload
  *
- * Creates a new activity with status = 'pending'.
+ * Creates a new activity with status = 'pending', plus its link and library
+ * materials. File materials are not accepted here: a file needs the
+ * activity's id for its storage path, so the form attaches them afterwards
+ * through /api/activities/[id]/materials.
  * Requires authentication.
  */
 export async function POST(request: NextRequest) {
@@ -136,6 +144,46 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Materials are checked before the activity is written, so a bad entry
+    // refuses the whole proposal instead of leaving a half-attached one.
+    const materials: ActivityMaterialInput[] = [];
+    if (body.materials !== undefined) {
+      if (!Array.isArray(body.materials)) {
+        return NextResponse.json<ApiResponse>(
+          { success: false, error: "Materijali nisu ispravno zadani." },
+          { status: 400 }
+        );
+      }
+      if (body.materials.length > MAX_ACTIVITY_MATERIALS) {
+        return NextResponse.json<ApiResponse>(
+          {
+            success: false,
+            error: `Najviše ${MAX_ACTIVITY_MATERIALS} materijala po aktivnosti.`,
+          },
+          { status: 400 }
+        );
+      }
+      for (let i = 0; i < body.materials.length; i++) {
+        const parsed = parseActivityMaterial(body.materials[i], i);
+        if (!parsed.ok) {
+          return NextResponse.json<ApiResponse>(
+            { success: false, error: parsed.error },
+            { status: 400 }
+          );
+        }
+        if (parsed.material.kind === "file") {
+          return NextResponse.json<ApiResponse>(
+            {
+              success: false,
+              error: "Datoteke se prilažu nakon što je aktivnost stvorena.",
+            },
+            { status: 400 }
+          );
+        }
+        materials.push(parsed.material);
+      }
+    }
+
     const { data: activity, error } = await supabase
       .from("activities")
       .insert({
@@ -154,6 +202,33 @@ export async function POST(request: NextRequest) {
         { success: false, error: error.message },
         { status: 400 }
       );
+    }
+
+    if (materials.length > 0) {
+      const { error: materialsError } = await supabase
+        .from("activity_materials")
+        .insert(
+          materials.map((m) => ({
+            activity_id: activity.id,
+            phase: m.phase,
+            kind: m.kind,
+            title: m.title,
+            url: m.url ?? "",
+            note: m.note ?? "",
+            position: m.position ?? 0,
+          }))
+        );
+
+      if (materialsError) {
+        // The proposal is withdrawn rather than left standing without the
+        // reading list its author wrote; they can resubmit in one go.
+        await supabase.from("activities").delete().eq("id", activity.id);
+        console.error("POST /api/activities materials error:", materialsError);
+        return NextResponse.json<ApiResponse>(
+          { success: false, error: "Materijale nije moguće spremiti." },
+          { status: 400 }
+        );
+      }
     }
 
     return NextResponse.json<ApiResponse<Activity>>(

@@ -15,7 +15,9 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TYPE activity_type AS ENUM (
   'lecture',
   'discussion',
-  'problem_solving_session'
+  'problem_solving_session',
+  'social',
+  'seminar'
 );
 
 CREATE TYPE activity_status AS ENUM (
@@ -893,3 +895,179 @@ RETURNS TABLE (
   ORDER BY c.embedding <=> p_query_embedding
   LIMIT least(greatest(p_limit, 1), 20);
 $$ LANGUAGE sql STABLE SECURITY INVOKER;
+
+-- ============================================================================
+-- 13. ACTIVITY MATERIALS — reading lists and uploads attached to a proposal
+-- ============================================================================
+-- Re-runnable like sections 9-12.  On a database that already has sections
+-- 1-12, run ONLY this section.  The two ALTER TYPE lines are a no-op on a
+-- fresh database, where section 2 already declares the values.
+
+-- ---------------------------------------------------------------------------
+-- 13.1 NEW ACTIVITY TYPES
+-- ---------------------------------------------------------------------------
+-- ADD VALUE cannot run inside the same transaction as a statement that uses
+-- the new value, so these two lines stand first and alone.
+ALTER TYPE activity_type ADD VALUE IF NOT EXISTS 'social';
+ALTER TYPE activity_type ADD VALUE IF NOT EXISTS 'seminar';
+
+-- ---------------------------------------------------------------------------
+-- 13.2 ACTIVITY MATERIALS TABLE
+-- ---------------------------------------------------------------------------
+-- One row per material on a proposal.  `phase` splits them into what to go
+-- through BEFORE the session and what belongs to the session itself or to
+-- afterwards; the activity page renders the two as separate lists.  `kind`
+-- says where the thing lives: a page under /materials, any URL, or a file
+-- in the activity-materials bucket.  Phase and kind are TEXT with CHECKs
+-- rather than enums for the reason given in section 10.
+CREATE TABLE IF NOT EXISTS public.activity_materials (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  activity_id   UUID NOT NULL REFERENCES public.activities(id) ON DELETE CASCADE,
+  phase         TEXT NOT NULL,
+  kind          TEXT NOT NULL,
+  title         TEXT NOT NULL,
+  url           TEXT NOT NULL DEFAULT '',   -- library and link kinds
+  note          TEXT NOT NULL DEFAULT '',   -- e.g. the library topic a book belongs to
+  storage_path  TEXT NOT NULL DEFAULT '',   -- file kind
+  file_name     TEXT NOT NULL DEFAULT '',
+  content_type  TEXT NOT NULL DEFAULT '',
+  byte_size     INTEGER NOT NULL DEFAULT 0,
+  position      INTEGER NOT NULL DEFAULT 0,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  CONSTRAINT chk_material_phase CHECK (phase IN ('before', 'during')),
+  CONSTRAINT chk_material_kind  CHECK (kind IN ('library', 'link', 'file'))
+);
+
+-- Materials are always read as one activity's two lists, in order
+CREATE INDEX IF NOT EXISTS idx_activity_materials_activity
+  ON public.activity_materials(activity_id, phase, position);
+
+-- ---------------------------------------------------------------------------
+-- 13.3 ROW LEVEL SECURITY
+-- ---------------------------------------------------------------------------
+ALTER TABLE public.activity_materials ENABLE ROW LEVEL SECURITY;
+
+-- Visibility is TESTED THROUGH THE ACTIVITY: the subquery runs under the
+-- caller's role, so the activities policies (approved for everyone, own for
+-- the author, all for admins) decide here too, and nothing is repeated.
+
+DROP POLICY IF EXISTS "Materials follow their activity" ON public.activity_materials;
+CREATE POLICY "Materials follow their activity"
+  ON public.activity_materials FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.activities a
+      WHERE a.id = activity_id
+    )
+  );
+
+-- Writes mirror the activity rules: the author while the proposal is still
+-- pending, admins always.  No UPDATE policy — a material is replaced, not
+-- edited.
+
+DROP POLICY IF EXISTS "Authors add materials to own pending activities" ON public.activity_materials;
+CREATE POLICY "Authors add materials to own pending activities"
+  ON public.activity_materials FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.activities a
+      WHERE a.id = activity_id
+        AND a.created_by = auth.uid()
+        AND a.status = 'pending'
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+DROP POLICY IF EXISTS "Authors remove materials from own pending activities" ON public.activity_materials;
+CREATE POLICY "Authors remove materials from own pending activities"
+  ON public.activity_materials FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.activities a
+      WHERE a.id = activity_id
+        AND a.created_by = auth.uid()
+        AND a.status = 'pending'
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+-- ---------------------------------------------------------------------------
+-- 13.4 STORAGE BUCKET
+-- ---------------------------------------------------------------------------
+-- Private, like `documents`, and for the same reason: the browser PUTs the
+-- bytes straight to Storage on a signed URL, so the bucket is the only thing
+-- positioned to refuse a size or a type.  Readers get short-lived signed
+-- URLs minted by the activity page.
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'activity-materials',
+  'activity-materials',
+  false,
+  26214400,                                 -- 25 MiB
+  ARRAY['application/pdf', 'text/markdown', 'text/plain']
+)
+ON CONFLICT (id) DO UPDATE SET
+  public             = EXCLUDED.public,
+  file_size_limit    = EXCLUDED.file_size_limit,
+  allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+-- Objects are keyed {activity_id}/{material_id}/{file name}, so the first
+-- path segment is the activity and the tests below are the table's tests
+-- again.  The id is compared as text so a malformed segment is a miss, not
+-- a cast error.
+
+DROP POLICY IF EXISTS "Activity files follow their activity" ON storage.objects;
+CREATE POLICY "Activity files follow their activity"
+  ON storage.objects FOR SELECT
+  USING (
+    bucket_id = 'activity-materials'
+    AND EXISTS (
+      SELECT 1 FROM public.activities a
+      WHERE a.id::text = (storage.foldername(name))[1]
+    )
+  );
+
+DROP POLICY IF EXISTS "Authors upload files to own pending activities" ON storage.objects;
+CREATE POLICY "Authors upload files to own pending activities"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'activity-materials'
+    AND (
+      EXISTS (
+        SELECT 1 FROM public.activities a
+        WHERE a.id::text = (storage.foldername(name))[1]
+          AND a.created_by = auth.uid()
+          AND a.status = 'pending'
+      )
+      OR EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND role = 'admin'
+      )
+    )
+  );
+
+DROP POLICY IF EXISTS "Authors remove files from own pending activities" ON storage.objects;
+CREATE POLICY "Authors remove files from own pending activities"
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id = 'activity-materials'
+    AND (
+      EXISTS (
+        SELECT 1 FROM public.activities a
+        WHERE a.id::text = (storage.foldername(name))[1]
+          AND a.created_by = auth.uid()
+          AND a.status = 'pending'
+      )
+      OR EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND role = 'admin'
+      )
+    )
+  );

@@ -6,6 +6,7 @@ import {
   type Category,
   type Difficulty,
   type FreeStatus,
+  type LibraryEntry,
   type Material,
   type MaterialGroup,
   type Topic,
@@ -295,6 +296,37 @@ export function toSummary(t: Topic): TopicSummary {
     order: t.order,
     shortTitle: shortTitle(t.title),
   };
+}
+
+/**
+ * The searchable index the activity form offers: every topic page and every
+ * named material in every topic. A couple of hundred small rows, so it is
+ * handed to the form as a prop rather than searched through an API.
+ */
+export function getLibraryIndex(): LibraryEntry[] {
+  const out: LibraryEntry[] = [];
+  for (const t of getAllTopics()) {
+    const topic = shortTitle(t.title);
+    out.push({
+      kind: "topic",
+      title: t.title,
+      url: `/materials/${t.id}`,
+      topic,
+      type: "",
+    });
+    for (const g of t.materialGroups) {
+      for (const m of g.materials) {
+        out.push({
+          kind: "material",
+          title: m.name,
+          url: m.link ?? `/materials/${t.id}`,
+          topic,
+          type: m.type,
+        });
+      }
+    }
+  }
+  return out;
 }
 
 export function getTopicTitles(): Record<string, string> {

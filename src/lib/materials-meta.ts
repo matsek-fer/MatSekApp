@@ -70,6 +70,22 @@ export type TopicSummary = Pick<
   "id" | "title" | "category" | "prerequisites" | "requiredBy" | "order"
 > & { shortTitle: string };
 
+/**
+ * One row of the index the activity form searches: a topic page, or one
+ * named material (book, notes, video) inside a topic. `url` is where the
+ * activity page sends a reader — the material's own link when it has one,
+ * otherwise its topic page.
+ */
+export interface LibraryEntry {
+  kind: "topic" | "material";
+  title: string;
+  url: string;
+  /** Short topic title, shown under a material so a reader knows the field. */
+  topic: string;
+  /** Material type (book, notes, video, …); empty for a topic. */
+  type: string;
+}
+
 /** Title before the first " — " or ": " — for chips and map labels. */
 export function shortTitle(title: string): string {
   return title.split(/ — | – |: /)[0].trim();

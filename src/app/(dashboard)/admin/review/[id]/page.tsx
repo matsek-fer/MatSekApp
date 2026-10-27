@@ -11,6 +11,7 @@ import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Field";
 import { StatusBadge } from "@/components/ui/Badge";
+import ActivityMaterialsList from "@/components/activities/ActivityMaterialsList";
 
 type Action = "approve" | "deny" | null;
 
@@ -143,6 +144,15 @@ export default function AdminReviewPage({
           <div>
             <h3 className="font-medium text-fg">Ciljana publika</h3>
             <p className="mt-1 text-fg-muted">{activity.target_audience}</p>
+          </div>
+        )}
+
+        {activity.materials && activity.materials.length > 0 && (
+          <div>
+            <h3 className="font-medium text-fg">Materijali</h3>
+            <div className="mt-2">
+              <ActivityMaterialsList materials={activity.materials} />
+            </div>
           </div>
         )}
 
