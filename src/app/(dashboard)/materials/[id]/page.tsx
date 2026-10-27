@@ -12,7 +12,6 @@ import { getLang } from "@/lib/i18n/server";
 import { MATERIALS } from "@/lib/i18n/materials";
 import Markdown from "@/components/materials/Markdown";
 import AiBand from "@/components/materials/AiBand";
-import DifficultyBar from "@/components/materials/DifficultyBar";
 import StrengthDots from "@/components/materials/StrengthDots";
 import MaterialGroupList, {
   type MaterialGroupData,
@@ -48,6 +47,20 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
   const next = idx < all.length - 1 ? all[idx + 1] : null;
 
   const ai = (s: string) => topic.aiGenerated.includes(s);
+
+  // The content schema asks for hints in <details> blocks after each
+  // problem, but only some topics have them yet. The note under the heading
+  // says which case this is, instead of promising hidden hints that are not
+  // there.
+  const hasHints = /<details/i.test(topic.sections.pitchProblems);
+
+  // The MatSek section holds AI-drafted suggestions until a member writes
+  // real material; while flagged it reads as "none yet, here is what could
+  // come", never as a list of things that exist. The general page is an
+  // atlas of other people's maps, not a field the section writes for, so
+  // it carries no such panel.
+  const matsekIsDraft = ai("matsek_materials");
+  const showMatsek = topic.category !== "general";
 
   const groups: MaterialGroupData[] = topic.materialGroups.map((g) => ({
     title: g.title,
@@ -100,6 +113,7 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
 
   const toc: { id: string; label: string }[] = [];
   if (topic.sections.pitch) toc.push({ id: "pitch", label: SECTION_TITLES.pitch });
+  if (showMatsek) toc.push({ id: "matsek", label: SECTION_TITLES.matsek });
   if (topic.sections.pitchProblems)
     toc.push({ id: "problems", label: SECTION_TITLES.pitchProblems });
   if (topic.sections.prerequisites)
@@ -109,7 +123,6 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
   if (topic.sections.general) toc.push({ id: "general", label: SECTION_TITLES.general });
   if (groups.length) toc.push({ id: "materials", label: SECTION_TITLES.materials });
   if (topic.sections.problems) toc.push({ id: "exercises", label: SECTION_TITLES.problems });
-  if (topic.sections.matsek) toc.push({ id: "matsek", label: SECTION_TITLES.matsek });
 
   return (
     <div className="space-y-6">
@@ -121,56 +134,36 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
         <span>{t.categories[topic.category].label}</span>
       </nav>
 
-      <header className="rounded-xl border border-border bg-surface p-6">
+      <header>
         <h1 className="text-2xl font-bold text-fg">{topic.title}</h1>
-        <p className="mt-2 text-fg-muted leading-relaxed">{topic.tagline}</p>
-        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-fg-muted">
-          <span className="inline-flex items-center gap-2">
-            <DifficultyBar difficulty={topic.difficulty} lang={lang} size="md" />
-            <span>{t.difficultyLong(topic.difficulty)}</span>
-          </span>
-          <span>
-            {t.nMaterials(topic.counts.materials)}
-            {topic.counts.free > 0 && `, ${t.nFree(topic.counts.free)}`}
-          </span>
-          {topic.counts.problems > 0 && <span>{t.nProblems(topic.counts.problems)}</span>}
-        </div>
         {(topic.prerequisites.length > 0 || topic.requiredBy.length > 0) && (
-          <div className="mt-4 grid gap-2 sm:grid-cols-2 text-sm">
+          <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
             {topic.prerequisites.length > 0 && (
               <div>
-                <span className="text-fg-muted">{t.prerequisites} </span>
-                {topic.prerequisites.map((p) => (
-                  <Link
-                    key={p}
-                    href={`/materials/${p}`}
-                    className="mr-1 inline-block rounded bg-surface-hover px-2 py-0.5 text-fg hover:bg-brand/10 hover:text-brand"
-                  >
-                    {titles[p] ?? p}
-                  </Link>
-                ))}
+                <dt className="mb-1 text-xs uppercase tracking-wide text-fg-subtle">
+                  {t.prerequisites}
+                </dt>
+                <dd>
+                  <TopicChips ids={topic.prerequisites} titles={titles} />
+                </dd>
               </div>
             )}
             {topic.requiredBy.length > 0 && (
               <div>
-                <span className="text-fg-muted">{t.leadsTo} </span>
-                {topic.requiredBy.map((p) => (
-                  <Link
-                    key={p}
-                    href={`/materials/${p}`}
-                    className="mr-1 inline-block rounded bg-surface-hover px-2 py-0.5 text-fg hover:bg-brand/10 hover:text-brand"
-                  >
-                    {titles[p] ?? p}
-                  </Link>
-                ))}
+                <dt className="mb-1 text-xs uppercase tracking-wide text-fg-subtle">
+                  {t.leadsTo}
+                </dt>
+                <dd>
+                  <TopicChips ids={topic.requiredBy} titles={titles} />
+                </dd>
               </div>
             )}
-          </div>
+          </dl>
         )}
       </header>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_200px]">
-        <div className="space-y-10 min-w-0">
+        <div className="min-w-0 space-y-10">
           {topic.sections.pitch && (
             <Section id="pitch" title={SECTION_TITLES.pitch}>
               <AiBand active={ai("pitch")} lang={lang}>
@@ -179,11 +172,38 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
             </Section>
           )}
 
+          {showMatsek && (
+            <section
+              id="matsek"
+              className="scroll-mt-24 rounded-xl border border-brand/30 bg-brand/5 p-5"
+            >
+              <h2 className="text-xl font-semibold text-fg">{SECTION_TITLES.matsek}</h2>
+              {matsekIsDraft || !topic.sections.matsek ? (
+                <>
+                  <p className="mt-2 text-fg-muted">{t.matsekNone}</p>
+                  {topic.sections.matsek && (
+                    <div className="mt-5">
+                      <h3 className="text-base font-semibold text-fg">{t.matsekFuture}</h3>
+                      <p className="mb-3 mt-1 text-sm text-fg-muted">{t.matsekFutureHint}</p>
+                      <AiBand active lang={lang}>
+                        <Markdown topicIds={ids}>{topic.sections.matsek}</Markdown>
+                      </AiBand>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="mt-3">
+                  <Markdown topicIds={ids}>{topic.sections.matsek}</Markdown>
+                </div>
+              )}
+            </section>
+          )}
+
           {topic.sections.pitchProblems && (
             <Section
               id="problems"
               title={SECTION_TITLES.pitchProblems}
-              hint={t.problemsHint}
+              hint={hasHints ? t.problemsHint : t.problemsHintNoHints}
             >
               <AiBand active={ai("pitch_problems")} lang={lang}>
                 <Markdown topicIds={ids} className="prose-ol:space-y-6">
@@ -212,7 +232,7 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
                 </>
               }
             >
-              <ul className="grid gap-x-6 gap-y-3 sm:grid-cols-2 text-sm">
+              <ul className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
                 {connections.map((c) => {
                   const otherId = c.a === topic.id ? c.b : c.a;
                   return (
@@ -262,14 +282,6 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
             </Section>
           )}
 
-          {topic.sections.matsek && (
-            <Section id="matsek" title={SECTION_TITLES.matsek}>
-              <AiBand active={ai("matsek_materials")} lang={lang}>
-                <Markdown topicIds={ids}>{topic.sections.matsek}</Markdown>
-              </AiBand>
-            </Section>
-          )}
-
           <nav className="flex justify-between border-t border-border pt-6 text-sm">
             {prev ? (
               <Link href={`/materials/${prev.id}`} className="text-brand hover:underline">
@@ -279,7 +291,7 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
               <span />
             )}
             {next ? (
-              <Link href={`/materials/${next.id}`} className="text-brand hover:underline text-right">
+              <Link href={`/materials/${next.id}`} className="text-right text-brand hover:underline">
                 {next.title} →
               </Link>
             ) : (
@@ -309,6 +321,28 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
   );
 }
 
+function TopicChips({
+  ids,
+  titles,
+}: {
+  ids: string[];
+  titles: Record<string, string>;
+}) {
+  return (
+    <span className="flex flex-wrap gap-1">
+      {ids.map((p) => (
+        <Link
+          key={p}
+          href={`/materials/${p}`}
+          className="inline-block rounded bg-surface-hover px-2 py-0.5 text-fg hover:bg-brand/10 hover:text-brand"
+        >
+          {titles[p] ?? p}
+        </Link>
+      ))}
+    </span>
+  );
+}
+
 function Section({
   id,
   title,
@@ -323,7 +357,7 @@ function Section({
   return (
     <section id={id} className="scroll-mt-24">
       <h2 className="text-xl font-semibold text-fg">{title}</h2>
-      {hint && <p className="mt-1 mb-3 text-sm text-fg-muted">{hint}</p>}
+      {hint && <p className="mb-3 mt-1 text-sm text-fg-muted">{hint}</p>}
       <div className={hint ? "" : "mt-3"}>{children}</div>
     </section>
   );

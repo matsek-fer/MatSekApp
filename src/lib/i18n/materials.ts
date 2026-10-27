@@ -54,6 +54,7 @@ export interface MaterialsCopy {
   aiBandTitle: string;
 
   prerequisites: string;
+  /** The topic header's second row: what this topic is a prerequisite for. */
   leadsTo: string;
   openTopic: string;
   mapHint: string;
@@ -91,7 +92,14 @@ export interface MaterialsCopy {
     matsek: string;
     connections: string;
   };
+  /** Under the pitch problems when the content has <details> hints. */
   problemsHint: string;
+  /** The same, for the topics whose problems have no hints written yet. */
+  problemsHintNoHints: string;
+  /** The MatSek panel while its content is still an AI draft. */
+  matsekNone: string;
+  matsekFuture: string;
+  matsekFutureHint: string;
   /** Rendered as `before <a>link</a> after`. */
   generalHint: { before: string; link: string; after: string };
   breadcrumb: string;
@@ -204,7 +212,7 @@ const hr: MaterialsCopy = {
     "Ovaj odjeljak je generiran uz pomoć AI-ja i još ga nije pregledao član sekcije.",
 
   prerequisites: "Preduvjeti:",
-  leadsTo: "Vodi u:",
+  leadsTo: "Preduvjet za:",
   openTopic: "Otvori temu →",
   mapHint:
     "Slijeva nadesno: tema stoji desno od svojih preduvjeta. Klikni temu za njezine veze, dvaput za otvaranje.",
@@ -234,8 +242,8 @@ const hr: MaterialsCopy = {
   weaknesses: "Nedostaci",
 
   sections: {
-    pitch: "Zašto ova tema",
-    pitchProblems: "Problemi za početak",
+    pitch: "Uvod",
+    pitchProblems: "Pitch problemi",
     prerequisites: "Preduvjeti",
     general: "Iz općih materijala",
     materials: "Materijali",
@@ -244,7 +252,13 @@ const hr: MaterialsCopy = {
     connections: "Veze s drugim temama",
   },
   problemsHint:
-    "Problemi koji se mogu razumjeti (i napasti) bez poznavanja teorije. Upute su skrivene — otvori ih tek kad zapneš.",
+    "Problemi koji se mogu razumjeti (i napasti) bez poznavanja teorije. Upute su sklopljene ispod svakog problema — otvori ih tek kad zapneš.",
+  problemsHintNoHints:
+    "Problemi koji se mogu razumjeti (i napasti) bez poznavanja teorije. Upute za ovu temu još nisu napisane.",
+  matsekNone: "Trenutno nema MatSek materijala za ovo područje.",
+  matsekFuture: "Budući MatSek materijali",
+  matsekFutureHint:
+    "Prijedlozi što bi sekcija mogla napisati ili održati — skripte, zadaci, planovi sesija.",
   generalHint: {
     before: "Dijelovi ",
     link: "općih materijala",
@@ -324,7 +338,7 @@ const en: MaterialsCopy = {
     "This section was generated with AI and has not yet been reviewed by a member of the section.",
 
   prerequisites: "Prerequisites:",
-  leadsTo: "Leads to:",
+  leadsTo: "Prerequisite for:",
   openTopic: "Open topic →",
   mapHint:
     "Left to right: a topic sits to the right of its prerequisites. Click a topic to see its links, click again to open it.",
@@ -354,8 +368,8 @@ const en: MaterialsCopy = {
   weaknesses: "Weaknesses",
 
   sections: {
-    pitch: "Why this topic",
-    pitchProblems: "Problems to start with",
+    pitch: "Introduction",
+    pitchProblems: "Pitch problems",
     prerequisites: "Prerequisites",
     general: "From the general materials",
     materials: "Materials",
@@ -364,7 +378,13 @@ const en: MaterialsCopy = {
     connections: "Connections to other topics",
   },
   problemsHint:
-    "Problems you can understand (and attack) without knowing the theory. The hints are hidden — open them only when you are stuck.",
+    "Problems you can understand (and attack) without knowing the theory. The hints are folded under each problem — open them only when you are stuck.",
+  problemsHintNoHints:
+    "Problems you can understand (and attack) without knowing the theory. Hints for this topic have not been written yet.",
+  matsekNone: "There are no MatSek materials for this field yet.",
+  matsekFuture: "Future MatSek materials",
+  matsekFutureHint:
+    "What the section could write or run — scripts, problem sheets, session plans.",
   generalHint: {
     before: "The parts of the ",
     link: "general materials",
