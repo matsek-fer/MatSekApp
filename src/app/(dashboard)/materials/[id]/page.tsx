@@ -3,14 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   CATEGORY_META,
-  DIFFICULTY_LABELS,
   getAllTopics,
   getTopic,
   getTopicTitles,
 } from "@/lib/materials";
 import Markdown from "@/components/materials/Markdown";
 import AiBand from "@/components/materials/AiBand";
-import DifficultyBar from "@/components/materials/DifficultyBar";
 import MaterialGroupList, {
   type MaterialGroupData,
 } from "@/components/materials/MaterialGroupList";
@@ -27,13 +25,13 @@ export function generateMetadata({
 }
 
 const SECTION_TITLES = {
-  pitch: "Zašto ova tema",
-  pitchProblems: "Problemi za početak",
+  pitch: "Uvod",
+  matsek: "MatSek materijali",
+  pitchProblems: "Pitch problemi",
   prerequisites: "Preduvjeti",
   general: "Iz općih materijala",
   materials: "Materijali",
   problems: "Zadaci i nastavak",
-  matsek: "MatSek materijali",
 } as const;
 
 export default function TopicPage({ params }: { params: { id: string } }) {
@@ -48,6 +46,20 @@ export default function TopicPage({ params }: { params: { id: string } }) {
   const next = idx < all.length - 1 ? all[idx + 1] : null;
 
   const ai = (s: string) => topic.aiGenerated.includes(s);
+
+  // The content schema asks for hints in <details> blocks after each
+  // problem, but only some topics have them yet. The note under the heading
+  // says which case this is, instead of promising hidden hints that are not
+  // there.
+  const hasHints = /<details/i.test(topic.sections.pitchProblems);
+
+  // The MatSek section holds AI-drafted suggestions until a member writes
+  // real material; while flagged it reads as "none yet, here is what could
+  // come", never as a list of things that exist.
+  const matsekIsDraft = ai("matsek_materials");
+  // The general page is an atlas of other people's maps, not a field the
+  // section writes for, so it carries no MatSek panel.
+  const showMatsek = topic.category !== "general";
 
   const groups: MaterialGroupData[] = topic.materialGroups.map((g) => ({
     title: g.title,
@@ -100,6 +112,7 @@ export default function TopicPage({ params }: { params: { id: string } }) {
 
   const toc: { id: string; label: string }[] = [];
   if (topic.sections.pitch) toc.push({ id: "pitch", label: SECTION_TITLES.pitch });
+  if (showMatsek) toc.push({ id: "matsek", label: SECTION_TITLES.matsek });
   if (topic.sections.pitchProblems)
     toc.push({ id: "problems", label: SECTION_TITLES.pitchProblems });
   if (topic.sections.prerequisites)
@@ -107,7 +120,6 @@ export default function TopicPage({ params }: { params: { id: string } }) {
   if (topic.sections.general) toc.push({ id: "general", label: SECTION_TITLES.general });
   if (groups.length) toc.push({ id: "materials", label: SECTION_TITLES.materials });
   if (topic.sections.problems) toc.push({ id: "exercises", label: SECTION_TITLES.problems });
-  if (topic.sections.matsek) toc.push({ id: "matsek", label: SECTION_TITLES.matsek });
 
   return (
     <div className="space-y-6">
@@ -119,67 +131,36 @@ export default function TopicPage({ params }: { params: { id: string } }) {
         <span>{CATEGORY_META[topic.category].label}</span>
       </nav>
 
-      <header className="rounded-xl border border-border bg-surface p-6">
+      <header>
         <h1 className="text-2xl font-bold text-fg">{topic.title}</h1>
-        <p className="mt-2 text-fg-muted leading-relaxed">{topic.tagline}</p>
-        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-fg-muted">
-          <span className="inline-flex items-center gap-2">
-            <DifficultyBar difficulty={topic.difficulty} size="md" />
-            {topic.difficulty ? (
-              <span>
-                težina{" "}
-                {topic.difficulty.min === topic.difficulty.max
-                  ? `${topic.difficulty.min} (${DIFFICULTY_LABELS[topic.difficulty.min]})`
-                  : `${topic.difficulty.min}–${topic.difficulty.max} (${
-                      DIFFICULTY_LABELS[topic.difficulty.min]
-                    } → ${DIFFICULTY_LABELS[topic.difficulty.max]})`}
-              </span>
-            ) : (
-              <span>težina nije označena</span>
-            )}
-          </span>
-          <span>
-            {topic.counts.materials} materijala
-            {topic.counts.free > 0 && `, ${topic.counts.free} besplatnih`}
-          </span>
-          {topic.counts.problems > 0 && <span>{topic.counts.problems} problema</span>}
-        </div>
         {(topic.prerequisites.length > 0 || topic.requiredBy.length > 0) && (
-          <div className="mt-4 grid gap-2 sm:grid-cols-2 text-sm">
+          <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
             {topic.prerequisites.length > 0 && (
               <div>
-                <span className="text-fg-muted">Traži: </span>
-                {topic.prerequisites.map((p) => (
-                  <Link
-                    key={p}
-                    href={`/materials/${p}`}
-                    className="mr-1 inline-block rounded bg-surface-hover px-2 py-0.5 text-fg hover:bg-brand/10 hover:text-brand"
-                  >
-                    {titles[p] ?? p}
-                  </Link>
-                ))}
+                <dt className="mb-1 text-xs uppercase tracking-wide text-fg-subtle">
+                  Preduvjeti
+                </dt>
+                <dd>
+                  <TopicChips ids={topic.prerequisites} titles={titles} />
+                </dd>
               </div>
             )}
             {topic.requiredBy.length > 0 && (
               <div>
-                <span className="text-fg-muted">Vodi u: </span>
-                {topic.requiredBy.map((p) => (
-                  <Link
-                    key={p}
-                    href={`/materials/${p}`}
-                    className="mr-1 inline-block rounded bg-surface-hover px-2 py-0.5 text-fg hover:bg-brand/10 hover:text-brand"
-                  >
-                    {titles[p] ?? p}
-                  </Link>
-                ))}
+                <dt className="mb-1 text-xs uppercase tracking-wide text-fg-subtle">
+                  Preduvjet za
+                </dt>
+                <dd>
+                  <TopicChips ids={topic.requiredBy} titles={titles} />
+                </dd>
               </div>
             )}
-          </div>
+          </dl>
         )}
       </header>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_200px]">
-        <div className="space-y-10 min-w-0">
+        <div className="min-w-0 space-y-10">
           {topic.sections.pitch && (
             <Section id="pitch" title={SECTION_TITLES.pitch}>
               <AiBand active={ai("pitch")}>
@@ -188,11 +169,49 @@ export default function TopicPage({ params }: { params: { id: string } }) {
             </Section>
           )}
 
+          {showMatsek && (
+          <section
+            id="matsek"
+            className="scroll-mt-24 rounded-xl border border-brand/30 bg-brand/5 p-5"
+          >
+            <h2 className="text-xl font-semibold text-fg">{SECTION_TITLES.matsek}</h2>
+            {matsekIsDraft || !topic.sections.matsek ? (
+              <>
+                <p className="mt-2 text-fg-muted">
+                  Trenutno nema MatSek materijala za ovo područje.
+                </p>
+                {topic.sections.matsek && (
+                  <div className="mt-5">
+                    <h3 className="text-base font-semibold text-fg">
+                      Budući MatSek materijali
+                    </h3>
+                    <p className="mb-3 mt-1 text-sm text-fg-muted">
+                      Prijedlozi što bi sekcija mogla napisati ili održati —
+                      skripte, zadaci, planovi sesija.
+                    </p>
+                    <AiBand active>
+                      <Markdown topicIds={ids}>{topic.sections.matsek}</Markdown>
+                    </AiBand>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="mt-3">
+                <Markdown topicIds={ids}>{topic.sections.matsek}</Markdown>
+              </div>
+            )}
+          </section>
+          )}
+
           {topic.sections.pitchProblems && (
             <Section
               id="problems"
               title={SECTION_TITLES.pitchProblems}
-              hint="Problemi koji se mogu razumjeti (i napasti) bez poznavanja teorije. Upute su skrivene — otvori ih tek kad zapneš."
+              hint={
+                hasHints
+                  ? "Problemi koji se mogu razumjeti (i napasti) bez poznavanja teorije. Upute su sklopljene ispod svakog problema — otvori ih tek kad zapneš."
+                  : "Problemi koji se mogu razumjeti (i napasti) bez poznavanja teorije. Upute za ovu temu još nisu napisane."
+              }
             >
               <AiBand active={ai("pitch_problems")}>
                 <Markdown topicIds={ids} className="prose-ol:space-y-6">
@@ -238,14 +257,6 @@ export default function TopicPage({ params }: { params: { id: string } }) {
             </Section>
           )}
 
-          {topic.sections.matsek && (
-            <Section id="matsek" title={SECTION_TITLES.matsek}>
-              <AiBand active={ai("matsek_materials")}>
-                <Markdown topicIds={ids}>{topic.sections.matsek}</Markdown>
-              </AiBand>
-            </Section>
-          )}
-
           <nav className="flex justify-between border-t border-border pt-6 text-sm">
             {prev ? (
               <Link href={`/materials/${prev.id}`} className="text-brand hover:underline">
@@ -255,7 +266,7 @@ export default function TopicPage({ params }: { params: { id: string } }) {
               <span />
             )}
             {next ? (
-              <Link href={`/materials/${next.id}`} className="text-brand hover:underline text-right">
+              <Link href={`/materials/${next.id}`} className="text-right text-brand hover:underline">
                 {next.title} →
               </Link>
             ) : (
@@ -285,6 +296,28 @@ export default function TopicPage({ params }: { params: { id: string } }) {
   );
 }
 
+function TopicChips({
+  ids,
+  titles,
+}: {
+  ids: string[];
+  titles: Record<string, string>;
+}) {
+  return (
+    <span className="flex flex-wrap gap-1">
+      {ids.map((p) => (
+        <Link
+          key={p}
+          href={`/materials/${p}`}
+          className="inline-block rounded bg-surface-hover px-2 py-0.5 text-fg hover:bg-brand/10 hover:text-brand"
+        >
+          {titles[p] ?? p}
+        </Link>
+      ))}
+    </span>
+  );
+}
+
 function Section({
   id,
   title,
@@ -299,7 +332,7 @@ function Section({
   return (
     <section id={id} className="scroll-mt-24">
       <h2 className="text-xl font-semibold text-fg">{title}</h2>
-      {hint && <p className="mt-1 mb-3 text-sm text-fg-muted">{hint}</p>}
+      {hint && <p className="mb-3 mt-1 text-sm text-fg-muted">{hint}</p>}
       <div className={hint ? "" : "mt-3"}>{children}</div>
     </section>
   );
