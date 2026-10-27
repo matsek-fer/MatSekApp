@@ -1,12 +1,14 @@
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
 import { pickActivityFields } from "@/lib/validation";
+import { withDownloadUrls } from "@/lib/activity-materials";
 import type { ApiResponse, Activity } from "@/types";
 
 /**
  * GET /api/activities/[id]
  *
- * Returns a single activity by ID.
+ * Returns a single activity by ID, with its materials. File materials carry
+ * a short-lived download URL minted under the caller's own permissions.
  * Respects RLS: anonymous sees only approved; users see own + approved; admins see all.
  */
 export async function GET(
@@ -19,7 +21,9 @@ export async function GET(
 
     const { data: activity, error } = await supabase
       .from("activities")
-      .select("*, creator:profiles!created_by(id, full_name)")
+      .select(
+        "*, creator:profiles!created_by(id, full_name), materials:activity_materials(*)"
+      )
       .eq("id", id)
       .single();
 
@@ -30,8 +34,10 @@ export async function GET(
       );
     }
 
+    const materials = await withDownloadUrls(supabase, activity.materials ?? []);
+
     return NextResponse.json<ApiResponse<Activity>>(
-      { success: true, data: activity },
+      { success: true, data: { ...activity, materials } },
       { status: 200 }
     );
   } catch (err) {

@@ -32,7 +32,8 @@ src/
 │   └── globals.css            Design tokens. Start here for anything visual.
 ├── components/
 │   ├── ui/                    Button, Card, Badge, Field, Alert, Logo, ThemeToggle
-│   ├── activities/            ActivityBrowser, ActivityListItem, ActivityTimeline
+│   ├── activities/            ActivityBrowser, ActivityListItem, ActivityTimeline,
+│   │                          NewActivityForm + ActivityMaterialsEditor, ActivityMaterialsList
 │   ├── layout/                VoronoiNavbarLink
 │   ├── landing/               ContentPanel
 │   └── notifications/         NotificationBell
@@ -40,6 +41,8 @@ src/
 │   ├── ascii-tree.ts          Procedural tree generator (the largest file here)
 │   ├── supabase/              server.ts (RLS + admin) · middleware.ts · client.ts
 │   ├── validation.ts          Domain lock, enum guards, writable-field whitelist
+│   ├── activity-materials.ts  Signed download URLs for uploaded activity materials
+│   ├── materials.ts           Loader for content/materials (topics, connections, library index)
 │   ├── theme.ts               Dark mode, applied before first paint
 │   └── email.ts               Nodemailer transport + Croatian HTML templates
 └── types/index.ts             Row types, payloads, ApiResponse, Croatian labels
