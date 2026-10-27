@@ -21,35 +21,22 @@ import {
 export interface MaterialsCopy {
   meta: { title: string; description: string };
   heading: string;
-  lede: string;
 
-  categories: Record<Category, { label: string; description: string }>;
-  difficultyLabels: Record<number, string>;
+  categories: Record<Category, { label: string }>;
   /** Lower-case noun for "težina 2–3" badges. */
   difficultyWord: string;
   /** Tooltip of the difficulty bar. */
   difficultyTitle: (d: Difficulty | null) => string;
-  /** The topic header's line: level, then the labels in brackets. */
-  difficultyLong: (d: Difficulty | null) => string;
 
   nMaterials: (n: number) => string;
-  nFree: (n: number) => string;
-  nProblems: (n: number) => string;
-  nSources: (n: number) => string;
 
   searchPlaceholder: string;
   searchLabel: string;
-  filterByDifficulty: string;
-  difficulty: string;
-  reset: string;
   viewGrid: string;
   viewMap: string;
   viewConnections: string;
-  legendSummary: string;
   noMatch: string;
 
-  aiBadge: string;
-  aiBadgeTitle: string;
   aiBand: string;
   aiBandTitle: string;
 
@@ -149,32 +136,13 @@ const hr: MaterialsCopy = {
       "Pregled tema i materijala za učenje matematike: od klasičnih područja preko teorije kategorija do naprednih tema.",
   },
   heading: "Materijali",
-  lede:
-    "Karta tema kojima se sekcija bavi. Svaka tema ima kratki uvod, tri problema za početak, popis preduvjeta i odabrane materijale (knjige, skripte, videe, zadatke) s ocjenom težine i kratkim komentarom. Klikni na temu za detalje; u „karti preduvjeta” vidiš što se na što oslanja.",
 
   categories: {
-    general: {
-      label: "Opći materijali",
-      description:
-        "Atlasi, indeksi i kanali koji pokrivaju cijelu matematiku — za orijentaciju prije odabira teme.",
-    },
-    classical: {
-      label: "Uvod u klasična područja",
-      description:
-        "Analiza, algebra, kombinatorika, vjerojatnost, topologija, logika i računarstvo — temelji na koje se sve ostalo oslanja.",
-    },
-    language: {
-      label: "Kategorije i slično",
-      description:
-        "Teorija kategorija i teorija tipova: što ih čini moćnima, kompozicionalnost, i klasična područja gledana s više razine.",
-    },
-    advanced: {
-      label: "Napredno i specijalizirano",
-      description:
-        "Nastavak klasičnih područja, primjene u fizici, napredna logika, geometrija, računarstvo i teorija igara.",
-    },
+    general: { label: "Opći materijali" },
+    classical: { label: "Uvod u klasična područja" },
+    language: { label: "Kategorije i slično" },
+    advanced: { label: "Napredno i specijalizirano" },
   },
-  difficultyLabels: HR_LEVELS,
   difficultyWord: "težina",
   difficultyTitle: (d) =>
     !d
@@ -182,31 +150,16 @@ const hr: MaterialsCopy = {
       : d.min === d.max
         ? `Težina ${d.min} — ${HR_LEVELS[d.min]}`
         : `Težina ${range(d)} — od „${HR_LEVELS[d.min]}” do „${HR_LEVELS[d.max]}”`,
-  difficultyLong: (d) =>
-    !d
-      ? "težina nije označena"
-      : d.min === d.max
-        ? `težina ${d.min} (${HR_LEVELS[d.min]})`
-        : `težina ${range(d)} (${HR_LEVELS[d.min]} → ${HR_LEVELS[d.max]})`,
 
   nMaterials: hrMaterials,
-  nFree: (n) => hrN(n, "besplatan", "besplatna", "besplatnih"),
-  nProblems: (n) => hrN(n, "problem", "problema", "problema"),
-  nSources: (n) => hrN(n, "izvor", "izvora", "izvora"),
 
   searchPlaceholder: "Pretraži teme…",
   searchLabel: "Pretraži teme",
-  filterByDifficulty: "Filtriraj po težini",
-  difficulty: "Težina",
-  reset: "poništi",
-  viewGrid: "Pregled",
+  viewGrid: "Popis",
   viewMap: "Karta preduvjeta",
   viewConnections: "Karta veza",
-  legendSummary: "Što znače razine težine?",
-  noMatch: "Nijedna tema ne odgovara filtru.",
+  noMatch: "Nijedna tema ne odgovara pretrazi.",
 
-  aiBadge: "AI",
-  aiBadgeTitle: "Uvod i problemi su AI nacrt — još nisu pregledani",
   aiBand: "AI nacrt",
   aiBandTitle:
     "Ovaj odjeljak je generiran uz pomoć AI-ja i još ga nije pregledao član sekcije.",
@@ -275,32 +228,13 @@ const en: MaterialsCopy = {
       "A map of topics and materials for learning mathematics: from the classical fields through category theory to advanced topics.",
   },
   heading: "Materials",
-  lede:
-    "A map of the topics the section works on. Each topic has a short introduction, three problems to start with, a list of prerequisites and a curated set of materials (books, notes, videos, problem sets) with a difficulty rating and a short comment. Click a topic for details; the prerequisite map shows what rests on what.",
 
   categories: {
-    general: {
-      label: "General materials",
-      description:
-        "Atlases, indices and channels that cover all of mathematics — for orientation before choosing a topic.",
-    },
-    classical: {
-      label: "Introductions to classical fields",
-      description:
-        "Analysis, algebra, combinatorics, probability, topology, logic and computer science — the foundations everything else rests on.",
-    },
-    language: {
-      label: "Categories and the like",
-      description:
-        "Category theory and type theory: what makes them powerful, compositionality, and the classical fields seen from a higher vantage point.",
-    },
-    advanced: {
-      label: "Advanced and specialised",
-      description:
-        "The classical fields continued, applications in physics, advanced logic, geometry, computer science and game theory.",
-    },
+    general: { label: "General materials" },
+    classical: { label: "Introductions to classical fields" },
+    language: { label: "Categories and the like" },
+    advanced: { label: "Advanced and specialised" },
   },
-  difficultyLabels: EN_LEVELS,
   difficultyWord: "difficulty",
   difficultyTitle: (d) =>
     !d
@@ -308,31 +242,16 @@ const en: MaterialsCopy = {
       : d.min === d.max
         ? `Difficulty ${d.min} — ${EN_LEVELS[d.min]}`
         : `Difficulty ${range(d)} — from “${EN_LEVELS[d.min]}” to “${EN_LEVELS[d.max]}”`,
-  difficultyLong: (d) =>
-    !d
-      ? "difficulty not marked"
-      : d.min === d.max
-        ? `difficulty ${d.min} (${EN_LEVELS[d.min]})`
-        : `difficulty ${range(d)} (${EN_LEVELS[d.min]} → ${EN_LEVELS[d.max]})`,
 
   nMaterials: enMaterials,
-  nFree: (n) => `${n} free`,
-  nProblems: (n) => enN(n, "problem", "problems"),
-  nSources: (n) => enN(n, "source", "sources"),
 
   searchPlaceholder: "Search topics…",
   searchLabel: "Search topics",
-  filterByDifficulty: "Filter by difficulty",
-  difficulty: "Difficulty",
-  reset: "clear",
-  viewGrid: "Overview",
+  viewGrid: "List",
   viewMap: "Prerequisite map",
   viewConnections: "Connections map",
-  legendSummary: "What do the difficulty levels mean?",
-  noMatch: "No topic matches the filter.",
+  noMatch: "No topic matches the search.",
 
-  aiBadge: "AI",
-  aiBadgeTitle: "The introduction and problems are an AI draft — not yet reviewed",
   aiBand: "AI draft",
   aiBandTitle:
     "This section was generated with AI and has not yet been reviewed by a member of the section.",

@@ -17,20 +17,21 @@ import ConnectionsMap from "./ConnectionsMap";
 import { cn } from "@/lib/utils";
 
 /**
- * The overview: search + difficulty filter, then the category grid, the
- * prerequisite map or the connections map. Filters narrow all three views
- * the same way.
+ * The overview: a search box, then the topics listed by category, the
+ * prerequisite map or the connections map. Nothing else — the page is a
+ * list of names to open one at a time, and everything about a topic lives
+ * on its own page. The search narrows all three views the same way.
  */
 export default function MaterialsExplorer({
   topics,
-  general,
+  hasGeneral,
   titles,
   connections,
   lang,
   initialView = "grid",
 }: {
   topics: TopicSummary[];
-  general: TopicSummary | null;
+  hasGeneral: boolean;
   titles: Record<string, string>;
   connections: ConnectionSummary[];
   lang: Lang;
@@ -44,76 +45,34 @@ export default function MaterialsExplorer({
     connections: t.viewConnections,
   };
   const [query, setQuery] = useState("");
-  const [levels, setLevels] = useState<Set<number>>(new Set());
   const [view, setView] = useState<View>(initialView);
 
   const matching = useMemo(() => {
     const q = query.trim().toLowerCase();
     const ids = topics
-      .filter((t) => {
-        if (levels.size && !t.levels.some((l) => levels.has(l))) return false;
-        if (!q) return true;
-        return (
-          t.title.toLowerCase().includes(q) ||
-          t.tagline.toLowerCase().includes(q) ||
-          t.id.includes(q)
-        );
-      })
-      .map((t) => t.id);
+      .filter(
+        (topic) =>
+          !q ||
+          topic.title.toLowerCase().includes(q) ||
+          topic.shortTitle.toLowerCase().includes(q) ||
+          topic.id.includes(q)
+      )
+      .map((topic) => topic.id);
     return new Set(ids);
-  }, [topics, query, levels]);
-
-  const toggleLevel = (l: number) =>
-    setLevels((s) => {
-      const n = new Set(s);
-      n.has(l) ? n.delete(l) : n.add(l);
-      return n;
-    });
+  }, [topics, query]);
 
   return (
     <div className="space-y-8">
-      {/* Controls */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t.searchPlaceholder}
-            aria-label={t.searchLabel}
-            className="field text-sm sm:max-w-xs"
-          />
-          <div className="flex items-center gap-1" role="group" aria-label={t.filterByDifficulty}>
-            <span className="mr-1 text-xs text-fg-muted">{t.difficulty}</span>
-            {[1, 2, 3, 4, 5].map((l) => (
-              <button
-                key={l}
-                type="button"
-                onClick={() => toggleLevel(l)}
-                title={t.difficultyLabels[l]}
-                aria-pressed={levels.has(l)}
-                className={cn(
-                  "h-8 w-8 rounded-md border text-sm font-medium transition-colors",
-                  levels.has(l)
-                    ? "border-brand bg-brand text-brand-fg"
-                    : "border-border-strong bg-surface text-fg hover:bg-surface-hover"
-                )}
-              >
-                {l}
-              </button>
-            ))}
-            {levels.size > 0 && (
-              <button
-                type="button"
-                onClick={() => setLevels(new Set())}
-                className="ml-1 text-xs text-fg-muted hover:text-fg"
-              >
-                {t.reset}
-              </button>
-            )}
-          </div>
-        </div>
-        <div className="inline-flex rounded-lg border border-border-strong bg-surface p-0.5 self-start">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t.searchPlaceholder}
+          aria-label={t.searchLabel}
+          className="field text-sm sm:max-w-xs"
+        />
+        <div className="inline-flex self-start rounded-lg border border-border-strong bg-surface p-0.5">
           {VIEWS.map((v) => (
             <button
               key={v}
@@ -133,37 +92,14 @@ export default function MaterialsExplorer({
         </div>
       </div>
 
-      {/* Difficulty legend */}
-      <details className="text-sm text-fg-muted">
-        <summary className="cursor-pointer select-none text-fg-muted hover:text-fg">
-          {t.legendSummary}
-        </summary>
-        <ol className="mt-2 grid gap-1 sm:grid-cols-5">
-          {[1, 2, 3, 4, 5].map((l) => (
-            <li key={l} className="rounded-md bg-surface-hover px-3 py-2">
-              <span className="font-semibold text-fg">{l}</span>{" "}
-              <span>{t.difficultyLabels[l]}</span>
-            </li>
-          ))}
-        </ol>
-      </details>
-
-      {/* General materials strip */}
-      {general && (
+      {hasGeneral && (
         <Link
           href="/materials/general"
-          className="flex flex-col gap-2 rounded-xl border border-brand/30 bg-brand/5 px-5 py-4
-                     hover:bg-brand/10 transition-colors sm:flex-row sm:items-center sm:justify-between"
+          className="flex items-center justify-between gap-4 rounded-xl border border-brand/30 bg-brand/5 px-5 py-4
+                     transition-colors hover:bg-brand/10"
         >
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-wide text-brand">
-              {t.categories.general.label}
-            </div>
-            <p className="text-sm text-fg">{general.tagline}</p>
-          </div>
-          <span className="text-sm text-brand whitespace-nowrap">
-            {t.nSources(general.counts.materials)} →
-          </span>
+          <span className="font-medium text-fg">{t.categories.general.label}</span>
+          <span className="whitespace-nowrap text-sm text-brand">→</span>
         </Link>
       )}
 
@@ -178,39 +114,24 @@ export default function MaterialsExplorer({
           lang={lang}
         />
       ) : (
-        <div className="space-y-10">
+        <div className="space-y-8">
           {CATEGORY_ORDER.map((cat) => {
-            const inCat = topics.filter((t) => t.category === cat);
-            const shown = inCat.filter((t) => matching.has(t.id));
+            const inCat = topics.filter((topic) => topic.category === cat);
+            const shown = inCat.filter((topic) => matching.has(topic.id));
             if (inCat.length === 0) return null;
             return (
               <section key={cat} aria-labelledby={`cat-${cat}`}>
-                <div className="mb-3 flex items-baseline justify-between gap-4">
-                  <div>
-                    <h2
-                      id={`cat-${cat}`}
-                      className="text-lg font-semibold text-fg"
-                    >
-                      {t.categories[cat].label}
-                    </h2>
-                    <p className="text-sm text-fg-muted">
-                      {t.categories[cat].description}
-                    </p>
-                  </div>
-                  <span className="text-xs text-fg-subtle whitespace-nowrap">
-                    {shown.length}/{inCat.length}
-                  </span>
-                </div>
+                <h2 id={`cat-${cat}`} className="mb-3 text-lg font-semibold text-fg">
+                  {t.categories[cat].label}
+                </h2>
                 {shown.length === 0 ? (
-                  <p className="text-sm text-fg-subtle italic">
-                    {t.noMatch}
-                  </p>
+                  <p className="text-sm italic text-fg-subtle">{t.noMatch}</p>
                 ) : (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
                     {shown.map((topic) => (
                       <TopicCard key={topic.id} topic={topic} titles={titles} lang={lang} />
                     ))}
-                  </div>
+                  </ul>
                 )}
               </section>
             );

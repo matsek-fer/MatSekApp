@@ -258,17 +258,6 @@ export function getAllTopics(): Topic[] {
     const { data, content } = matter(raw);
     const { sections, groups } = parseBody(content);
 
-    const materials = groups.flatMap((g) => g.materials);
-    const withDifficulty = materials.filter((m) => m.difficulty);
-    const difficulty: Difficulty | null = withDifficulty.length
-      ? {
-          min: Math.min(...withDifficulty.map((m) => m.difficulty!.min)),
-          max: Math.max(...withDifficulty.map((m) => m.difficulty!.max)),
-        }
-      : null;
-    const problems = (sections.pitchProblems.match(/^\d+\.\s+\*\*/gm) ?? [])
-      .length;
-
     const id = String(data.id ?? path.basename(file, ".md"));
     return {
       id,
@@ -281,12 +270,6 @@ export function getAllTopics(): Topic[] {
       aiGenerated: asStringArray(data.ai_generated),
       sections,
       materialGroups: groups,
-      difficulty,
-      counts: {
-        materials: materials.length,
-        free: materials.filter((m) => m.free === "yes").length,
-        problems,
-      },
       order: order.get(id) ?? 1000,
     };
   });
@@ -316,25 +299,13 @@ export function getTopic(id: string): Topic | undefined {
 }
 
 export function toSummary(t: Topic): TopicSummary {
-  const levels: number[] = [];
-  for (const g of t.materialGroups)
-    for (const m of g.materials)
-      if (m.difficulty)
-        for (let l = m.difficulty.min; l <= m.difficulty.max; l++)
-          if (!levels.includes(l)) levels.push(l);
-  levels.sort();
   return {
     id: t.id,
     title: t.title,
     category: t.category,
-    tagline: t.tagline,
     prerequisites: t.prerequisites,
     requiredBy: t.requiredBy,
-    aiGenerated: t.aiGenerated,
-    difficulty: t.difficulty,
-    counts: t.counts,
     order: t.order,
-    levels,
     shortTitle: shortTitle(t.title),
   };
 }

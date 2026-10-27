@@ -34,13 +34,10 @@ export default async function MaterialsPage({
 
   return (
     <div className="space-y-6">
-      <header className="max-w-3xl">
-        <h1 className="text-2xl font-bold text-fg">{t.heading}</h1>
-        <p className="mt-2 text-fg-muted leading-relaxed">{t.lede}</p>
-      </header>
+      <h1 className="text-2xl font-bold text-fg">{t.heading}</h1>
       <MaterialsExplorer
         topics={topics}
-        general={general ? toSummary(general) : null}
+        hasGeneral={Boolean(general)}
         titles={titles}
         connections={connections}
         lang={lang}

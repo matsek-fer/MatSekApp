@@ -17,8 +17,8 @@ const NODE_W = 204;
 const NODE_H = 46;
 const LAYER_W = 270;
 const ROW_H = 58;
-/** Label budget in px: the label starts 14px in, the difficulty squares at 154px. */
-const LABEL_PX = 136;
+/** Label budget in px: the label starts 14px in and keeps 10px off the right edge. */
+const LABEL_PX = 180;
 const PAD_X = 20;
 const PAD_Y = 24;
 
@@ -319,24 +319,6 @@ export default function PrereqMap({
                     </text>
                   );
                 })()}
-                {topic.difficulty && (
-                  <g transform={`translate(${NODE_W - 10 - 5 * 8} ${NODE_H / 2 - 3})`}>
-                    {[1, 2, 3, 4, 5].map((l) => (
-                      <rect
-                        key={l}
-                        x={(l - 1) * 8}
-                        width={6}
-                        height={6}
-                        rx={1}
-                        className={
-                          l >= topic.difficulty!.min && l <= topic.difficulty!.max
-                            ? "fill-brand"
-                            : "fill-border"
-                        }
-                      />
-                    ))}
-                  </g>
-                )}
               </g>
             );
           })}

@@ -58,25 +58,18 @@ export interface Topic {
   aiGenerated: string[];
   sections: TopicSections;
   materialGroups: MaterialGroup[];
-  difficulty: Difficulty | null;
-  counts: { materials: number; free: number; problems: number };
   order: number;
 }
 
-/** Everything the overview needs, and nothing that is heavy. */
+/**
+ * Everything the overview and the maps need, and nothing that is heavy.
+ * The overview is a list of names to explore one by one: no tagline, no
+ * difficulty, no counts — difficulty belongs to a book, not to a field.
+ */
 export type TopicSummary = Pick<
   Topic,
-  | "id"
-  | "title"
-  | "category"
-  | "tagline"
-  | "prerequisites"
-  | "requiredBy"
-  | "aiGenerated"
-  | "difficulty"
-  | "counts"
-  | "order"
-> & { levels: number[]; shortTitle: string };
+  "id" | "title" | "category" | "prerequisites" | "requiredBy" | "order"
+> & { shortTitle: string };
 
 /**
  * One row of the index the activity form searches: a topic page, or one
