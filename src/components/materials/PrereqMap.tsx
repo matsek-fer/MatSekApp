@@ -184,24 +184,6 @@ export default function PrereqMap({
               >
                 {shorten(titles[t.id] ?? t.id)}
               </text>
-              {t.difficulty && (
-                <g transform={`translate(${NODE_W - 12 - 5 * 9} ${NODE_H / 2 - 3})`}>
-                  {[1, 2, 3, 4, 5].map((l) => (
-                    <rect
-                      key={l}
-                      x={(l - 1) * 9}
-                      width={7}
-                      height={6}
-                      rx={1}
-                      className={
-                        l >= t.difficulty!.min && l <= t.difficulty!.max
-                          ? "fill-brand"
-                          : "fill-border"
-                      }
-                    />
-                  ))}
-                </g>
-              )}
             </g>
           );
         })}
