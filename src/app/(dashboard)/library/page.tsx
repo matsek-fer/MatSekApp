@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { getLang } from "@/lib/i18n/server";
 import type { Lang } from "@/lib/i18n";
-
-const LIBRARY_SITE = "https://matsek-fer.github.io/library/";
-const LIBRARY_REPO = "https://github.com/matsek-fer/library";
+import { LIBRARY_REPO_URL, LIBRARY_SITE_URL } from "@/lib/library";
 
 /**
  * A placeholder until the library is rendered here natively. The library
@@ -62,7 +60,7 @@ export default async function LibraryPage() {
         <p className="text-sm text-fg-muted">{t.meanwhile}</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <a
-            href={LIBRARY_SITE}
+            href={LIBRARY_SITE_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center rounded-lg bg-brand px-4 py-2 text-sm font-medium text-brand-fg hover:bg-brand/90"
@@ -70,7 +68,7 @@ export default async function LibraryPage() {
             {t.site} →
           </a>
           <a
-            href={LIBRARY_REPO}
+            href={LIBRARY_REPO_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center rounded-lg border border-border-strong bg-surface px-4 py-2 text-sm font-medium text-fg hover:bg-surface-hover"

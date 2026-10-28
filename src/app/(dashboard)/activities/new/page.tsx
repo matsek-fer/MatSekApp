@@ -1,12 +1,20 @@
 import { getLibraryIndex } from "@/lib/materials";
+import { getLibrarySiteIndex } from "@/lib/library";
 import NewActivityForm from "@/components/activities/NewActivityForm";
 
+// The library site's index is fetched per request (and cached for an hour
+// by fetch), so the form never serves a list prerendered at build time
+// from a site that was unreachable then.
+export const dynamic = "force-dynamic";
+
 /**
- * The library index is read from content/materials on the server and
- * handed to the form, so searching it needs no round trip.
+ * What the form searches: the MatSek library (problems, proofs, blogs, the
+ * forest), then the Materials pages. Both are read on the server and handed
+ * over as one list, so a search is a filter on a prop and not a request.
  */
-export default function NewActivityPage() {
-  const library = getLibraryIndex();
+export default async function NewActivityPage() {
+  const site = await getLibrarySiteIndex();
+  const library = [...site.entries, ...getLibraryIndex()];
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -17,7 +25,7 @@ export default function NewActivityPage() {
         </p>
       </div>
 
-      <NewActivityForm library={library} />
+      <NewActivityForm library={library} libraryAvailable={site.available} />
     </div>
   );
 }

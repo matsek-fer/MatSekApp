@@ -129,7 +129,12 @@ export async function POST(
     if (insertError || !material) {
       console.error("POST /api/activities/[id]/materials insert error:", insertError);
       return NextResponse.json<ApiResponse>(
-        { success: false, error: "Materijal nije moguće spremiti." },
+        {
+          success: false,
+          error: `Materijal nije moguće spremiti${
+            insertError ? ` (${insertError.message})` : ""
+          }.`,
+        },
         { status: 400 }
       );
     }

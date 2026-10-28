@@ -43,6 +43,7 @@ src/
 │   ├── validation.ts          Domain lock, enum guards, writable-field whitelist
 │   ├── activity-materials.ts  Signed download URLs for uploaded activity materials
 │   ├── materials.ts           Loader for content/materials (topics, connections, library index)
+│   ├── library.ts             The MatSek library site's address and its search index, for the form
 │   ├── theme.ts               Dark mode, applied before first paint
 │   └── email.ts               Nodemailer transport + Croatian HTML templates
 └── types/index.ts             Row types, payloads, ApiResponse, Croatian labels

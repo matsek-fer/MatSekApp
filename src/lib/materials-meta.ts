@@ -72,18 +72,20 @@ export type TopicSummary = Pick<
 > & { shortTitle: string };
 
 /**
- * One row of the index the activity form searches: a topic page, or one
- * named material (book, notes, video) inside a topic. `url` is where the
- * activity page sends a reader — the material's own link when it has one,
- * otherwise its topic page.
+ * One row of the index the activity form searches. From the Materials
+ * pages: a topic, or one named material (book, notes, video) inside a
+ * topic, whose `url` is the material's own link when it has one and its
+ * topic page otherwise. From the MatSek library site (lib/library.ts): a
+ * problem, a proof, a blog, or one tree of the concept forest, whose `url`
+ * is its page on the site.
  */
 export interface LibraryEntry {
-  kind: "topic" | "material";
+  kind: "topic" | "material" | "problem" | "proof" | "blog" | "tree";
   title: string;
   url: string;
   /** Short topic title, shown under a material so a reader knows the field. */
   topic: string;
-  /** Material type (book, notes, video, …); empty for a topic. */
+  /** Material type (book, notes, video, …); empty otherwise. */
   type: string;
 }
 

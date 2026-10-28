@@ -44,7 +44,13 @@ const EMPTY_FORM: FormFields = {
  * proposal — which by then exists — is reported with a link rather than
  * silently missing a document.
  */
-export default function NewActivityForm({ library }: { library: LibraryEntry[] }) {
+export default function NewActivityForm({
+  library,
+  libraryAvailable,
+}: {
+  library: LibraryEntry[];
+  libraryAvailable: boolean;
+}) {
   const router = useRouter();
   const [form, setForm] = useState<FormFields>(EMPTY_FORM);
   const [materials, setMaterials] = useState<DraftMaterial[]>([]);
@@ -261,6 +267,7 @@ export default function NewActivityForm({ library }: { library: LibraryEntry[] }
 
           <ActivityMaterialsEditor
             library={library}
+            libraryAvailable={libraryAvailable}
             value={materials}
             onChange={setMaterials}
             disabled={busy}

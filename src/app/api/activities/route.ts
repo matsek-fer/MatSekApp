@@ -229,11 +229,17 @@ export async function POST(request: NextRequest) {
 
       if (materialsError) {
         // The proposal is withdrawn rather than left standing without the
-        // reading list its author wrote; they can resubmit in one go.
+        // reading list its author wrote; they can resubmit in one go. The
+        // database's reason rides along, as it does for the activity insert
+        // above: a missing table (schema section 9 not applied) or a policy
+        // refusal reads very differently from a bad value.
         await supabase.from("activities").delete().eq("id", activity.id);
         console.error("POST /api/activities materials error:", materialsError);
         return NextResponse.json<ApiResponse>(
-          { success: false, error: "Materijale nije moguće spremiti." },
+          {
+            success: false,
+            error: `Materijale nije moguće spremiti (${materialsError.message}).`,
+          },
           { status: 400 }
         );
       }

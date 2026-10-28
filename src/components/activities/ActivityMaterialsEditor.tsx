@@ -61,11 +61,14 @@ function newKey() {
  */
 export default function ActivityMaterialsEditor({
   library,
+  libraryAvailable = true,
   value,
   onChange,
   disabled = false,
 }: {
   library: LibraryEntry[];
+  /** False when the library site's index could not be fetched. */
+  libraryAvailable?: boolean;
   value: DraftMaterial[];
   onChange: (next: DraftMaterial[]) => void;
   disabled?: boolean;
@@ -80,9 +83,16 @@ export default function ActivityMaterialsEditor({
     <fieldset className="space-y-5" disabled={disabled}>
       <legend className="field-label">Materijali</legend>
       <p className="!mt-0 text-xs text-fg-subtle">
-        Neobavezno. Teme i knjige iz knjižnice, vanjske poveznice ili vlastiti
-        dokumenti (PDF, Markdown, tekst — do 25 MB).
+        Neobavezno. Zadaci, dokazi i blogovi iz knjižnice, teme i knjige s
+        Materijala, vanjske poveznice ili vlastiti dokumenti (PDF, Markdown,
+        tekst — do 25 MB).
       </p>
+      {!libraryAvailable && (
+        <p className="!mt-1 text-xs text-warning-fg">
+          Knjižnica trenutno nije dostupna, pa pretraga obuhvaća samo
+          Materijale. Zapis iz knjižnice možeš dodati kao poveznicu.
+        </p>
+      )}
 
       {PHASES.map((phase) => (
         <PhaseBlock
@@ -172,6 +182,48 @@ function PhaseBlock({
 
 type Mode = ActivityMaterialKind;
 
+/**
+ * The line under a hit, and the note stored with the material: where the
+ * thing lives and what it is. A library bundle names its kind; a Materials
+ * entry names its type and topic.
+ */
+function describe(e: LibraryEntry): string {
+  switch (e.kind) {
+    case "topic":
+      return "Tema s Materijala";
+    case "material":
+      return [e.type, e.topic].filter(Boolean).join(" · ");
+    case "problem":
+      return "Knjižnica · zadatak";
+    case "proof":
+      return "Knjižnica · dokaz";
+    case "blog":
+      return "Knjižnica · blog";
+    case "tree":
+      return "Knjižnica · šuma pojmova";
+  }
+}
+
+/** Trailing slashes and the scheme do not decide whether a pasted link matches. */
+function bareUrl(u: string): string {
+  return u.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/+$/, "");
+}
+
+/**
+ * What comes first among the hits. A forest tree digests a bundle and
+ * repeats its title ("Dokaz: …", "Rješenje: …"), so for every proof there
+ * are three trees; the artifact itself leads and the trees follow. Within
+ * a rank, a title that starts with the query beats one that merely holds it.
+ */
+const KIND_RANK: Record<LibraryEntry["kind"], number> = {
+  blog: 0,
+  problem: 0,
+  proof: 0,
+  topic: 1,
+  material: 1,
+  tree: 2,
+};
+
 const MODE_LABELS: Record<Mode, string> = {
   library: "Iz knjižnice",
   link: "Poveznica",
@@ -193,11 +245,19 @@ function AddMaterial({
   const hits = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
+    // A pasted address of a library page finds that page, so a member who
+    // has the link open does not have to know its title.
+    const qUrl = bareUrl(q);
+    const score = (e: LibraryEntry) =>
+      KIND_RANK[e.kind] * 2 + (e.title.toLowerCase().startsWith(q) ? 0 : 1);
     return library
       .filter(
         (e) =>
-          e.title.toLowerCase().includes(q) || e.topic.toLowerCase().includes(q)
+          e.title.toLowerCase().includes(q) ||
+          e.topic.toLowerCase().includes(q) ||
+          (qUrl.length > 8 && bareUrl(e.url).includes(qUrl))
       )
+      .sort((a, b) => score(a) - score(b))
       .slice(0, MAX_HITS);
   }, [library, query]);
 
@@ -215,10 +275,7 @@ function AddMaterial({
       kind: "library",
       title: e.title,
       url: e.url,
-      note:
-        e.kind === "topic"
-          ? "Tema iz knjižnice"
-          : [e.type, e.topic].filter(Boolean).join(" · "),
+      note: describe(e),
       file: null,
     });
     setQuery("");
@@ -313,7 +370,7 @@ function AddMaterial({
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Pretraži teme i knjige po naslovu…"
+            placeholder="Pretraži po naslovu ili zalijepi poveznicu iz knjižnice…"
             aria-label="Pretraži knjižnicu materijala"
             className="field text-sm"
           />
@@ -328,18 +385,14 @@ function AddMaterial({
                 </li>
               ) : (
                 hits.map((e) => (
-                  <li key={`${e.kind}:${e.topic}:${e.title}`}>
+                  <li key={`${e.kind}:${e.url}:${e.title}`}>
                     <button
                       type="button"
                       onClick={() => pickLibrary(e)}
                       className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-surface-hover"
                     >
                       <span className="text-sm text-fg">{e.title}</span>
-                      <span className="text-xs text-fg-muted">
-                        {e.kind === "topic"
-                          ? "Tema"
-                          : [e.type, e.topic].filter(Boolean).join(" · ")}
-                      </span>
+                      <span className="text-xs text-fg-muted">{describe(e)}</span>
                     </button>
                   </li>
                 ))
