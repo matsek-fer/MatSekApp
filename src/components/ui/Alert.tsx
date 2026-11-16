@@ -1,11 +1,12 @@
 import { cn } from "@/lib/utils";
 
-export type AlertTone = "error" | "success" | "info";
+export type AlertTone = "error" | "success" | "info" | "warning";
 
 const TONES: Record<AlertTone, string> = {
   error: "bg-danger-bg text-danger-fg border-danger/30",
   success: "bg-success-bg text-success-fg border-success/30",
   info: "bg-brand/10 text-brand border-brand/30",
+  warning: "bg-warning-bg text-warning-fg border-warning/30",
 };
 
 /** Inline form feedback. Announced to screen readers when it appears. */

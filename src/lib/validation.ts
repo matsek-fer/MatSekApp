@@ -4,6 +4,7 @@ import type {
   ActivityMaterialPhase,
   ActivityStatus,
   ActivityType,
+  ReservationStatus,
 } from "@/types";
 import { ACTIVITY_MATERIAL_MIME_BY_EXTENSION } from "@/types";
 
@@ -26,6 +27,11 @@ const ACTIVITY_TYPES: ActivityType[] = [
   "problem_solving_session",
   "social",
   "seminar",
+];
+const RESERVATION_STATUSES: ReservationStatus[] = [
+  "not_sent",
+  "pending",
+  "confirmed",
 ];
 
 /**
@@ -50,6 +56,10 @@ export function isActivityType(value: unknown): value is ActivityType {
   return ACTIVITY_TYPES.includes(value as ActivityType);
 }
 
+export function isReservationStatus(value: unknown): value is ReservationStatus {
+  return RESERVATION_STATUSES.includes(value as ReservationStatus);
+}
+
 /** Columns a client is allowed to write. Everything else is server-owned. */
 export const ACTIVITY_WRITABLE_FIELDS = [
   "title",
@@ -57,6 +67,7 @@ export const ACTIVITY_WRITABLE_FIELDS = [
   "start_time",
   "end_time",
   "location",
+  "reservation_status",
   "description",
   "prerequisites",
   "target_audience",
@@ -75,6 +86,19 @@ export function pickActivityFields(
   }
   return out;
 }
+
+/**
+ * What an approval is about: when, where and what kind. A member who changes
+ * one of these on an approved activity sends it back for review. The rule
+ * itself is the `settle_member_edit` trigger in schema.sql; this list lets
+ * the form say so before saving.
+ */
+export const ACTIVITY_REVIEWED_FIELDS = [
+  "activity_type",
+  "start_time",
+  "end_time",
+  "location",
+] as const;
 
 // ── Activity materials ─────────────────────────────────────────────────────
 

@@ -33,7 +33,8 @@ src/
 ├── components/
 │   ├── ui/                    Button, Card, Badge, Field, Alert, Logo, ThemeToggle
 │   ├── activities/            ActivityBrowser, ActivityListItem, ActivityTimeline,
-│   │                          NewActivityForm + ActivityMaterialsEditor, ActivityMaterialsList
+│   │                          ActivityForm (propose and edit) + ActivityMaterialsEditor,
+│   │                          ActivityMaterialsList, ReservationIndicator
 │   ├── layout/                VoronoiNavbarLink
 │   ├── landing/               ContentPanel
 │   └── notifications/         NotificationBell
@@ -42,6 +43,7 @@ src/
 │   ├── supabase/              server.ts (RLS + admin) · middleware.ts · client.ts
 │   ├── validation.ts          Domain lock, enum guards, writable-field whitelist
 │   ├── activity-materials.ts  Signed download URLs for uploaded activity materials
+│   ├── activity-edits.ts      What an edit of an approved activity changed, and the note it leaves the admins
 │   ├── materials.ts           Loader for content/materials (topics, connections, library index)
 │   ├── library.ts             The MatSek library site's address and its search index, for the form
 │   ├── theme.ts               Dark mode, applied before first paint
@@ -85,11 +87,13 @@ to RLS — that is the default everywhere. `lib/supabase/middleware` builds the
 same client bound to a request, because middleware cannot write through
 `cookies()`: a refreshed session goes onto the request and onto the response
 it returns (`redirectWith()` carries it onto a redirect). `createAdminClient()`
-uses the service-role key and bypasses RLS entirely; it exists only so the
-approve and deny routes, after their own admin check, can insert a
-notification for another user and read the proposer's e-mail for the
-decision mail — members cannot read each other's e-mail through the RLS
-client. Don't reach for it to make a query easier. On the server, read the user with
+uses the service-role key and bypasses RLS entirely; it exists only to leave
+a notification with somebody else, which no member's token may do: the
+approve and deny routes, after their own admin check, notify the proposer
+(and read their e-mail for the decision mail — members cannot read each
+other's through the RLS client), and `lib/activity-edits` notifies the admins
+once a member's edit of an approved activity has gone through RLS. Don't
+reach for it to make a query easier. On the server, read the user with
 `getUser()`, never from `getSession()`: the session is parsed from the cookie
 without verification, and touching its user logs a warning per request.
 
@@ -99,6 +103,24 @@ without verification, and touching its user logs a warning per request.
 PostgREST filter is checked against its enum first (`isActivityStatus`), or
 its shape (`isUuid`). No schema library is installed; the hand-written guards
 in `lib/validation.ts` are the pattern.
+
+**A member never sets an activity's status; the database does.** An author
+may edit their activity until it is rejected. While it is pending the edit
+just goes through. Once it is approved, changing when, where or what kind
+(`start_time`, `end_time`, `location`, `activity_type`) puts it back to
+`pending` — off the public calendar until an admin approves it again — and
+anything else, materials and the reservation status included, leaves it
+published. That rule is the `settle_member_edit` trigger in
+`supabase/schema.sql`, so it holds for a token used against PostgREST as
+well; the PATCH route only reads the outcome off the returned row and tells
+the admins what changed. Admins' edits are saved as written.
+
+**Times are instants.** The forms turn a `datetime-local` value into an ISO
+instant in the browser, where the member's zone is known — sent as typed,
+Postgres would read it as UTC. Everything renders them with `date-fns` in the
+zone of whatever is rendering, which is why the container sets
+`TZ=Europe/Zagreb`: without it server-rendered times are UTC and disagree
+with the browser's.
 
 **Server Components by default.** Pages fetch with the server client directly.
 `"use client"` is for forms, and for anything with pointer interaction or

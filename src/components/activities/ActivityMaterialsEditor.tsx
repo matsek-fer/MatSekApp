@@ -30,6 +30,14 @@ export interface DraftMaterial {
   url: string;
   note: string;
   file: File | null;
+  /**
+   * Set on a material the activity already has, when the form is editing
+   * one. Saving leaves these alone, removes the ones taken off the list
+   * and adds the drafts without an id.
+   */
+  id?: string;
+  /** Name and size of a file that is already in Storage, so has no `File`. */
+  fileLabel?: string;
 }
 
 const PHASES: ActivityMaterialPhase[] = ["before", "during"];
@@ -149,8 +157,10 @@ function PhaseBlock({
                   {d.title}
                 </span>
                 <span className="block truncate text-xs text-fg-muted">
-                  {d.kind === "file" && d.file
-                    ? `${d.file.name} · ${formatBytes(d.file.size)}`
+                  {d.kind === "file"
+                    ? d.file
+                      ? `${d.file.name} · ${formatBytes(d.file.size)}`
+                      : d.fileLabel
                     : d.kind === "library"
                       ? d.note
                       : d.url.replace(/^https?:\/\//, "")}

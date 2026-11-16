@@ -85,6 +85,8 @@ function rows(count, direction, createdBy) {
       title,
       activity_type,
       location,
+      // All three in turn, so the calendar shows every dot.
+      reservation_status: ["confirmed", "pending", "not_sent"][i % 3],
       description: `Sintetički zapis za testiranje kalendara. ${MARKER}`,
       target_audience: "Svi zainteresirani",
       status: "approved",

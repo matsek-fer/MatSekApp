@@ -7,6 +7,7 @@ import {
   safeFileName,
 } from "@/lib/validation";
 import { ACTIVITY_MATERIALS_BUCKET } from "@/lib/activity-materials";
+import { materialNotice, notifyAdminsOfEdit } from "@/lib/activity-edits";
 import type {
   ActivityMaterial,
   ApiResponse,
@@ -14,17 +15,20 @@ import type {
 } from "@/types";
 
 /**
- * POST /api/activities/[id]/materials — attach one material to a proposal.
+ * POST /api/activities/[id]/materials — attach one material to an activity.
  *
- * Link and library materials normally ride along with the activity itself;
- * this route exists for files, which need the activity's id in their storage
- * path. For a file it reserves the row and mints a signed upload URL, and
- * the browser PUTs the bytes straight to Storage — the same three-step
- * handshake as documents, for the same reasons (see /api/documents).
+ * On a new proposal, link and library materials ride along with the activity
+ * itself and this route is for files, which need the activity's id in their
+ * storage path. The edit form uses it for every kind. For a file it reserves
+ * the row and mints a signed upload URL, and the browser PUTs the bytes
+ * straight to Storage — the same three-step handshake as documents, for the
+ * same reasons (see /api/documents).
  *
  * Who may attach is decided by RLS on `activity_materials` and on the
- * bucket (the author while pending, admins always); the checks here only
- * turn a policy refusal into a readable message.
+ * bucket (the author while the activity is pending or approved, admins
+ * always); the checks here only turn a policy refusal into a readable
+ * message. A material added to an approved activity does not send it back
+ * for review — the admins are notified instead.
  */
 export async function POST(
   request: NextRequest,
@@ -46,7 +50,7 @@ export async function POST(
 
     const { data: activity } = await supabase
       .from("activities")
-      .select("id, created_by, status")
+      .select("id, title, created_by, status")
       .eq("id", activityId)
       .single();
 
@@ -59,17 +63,18 @@ export async function POST(
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, full_name")
       .eq("id", user.id)
       .single();
     const isAdmin = profile?.role === "admin";
     const isOwner = activity.created_by === user.id;
 
-    if (!isAdmin && !(isOwner && activity.status === "pending")) {
+    if (!isAdmin && !(isOwner && activity.status !== "rejected")) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
-          error: "Materijale možeš dodavati samo svojim aktivnostima na čekanju.",
+          error:
+            "Materijale možeš dodavati samo svojim aktivnostima koje nisu odbijene.",
         },
         { status: 403 }
       );
@@ -139,7 +144,19 @@ export async function POST(
       );
     }
 
+    // Said once the material is certain to stand: for a file, after the
+    // upload URL is in hand. A pending activity's materials are read at
+    // review, and an admin's own additions need no announcing.
+    const announce = async () => {
+      if (isAdmin || activity.status !== "approved") return;
+      await notifyAdminsOfEdit(
+        activityId,
+        materialNotice(profile?.full_name ?? "", activity.title, m.title, "added")
+      );
+    };
+
     if (m.kind !== "file") {
+      await announce();
       return NextResponse.json<ApiResponse<CreateActivityMaterialResult>>(
         {
           success: true,
@@ -164,6 +181,7 @@ export async function POST(
       );
     }
 
+    await announce();
     return NextResponse.json<ApiResponse<CreateActivityMaterialResult>>(
       {
         success: true,

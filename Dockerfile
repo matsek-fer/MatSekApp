@@ -20,6 +20,13 @@ RUN npm run build
 FROM node:22-bookworm-slim AS run
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
+# Activity times are stored as instants and formatted where they are
+# rendered. A container runs in UTC unless told otherwise, so every time on
+# a server-rendered page — the activity page, the admin queue, the note an
+# admin gets about a moved activity — would read an hour or two early for an
+# audience that is in Zagreb, and disagree with the same time rendered in
+# the browser.
+ENV TZ=Europe/Zagreb
 RUN groupadd --system app && useradd --system --gid app --home /app app
 COPY --from=build --chown=app:app /app/.next/standalone ./
 COPY --from=build --chown=app:app /app/.next/static ./.next/static

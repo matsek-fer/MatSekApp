@@ -89,6 +89,11 @@ CREATE TABLE public.activities (
   start_time      TIMESTAMPTZ NOT NULL,
   end_time        TIMESTAMPTZ NOT NULL,
   location        TEXT NOT NULL DEFAULT '',
+  -- Whether the room named in `location` is actually booked; shown beside
+  -- it as a red, yellow or green dot.  TEXT with a CHECK rather than an
+  -- enum, like the materials' phase and kind, so a state can be added
+  -- without an ALTER TYPE.
+  reservation_status TEXT NOT NULL DEFAULT 'not_sent',
   description     TEXT NOT NULL DEFAULT '',
   prerequisites   TEXT NOT NULL DEFAULT '',
   target_audience TEXT NOT NULL DEFAULT '',
@@ -99,7 +104,9 @@ CREATE TABLE public.activities (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-  CONSTRAINT chk_time_order CHECK (end_time > start_time)
+  CONSTRAINT chk_time_order CHECK (end_time > start_time),
+  CONSTRAINT chk_reservation_status
+    CHECK (reservation_status IN ('not_sent', 'pending', 'confirmed'))
 );
 
 CREATE TRIGGER activities_updated_at
@@ -117,7 +124,7 @@ CREATE TABLE public.notifications (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id     UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   activity_id UUID REFERENCES public.activities(id) ON DELETE SET NULL,
-  type        TEXT NOT NULL,            -- 'approved', 'rejected', 'info'
+  type        TEXT NOT NULL,            -- 'approved', 'rejected', 'edited', 'info'
   message     TEXT NOT NULL,
   is_read     BOOLEAN NOT NULL DEFAULT false,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -234,6 +241,71 @@ CREATE POLICY "Users can update own pending activities"
     AND reviewed_at IS NULL
     AND admin_comment IS NULL
   );
+
+-- An approved activity stays its author's to edit.  What the author may not
+-- do is choose where the edit leaves it: the check admits a row that is
+-- still approved, or back in the queue with the review columns cleared, and
+-- the trigger below decides which of the two it is.
+CREATE POLICY "Users can update own approved activities"
+  ON public.activities FOR UPDATE
+  USING (auth.uid() = created_by AND status = 'approved')
+  WITH CHECK (
+    auth.uid() = created_by
+    AND (
+      status = 'approved'
+      OR (
+        status = 'pending'
+        AND reviewed_by IS NULL
+        AND reviewed_at IS NULL
+        AND admin_comment IS NULL
+      )
+    )
+  );
+
+-- A member's edit never carries a status; this sets it.  Moving, relocating
+-- or retyping an approved activity changes what the admin agreed to, so the
+-- row goes back to 'pending' — off the public calendar, by the SELECT
+-- policies above — until it is approved again.  Every other edit (the
+-- description, the prerequisites, the reservation status) leaves the status
+-- and the review columns exactly as they were.  It has to be a trigger: a
+-- policy sees only the new row and cannot tell what changed, and with the
+-- two UPDATE policies ORed together a member could otherwise send their own
+-- pending row up as approved.  Admins, and anything without a member's
+-- token (the service role, the SQL editor), write what they mean.
+CREATE OR REPLACE FUNCTION public.settle_member_edit()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+BEGIN
+  IF auth.uid() IS NULL OR public.is_admin() THEN
+    RETURN NEW;
+  END IF;
+
+  IF OLD.status = 'approved' AND (
+       NEW.start_time    IS DISTINCT FROM OLD.start_time
+    OR NEW.end_time      IS DISTINCT FROM OLD.end_time
+    OR NEW.location      IS DISTINCT FROM OLD.location
+    OR NEW.activity_type IS DISTINCT FROM OLD.activity_type
+  ) THEN
+    NEW.status        := 'pending';
+    NEW.reviewed_by   := NULL;
+    NEW.reviewed_at   := NULL;
+    NEW.admin_comment := NULL;
+  ELSE
+    NEW.status        := OLD.status;
+    NEW.reviewed_by   := OLD.reviewed_by;
+    NEW.reviewed_at   := OLD.reviewed_at;
+    NEW.admin_comment := OLD.admin_comment;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER activities_settle_member_edit
+  BEFORE UPDATE ON public.activities
+  FOR EACH ROW EXECUTE FUNCTION public.settle_member_edit();
 
 -- Admins can update any activity (approve / deny / edit)
 CREATE POLICY "Admins can update any activity"
@@ -385,29 +457,31 @@ CREATE POLICY "Materials follow their activity"
     )
   );
 
--- Writes mirror the activity rules: the author while the proposal is still
--- pending, admins always.  No UPDATE policy — a material is replaced, not
--- edited.
-CREATE POLICY "Authors add materials to own pending activities"
+-- Writes are the author's while the activity is pending or approved — a
+-- reading list is not what the admin approved, so changing it does not send
+-- the activity back for review the way a new time or room does — and
+-- always an admin's.  A rejected activity is closed.  No UPDATE policy: a
+-- material is replaced, not edited.
+CREATE POLICY "Authors add materials to own activities"
   ON public.activity_materials FOR INSERT
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.activities a
       WHERE a.id = activity_id
         AND a.created_by = auth.uid()
-        AND a.status = 'pending'
+        AND a.status IN ('pending', 'approved')
     )
     OR public.is_admin()
   );
 
-CREATE POLICY "Authors remove materials from own pending activities"
+CREATE POLICY "Authors remove materials from own activities"
   ON public.activity_materials FOR DELETE
   USING (
     EXISTS (
       SELECT 1 FROM public.activities a
       WHERE a.id = activity_id
         AND a.created_by = auth.uid()
-        AND a.status = 'pending'
+        AND a.status IN ('pending', 'approved')
     )
     OR public.is_admin()
   );
@@ -443,7 +517,7 @@ CREATE POLICY "Activity files follow their activity"
     )
   );
 
-CREATE POLICY "Authors upload files to own pending activities"
+CREATE POLICY "Authors upload files to own activities"
   ON storage.objects FOR INSERT
   WITH CHECK (
     bucket_id = 'activity-materials'
@@ -452,13 +526,13 @@ CREATE POLICY "Authors upload files to own pending activities"
         SELECT 1 FROM public.activities a
         WHERE a.id::text = (storage.foldername(name))[1]
           AND a.created_by = auth.uid()
-          AND a.status = 'pending'
+          AND a.status IN ('pending', 'approved')
       )
       OR public.is_admin()
     )
   );
 
-CREATE POLICY "Authors remove files from own pending activities"
+CREATE POLICY "Authors remove files from own activities"
   ON storage.objects FOR DELETE
   USING (
     bucket_id = 'activity-materials'
@@ -467,7 +541,7 @@ CREATE POLICY "Authors remove files from own pending activities"
         SELECT 1 FROM public.activities a
         WHERE a.id::text = (storage.foldername(name))[1]
           AND a.created_by = auth.uid()
-          AND a.status = 'pending'
+          AND a.status IN ('pending', 'approved')
       )
       OR public.is_admin()
     )
@@ -480,6 +554,32 @@ CREATE POLICY "Authors remove files from own pending activities"
 --
 --   ALTER TYPE activity_type ADD VALUE IF NOT EXISTS 'social';
 --   ALTER TYPE activity_type ADD VALUE IF NOT EXISTS 'seminar';
+-- ---------------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------------
+-- Applying the edit-after-approval rules and the reservation status to a
+-- database that ran an earlier version of this file (one that has section 9).
+-- First these, which are safe to repeat:
+--
+--   ALTER TABLE public.activities
+--     ADD COLUMN IF NOT EXISTS reservation_status TEXT NOT NULL DEFAULT 'not_sent';
+--   ALTER TABLE public.activities DROP CONSTRAINT IF EXISTS chk_reservation_status;
+--   ALTER TABLE public.activities ADD CONSTRAINT chk_reservation_status
+--     CHECK (reservation_status IN ('not_sent', 'pending', 'confirmed'));
+--   DROP POLICY IF EXISTS "Users can update own approved activities" ON public.activities;
+--   DROP TRIGGER IF EXISTS activities_settle_member_edit ON public.activities;
+--   DROP POLICY IF EXISTS "Authors add materials to own pending activities" ON public.activity_materials;
+--   DROP POLICY IF EXISTS "Authors add materials to own activities" ON public.activity_materials;
+--   DROP POLICY IF EXISTS "Authors remove materials from own pending activities" ON public.activity_materials;
+--   DROP POLICY IF EXISTS "Authors remove materials from own activities" ON public.activity_materials;
+--   DROP POLICY IF EXISTS "Authors upload files to own pending activities" ON storage.objects;
+--   DROP POLICY IF EXISTS "Authors upload files to own activities" ON storage.objects;
+--   DROP POLICY IF EXISTS "Authors remove files from own pending activities" ON storage.objects;
+--   DROP POLICY IF EXISTS "Authors remove files from own activities" ON storage.objects;
+--
+-- then, as they stand above: the policy "Users can update own approved
+-- activities" and the function settle_member_edit() with its trigger from
+-- section 6, and the four "Authors …" policies from section 9.
 -- ---------------------------------------------------------------------------
 
 -- ============================================================================

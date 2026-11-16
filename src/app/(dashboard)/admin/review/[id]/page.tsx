@@ -8,10 +8,11 @@ import { ACTIVITY_TYPE_LABELS } from "@/types";
 import type { Activity } from "@/types";
 import Card from "@/components/ui/Card";
 import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
+import Button, { ButtonLink } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Field";
 import { StatusBadge } from "@/components/ui/Badge";
 import ActivityMaterialsList from "@/components/activities/ActivityMaterialsList";
+import ReservationIndicator from "@/components/activities/ReservationIndicator";
 
 type Action = "approve" | "deny" | null;
 
@@ -126,7 +127,15 @@ export default function AdminReviewPage() {
           </div>
           <div>
             <dt className="text-fg-subtle">Lokacija</dt>
-            <dd className="text-fg">{activity.location || "—"}</dd>
+            <dd className="text-fg">
+              {activity.location || "—"}
+              {activity.location && (
+                <ReservationIndicator
+                  status={activity.reservation_status}
+                  className="mt-1 flex"
+                />
+              )}
+            </dd>
           </div>
           <div>
             <dt className="text-fg-subtle">Početak</dt>
@@ -174,7 +183,18 @@ export default function AdminReviewPage() {
       </Card>
 
       <Card className="space-y-4 p-6">
-        <h3 className="font-semibold text-fg">Administratorske akcije</h3>
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="font-semibold text-fg">Administratorske akcije</h3>
+          {/* An admin's edit is saved as written: it neither waits for
+              review nor sends the activity back for one. */}
+          <ButtonLink
+            href={`/activities/${activity.id}/edit`}
+            variant="secondary"
+            size="sm"
+          >
+            Uredi
+          </ButtonLink>
+        </div>
 
         {!isPending && (
           <Alert tone="info">

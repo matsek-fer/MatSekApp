@@ -1,7 +1,17 @@
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
-import { pickActivityFields } from "@/lib/validation";
+import {
+  isActivityType,
+  isReservationStatus,
+  pickActivityFields,
+} from "@/lib/validation";
 import { withDownloadUrls } from "@/lib/activity-materials";
+import {
+  describeEdit,
+  editNotice,
+  hasChanges,
+  notifyAdminsOfEdit,
+} from "@/lib/activity-edits";
 import type { ApiResponse, Activity } from "@/types";
 
 /**
@@ -52,8 +62,15 @@ export async function GET(
 /**
  * PATCH /api/activities/[id]
  *
- * Update an activity. Only the creator can update and only if status is 'pending'.
- * Admins can update any activity.
+ * Update an activity. Its author may, until it is rejected; admins always.
+ *
+ * An author's edit of a pending proposal simply goes through. On an approved
+ * activity the database decides what the edit costs: a new time, place or
+ * type puts it back to 'pending' — off the public calendar until an admin
+ * approves it again — and anything else leaves it published. That rule is
+ * the `settle_member_edit` trigger, not this handler, so the returned row's
+ * `status` is how the caller learns which it was. Either way the admins get
+ * a notification saying what changed.
  */
 export async function PATCH(
   request: NextRequest,
@@ -76,25 +93,27 @@ export async function PATCH(
 
     const body = await request.json();
 
-    // Fetch existing to check ownership
-    const { data: existing } = await supabase
+    // The whole row, not just the owner: what it held before the edit is
+    // what the admins are told it was changed from.
+    const { data: existingRow } = await supabase
       .from("activities")
-      .select("created_by, status")
+      .select("*")
       .eq("id", id)
       .single();
 
-    if (!existing) {
+    if (!existingRow) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Aktivnost nije pronađena." },
         { status: 404 }
       );
     }
+    const existing = existingRow as Activity;
 
     // Check permissions via RLS (the update policy handles this, but we do
     // an early check for better error messages)
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, full_name")
       .eq("id", user.id)
       .single();
 
@@ -108,12 +127,9 @@ export async function PATCH(
       );
     }
 
-    if (!isAdmin && existing.status !== "pending") {
+    if (!isAdmin && existing.status === "rejected") {
       return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          error: "Možeš uređivati samo aktivnosti na čekanju.",
-        },
+        { success: false, error: "Odbijenu aktivnost nije moguće uređivati." },
         { status: 403 }
       );
     }
@@ -129,18 +145,87 @@ export async function PATCH(
       );
     }
 
-    const { data: updated, error } = await supabase
+    for (const field of ["title", "location", "description"]) {
+      const value = patch[field];
+      if (value !== undefined && (typeof value !== "string" || !value.trim())) {
+        return NextResponse.json<ApiResponse>(
+          { success: false, error: `Polje "${field}" ne može biti prazno.` },
+          { status: 400 }
+        );
+      }
+    }
+    if (
+      patch.activity_type !== undefined &&
+      !isActivityType(patch.activity_type)
+    ) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: "Nepoznata vrsta aktivnosti." },
+        { status: 400 }
+      );
+    }
+    if (
+      patch.reservation_status !== undefined &&
+      !isReservationStatus(patch.reservation_status)
+    ) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: "Nepoznat status rezervacije." },
+        { status: 400 }
+      );
+    }
+
+    // maybeSingle, not single: an UPDATE that RLS refuses is not an error to
+    // PostgREST, it is an update of no rows, and `single()` reports that as
+    // "Cannot coerce the result to a single JSON object" — true, and no use
+    // to the member reading it.
+    const { data: updatedRow, error } = await supabase
       .from("activities")
       .update(patch)
       .eq("id", id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: error.message },
         { status: 400 }
       );
+    }
+    if (!updatedRow) {
+      // The row was readable a moment ago and passed the checks above, so the
+      // UPDATE policies turned it down. Either it was reviewed in between, or
+      // the database predates the policy that lets an author edit an approved
+      // activity — the reply names both, as the insert errors name theirs.
+      console.error(
+        `PATCH /api/activities/${id}: update matched no row (status ${existing.status}, admin ${isAdmin})`
+      );
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          error:
+            "Izmjena nije spremljena jer je baza nije dopustila. Aktivnost je možda u međuvremenu pregledana; ako nije, bazi nedostaju pravila za uređivanje odobrenih aktivnosti (supabase/schema.sql).",
+        },
+        { status: 403 }
+      );
+    }
+    const updated = updatedRow as Activity;
+
+    // Only an author's edit of an approved activity is news to the admins:
+    // a pending one is theirs to read in full when they review it, and an
+    // admin's own edit needs no announcing. Compared against the stored row
+    // rather than the request, so re-sending a value is not reported.
+    if (!isAdmin && existing.status === "approved") {
+      const summary = describeEdit(existing, updated);
+      if (hasChanges(summary)) {
+        await notifyAdminsOfEdit(
+          id,
+          editNotice(
+            profile?.full_name ?? "",
+            updated.title,
+            summary,
+            updated.status === "pending"
+          )
+        );
+      }
     }
 
     return NextResponse.json<ApiResponse<Activity>>(

@@ -23,9 +23,14 @@ import { NextResponse, type NextRequest } from "next/server";
  * can act on; a redirect to an HTML page would not be.
  */
 const PROTECTED = ["/activities/new", "/admin", "/notifications", "/profile"];
+/** The edit form — the one guarded page with an id in the middle of its path. */
+const PROTECTED_EDIT = /^\/activities\/[^/]+\/edit$/;
 
 function isProtected(pathname: string) {
-  return PROTECTED.some((p) => pathname === p || pathname.startsWith(p + "/"));
+  return (
+    PROTECTED.some((p) => pathname === p || pathname.startsWith(p + "/")) ||
+    PROTECTED_EDIT.test(pathname)
+  );
 }
 
 export async function middleware(request: NextRequest) {

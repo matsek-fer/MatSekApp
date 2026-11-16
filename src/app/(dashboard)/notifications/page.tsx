@@ -45,7 +45,8 @@ export default async function NotificationsPage() {
                   !n.is_read && "border-l-4 border-l-brand"
                 )}
               >
-                <p className="text-fg">{n.message}</p>
+                {/* An edit note gains a line per change until it is read. */}
+                <p className="whitespace-pre-line text-fg">{n.message}</p>
                 <div className="mt-2 flex items-center justify-between gap-3">
                   <time
                     dateTime={n.created_at}
