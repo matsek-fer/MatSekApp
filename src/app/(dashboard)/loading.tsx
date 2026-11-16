@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
  * the page streams in over it.
  *
  * It is a generic page shape (heading row, list card) rather than a copy of
- * any one page: the same boundary serves the calendar, documents, profile and
+ * any one page: the same boundary serves the calendar, materials, profile and
  * admin screens.
  */
 export default function DashboardLoading() {

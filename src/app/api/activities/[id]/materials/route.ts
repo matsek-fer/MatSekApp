@@ -21,8 +21,10 @@ import type {
  * itself and this route is for files, which need the activity's id in their
  * storage path. The edit form uses it for every kind. For a file it reserves
  * the row and mints a signed upload URL, and the browser PUTs the bytes
- * straight to Storage — the same three-step handshake as documents, for the
- * same reasons (see /api/documents).
+ * straight to Storage, so they never pass through Next. Reading them here
+ * with `request.formData()` would cap at Next's body limit, hold the whole
+ * file in memory, and need its own size and MIME checks; the bucket already
+ * enforces both, and it is the only thing positioned to.
  *
  * Who may attach is decided by RLS on `activity_materials` and on the
  * bucket (the author while the activity is pending or approved, admins
@@ -106,7 +108,7 @@ export async function POST(
     const m = parsed.material;
 
     // The id is generated here so the storage path is known before the row
-    // is written — one insert, no follow-up update (as in /api/documents).
+    // is written — one insert, no follow-up update.
     const id = randomUUID();
     const fileName = m.kind === "file" ? safeFileName(m.file_name ?? "") : "";
     const storagePath =

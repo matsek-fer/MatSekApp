@@ -10,9 +10,8 @@ import type { ApiResponse } from "@/types";
  * Removes one material and, for a file, its object. The edit form calls it
  * for a material its author took off the list, and both forms when an upload
  * fails after the row was reserved, so the activity page never lists a file
- * that was never stored. The object goes first, for the reason given on the
- * documents route: once the row is gone RLS no longer sees the activity's
- * file and it would be orphaned in the bucket.
+ * that was never stored. The object goes first: once the row is gone RLS no
+ * longer sees the activity's file and it would be orphaned in the bucket.
  *
  * RLS decides who may delete (the author while the activity is pending or
  * approved, admins always); a refusal simply finds no row and reads as 404.

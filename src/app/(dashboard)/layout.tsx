@@ -37,13 +37,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-bg">
-      {/* The id is how the reader finds this bar to measure it. Its height is
-          not a constant — an extra nav row wraps under `md` — so the reading
-          view reads `offsetHeight` rather than hardcoding 4rem. */}
-      <nav
-        id="app-navbar"
-        className="sticky top-0 z-40 border-b border-border bg-surface"
-      >
+      <nav className="sticky top-0 z-40 border-b border-border bg-surface">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between gap-4">
             {/* self-stretch down the chain so the nav links can fill the bar's
