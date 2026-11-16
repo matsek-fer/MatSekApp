@@ -11,10 +11,9 @@ export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs" || process.env.NODE_ENV !== "production") return;
 
   const problems: string[] = [];
-  // Read through a variable, never as `process.env.NEXT_PUBLIC_X`: the build
-  // inlines static member access to the value it saw at build time, and this
-  // check is about what the server was started with. (In the Docker build
-  // both come from the same deploy/.env, so they agree.)
+  // Read through a variable rather than `process.env.X`, so nothing here can
+  // be inlined at build time: the check is about what the server was
+  // started with, which is the only place configuration comes from.
   const read = (name: string) => process.env[name] ?? "";
 
   for (const name of [
@@ -26,16 +25,16 @@ export async function register() {
     "SMTP_USER",
     "SMTP_PASS",
     "SMTP_FROM",
-    "NEXT_PUBLIC_APP_URL",
+    "APP_URL",
   ]) {
     if (!read(name)) problems.push(`${name} is not set`);
   }
 
-  const appUrl = read("NEXT_PUBLIC_APP_URL");
+  const appUrl = read("APP_URL");
   if (/localhost|127\.0\.0\.1/.test(appUrl)) {
-    problems.push(`NEXT_PUBLIC_APP_URL is ${appUrl}; every link in every email would point there`);
+    problems.push(`APP_URL is ${appUrl}; every link in every email would point there`);
   } else if (appUrl && !appUrl.startsWith("https://")) {
-    problems.push(`NEXT_PUBLIC_APP_URL should be an https origin, got ${appUrl}`);
+    problems.push(`APP_URL should be an https origin, got ${appUrl}`);
   }
 
   if (

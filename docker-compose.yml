@@ -3,17 +3,16 @@
 # .env.local.example and set DOMAIN; then `docker compose up -d --build`.
 services:
   app:
-    build:
-      context: .
-      args:
-        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+    build: .
+    # Everything the app needs — DATABASE_URL, the S3_* values, SMTP_* and
+    # APP_URL — comes from here at run time; the image carries none of it.
+    # Postgres and the S3 store are not part of this file: point the
+    # variables at wherever they run.
     env_file: deploy/.env
     restart: unless-stopped
     expose: ["3000"]
     healthcheck:
-      # /library renders without touching Supabase, so the check measures
+      # /library renders without touching the database, so the check measures
       # the container and not the database.
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/library').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s

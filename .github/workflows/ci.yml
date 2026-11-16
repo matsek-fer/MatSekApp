@@ -17,9 +17,6 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npx tsc --noEmit
-      # The build needs the two public Supabase values to exist; it never
-      # connects to them. Real values live in the host's environment.
+      # The build reads no configuration at all; every setting is a run-time
+      # environment variable of the deployed container.
       - run: npm run build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder

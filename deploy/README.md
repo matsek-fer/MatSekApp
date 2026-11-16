@@ -2,7 +2,8 @@
 
 The plan the section settled on: one small Hetzner Cloud server (the CX23
 is plenty now that the site is a plain Next.js app), Docker, Caddy for
-TLS, Supabase for the database and auth.
+TLS. The database (PostgreSQL), the file bucket (S3) and mail (SMTP) are
+reached through environment variables, wherever they run.
 
 1. **Server.** Ubuntu 24.04, your SSH key, `apt install git docker.io
    docker-compose-v2`, a user in the `docker` group (log in again after
@@ -16,11 +17,16 @@ TLS, Supabase for the database and auth.
 3. **DNS.** An A record for the domain pointing at the server's IPv4 (and
    AAAA for IPv6). Caddy needs the name to resolve before it can get a
    certificate.
-4. **Supabase.** Create the production project, run `supabase/schema.sql`
-   once in the SQL editor, then in Authentication: custom SMTP with the FER
-   relay, the "Confirm signup" and "Reset password" templates containing
-   `{{ .Token }}`, Site URL and redirect URLs set to the domain, and a higher
-   hourly email limit than the default.
+4. **Postgres, S3 and SMTP.** None of them runs in this compose file; the
+   app reaches each through its environment variables.
+   - **Postgres 15+**, managed or your own. Create the roles and apply
+     `db/schema.sql` once, as the header of that file lists (a fresh
+     `postgres` container with `db/init.sh` mounted into
+     `/docker-entrypoint-initdb.d/` does both).
+   - **An S3-compatible bucket** for files attached to activities. The app
+     creates it on first upload if its keys are allowed to.
+   - **SMTP**, the FER relay. The app sends the signup and password-reset
+     codes itself, so registration does not work until mail does.
 5. **Environment.** `cp .env.local.example deploy/.env` on the server and
    fill it in; add `DOMAIN=matsek.example.hr`. The file stays on the server
    and nowhere else. It is read by docker compose, whose parser is stricter
@@ -37,5 +43,10 @@ TLS, Supabase for the database and auth.
    admin as section 8 of the schema describes.
 
 Updating: `git pull && docker compose --env-file deploy/.env up -d --build`.
-Backups: Supabase Pro keeps daily backups; on Free, schedule `pg_dump`
-yourself.
+Backups: schedule `pg_dump` of the database and a copy of the bucket, or
+rely on the managed services' own.
+
+The same image runs anywhere: `ghcr.io/matsek-fer/matsekapp` is built by
+`.github/workflows/docker.yml` with no configuration in it, so a Kubernetes
+Deployment (or `docker run --env-file`) only has to supply the variables
+from `.env.local.example`.

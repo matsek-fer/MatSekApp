@@ -31,7 +31,7 @@ function getTransporter(): Transporter {
 
 /** The site's own origin, for links in emails. No trailing slash. */
 export function appUrl(): string {
-  return (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/+$/, "");
+  return (process.env.APP_URL ?? "").replace(/\/+$/, "");
 }
 
 /** The templates interpolate names and titles members typed; HTML in them is text, not markup. */
