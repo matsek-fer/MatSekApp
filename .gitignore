@@ -48,3 +48,6 @@ copilot-instructions
 # agent-local state (worktrees carry their own .env.local — never commit)
 /.claude/
 
+# the Supabase CLI's scratch folder
+/supabase/.temp/
+

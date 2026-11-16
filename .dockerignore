@@ -6,6 +6,12 @@ node_modules
 .env.*
 !.env.local.example
 deploy/.env
+# What a working checkout has and a clean clone does not. The patterns above
+# match at the root only, so without these a build from a developer's folder
+# sends the agent worktrees — each a full checkout with its own node_modules
+# and its own .env.local — into the build stage, keys and all.
+.claude
+supabase/.temp
 *.md
 !README.md
 docs
