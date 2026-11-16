@@ -15,8 +15,10 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = CHROME[await getLang()];
   return {
     // Absolute URLs for Open Graph and canonical links come from here; the
-    // production value is enforced at boot by src/instrumentation.ts.
-    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+    // production value is enforced at boot by src/instrumentation.ts. Read
+    // at request time — this function already is, since it reads the
+    // language cookie — so one image serves any domain.
+    metadataBase: new URL(process.env.APP_URL || "http://localhost:3000"),
     title: { default: t.siteTitle, template: "%s — MATSEK" },
     description: t.siteDescription,
   };

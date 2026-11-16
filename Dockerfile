@@ -9,11 +9,9 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY . .
-# The two public values are inlined into the browser bundle at build time,
-# so they must be present here; the secrets are read at runtime only.
-ARG NEXT_PUBLIC_SUPABASE_URL
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
-ARG NEXT_PUBLIC_APP_URL
+# No build arguments: nothing deployment-specific is compiled in. The
+# database, S3, SMTP and APP_URL all reach the container as environment
+# variables from whatever runs it, so one image serves every deployment.
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 

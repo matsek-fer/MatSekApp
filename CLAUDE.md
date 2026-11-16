@@ -160,12 +160,13 @@ consistent and unusual.
 ## Secrets
 
 `DATABASE_URL` (its password), the S3 keys and `SMTP_PASS` are real secrets.
-Anything prefixed
-`NEXT_PUBLIC_` is compiled into the browser bundle — never put a secret behind
-it. `.env.local` and `.next/` are gitignored and also blocked by
-`.githooks/pre-commit`, which exists because a build directory was once
-committed with the keys baked into its JS chunks. Enable the hook once per
-clone: `git config core.hooksPath .githooks`.
+Nothing is `NEXT_PUBLIC_`: all configuration, `APP_URL` included, is read at
+run time, and the image is built without any — keep it that way, since a
+`NEXT_PUBLIC_` value is compiled into the browser bundle. `.env.local` and
+`.next/` are gitignored and also blocked by `.githooks/pre-commit`, which
+exists because a build directory was once committed with the keys baked into
+its JS chunks. Enable the hook once per clone:
+`git config core.hooksPath .githooks`.
 
 ## A note on ARCHITECTURE.md
 
