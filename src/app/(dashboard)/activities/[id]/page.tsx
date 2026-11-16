@@ -8,8 +8,10 @@ import { ACTIVITY_TYPE_LABELS } from "@/types";
 import type { Activity } from "@/types";
 import Card from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/Badge";
+import { ButtonLink } from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
 import ActivityMaterialsList from "@/components/activities/ActivityMaterialsList";
+import ReservationIndicator from "@/components/activities/ReservationIndicator";
 
 export const dynamic = "force-dynamic";
 
@@ -53,14 +55,48 @@ export default async function ActivityDetailPage({
   // activity opens for everyone and a pending one only for its author.
   const materials = await withDownloadUrls(supabase, activity.materials ?? []);
 
+  // Who is looking decides only which buttons are drawn; the edit page, the
+  // PATCH route and the UPDATE policies each apply the rule themselves.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: profile } = user
+    ? await supabase.from("profiles").select("role").eq("id", user.id).single()
+    : { data: null };
+  const isAdmin = profile?.role === "admin";
+  const canEdit =
+    isAdmin ||
+    (user?.id === activity.created_by && activity.status !== "rejected");
+  const canReview = isAdmin && activity.status === "pending";
+
   const dateFmt = (iso: string) =>
     format(parseISO(iso), "dd.MM.yyyy. HH:mm", { locale: hr });
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Link href="/calendar" className="text-sm text-brand hover:underline">
-        ← Natrag na kalendar
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link href="/calendar" className="text-sm text-brand hover:underline">
+          ← Natrag na kalendar
+        </Link>
+        {(canEdit || canReview) && (
+          <div className="flex gap-2">
+            {canReview && (
+              <ButtonLink href={`/admin/review/${activity.id}`} size="sm">
+                Pregledaj
+              </ButtonLink>
+            )}
+            {canEdit && (
+              <ButtonLink
+                href={`/activities/${activity.id}/edit`}
+                variant="secondary"
+                size="sm"
+              >
+                Uredi
+              </ButtonLink>
+            )}
+          </div>
+        )}
+      </div>
 
       <Card className="space-y-6 p-6">
         <div className="flex items-start justify-between gap-4">
@@ -72,7 +108,15 @@ export default async function ActivityDetailPage({
           <DetailRow label="Tip">
             {ACTIVITY_TYPE_LABELS[activity.activity_type]}
           </DetailRow>
-          <DetailRow label="Lokacija">{activity.location || "—"}</DetailRow>
+          <DetailRow label="Lokacija">
+            {activity.location || "—"}
+            {activity.location && (
+              <ReservationIndicator
+                status={activity.reservation_status}
+                className="mt-1 flex"
+              />
+            )}
+          </DetailRow>
           <DetailRow label="Početak">
             <time dateTime={activity.start_time}>
               {dateFmt(activity.start_time)}

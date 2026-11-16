@@ -55,10 +55,11 @@ erDiagram
 | `start_time` | `TIMESTAMPTZ NOT NULL` | |
 | `end_time` | `TIMESTAMPTZ NOT NULL` | Constraint: `end_time > start_time` |
 | `location` | `TEXT` | Room / building |
+| `reservation_status` | `TEXT` | `not_sent` / `pending` / `confirmed` — whether the room is booked; shown beside the location as a red, yellow or green dot. Set by the author or an admin |
 | `description` | `TEXT` | |
 | `prerequisites` | `TEXT` | |
 | `target_audience` | `TEXT` | |
-| `status` | `activity_status` enum | `pending` → `approved` / `rejected` |
+| `status` | `activity_status` enum | `pending` → `approved` / `rejected`; an approved activity goes back to `pending` when its author changes the time, place or type (§3.5) |
 | `admin_comment` | `TEXT` nullable | Filled on denial |
 | `reviewed_by` | `UUID FK → profiles(id)` nullable | Admin who acted |
 | `reviewed_at` | `TIMESTAMPTZ` nullable | When the action happened |
@@ -85,7 +86,7 @@ Added with the proposal form's reading lists (schema section 9).
 | `position` | `INTEGER` | Order within the phase |
 | `created_at` | `TIMESTAMPTZ` | Auto |
 
-**Design rationale:** visibility is tested through the parent activity, so the activities policies (approved for everyone, own for the author, all for admins) decide here too, for the rows and for the bucket objects alike. Link and library materials are inserted together with the activity by `POST /api/activities`; a file needs the activity's id for its path, so the form reserves it on `POST /api/activities/[id]/materials` and PUTs the bytes to a signed upload URL. The activity page mints short-lived download URLs under the viewer's own permissions.
+**Design rationale:** visibility is tested through the parent activity, so the activities policies (approved for everyone, own for the author, all for admins) decide here too, for the rows and for the bucket objects alike. Writes are the author's while the activity is `pending` or `approved`, and always an admin's (§3.5). Link and library materials are inserted together with the activity by `POST /api/activities`; a file needs the activity's id for its path, so the form reserves it on `POST /api/activities/[id]/materials` and PUTs the bytes to a signed upload URL. The activity page mints short-lived download URLs under the viewer's own permissions.
 
 #### `notifications`
 
@@ -94,7 +95,7 @@ Added with the proposal form's reading lists (schema section 9).
 | `id` | `UUID` PK | |
 | `user_id` | `UUID FK → profiles(id)` | Recipient |
 | `activity_id` | `UUID FK → activities(id)` nullable | Linked activity (SET NULL on delete) |
-| `type` | `TEXT` | `'approved'`, `'rejected'`, `'info'` |
+| `type` | `TEXT` | `'approved'`, `'rejected'`, `'edited'` (to admins, about a member's edit of an approved activity), `'info'` |
 | `message` | `TEXT NOT NULL` | Human-readable |
 | `is_read` | `BOOLEAN DEFAULT false` | |
 | `created_at` | `TIMESTAMPTZ` | Auto |
@@ -104,7 +105,7 @@ Added with the proposal form's reading lists (schema section 9).
 | Table | Anonymous | Authenticated User | Admin |
 |---|---|---|---|
 | `profiles` | Read | Read all, Update own | Read all, Update any |
-| `activities` | Read `approved` only | Read `approved` + own; Create; Update/Delete own `pending` | Full CRUD |
+| `activities` | Read `approved` only | Read `approved` + own; Create; Update own `pending` or `approved` (a trigger decides the resulting status, §3.5); Delete own `pending` | Full CRUD |
 | `notifications` | None | Read/Update own | Read all, Insert for any user |
 
 ### 1.4 Domain Lock
@@ -211,7 +212,7 @@ MatSekApp/
 | **Server Components by default** | `calendar/page.tsx`, `activities/[id]/page.tsx`, `admin/page.tsx` are RSCs — they fetch data directly with `createServerClient()`, no loading spinners needed |
 | **Client Components where needed** | Forms (`new/page.tsx`, `review/[id]/page.tsx`) and auth pages use `"use client"` for state + browser Supabase client |
 | **Middleware for route protection** | `src/middleware.ts` checks session on all `/dashboard/*` and `/admin/*` routes; redirects to `/login` or `/calendar` accordingly |
-| **`createAdminClient()` for service_role** | Used only in `approve/route.ts` and `deny/route.ts` to insert notifications (bypasses RLS for the `notifications` table) |
+| **`createAdminClient()` for service_role** | Used only to insert notifications for other users (bypasses RLS for the `notifications` table): `approve/route.ts` and `deny/route.ts` for the proposer, `lib/activity-edits.ts` for the admins |
 | **Zod not yet integrated** | TypeScript interfaces + manual validation in route handlers suffice for MVP; Zod can be layered on in a later iteration |
 
 ---
@@ -230,7 +231,7 @@ MatSekApp/
 | `GET` | `/api/activities` | Public* | List activities (filtered by role) |
 | `POST` | `/api/activities` | User | Create activity (status → `pending`) |
 | `GET` | `/api/activities/[id]` | Public* | Get single activity (RLS-filtered) |
-| `PATCH` | `/api/activities/[id]` | Owner/Admin | Update activity |
+| `PATCH` | `/api/activities/[id]` | Owner/Admin | Update activity; an owner's edit of an approved one may return it to `pending` and notifies the admins (§3.5) |
 | `DELETE` | `/api/activities/[id]` | Owner/Admin | Delete activity |
 | `POST` | `/api/activities/[id]/approve` | Admin | Approve + notify + email |
 | `POST` | `/api/activities/[id]/deny` | Admin | Deny with comment + notify + email |
@@ -288,6 +289,27 @@ All endpoints return this. HTTP status codes follow REST conventions:
 - `403` — unauthorized (wrong role)
 - `404` — not found
 - `500` — server error
+
+### 3.5 Editing After Approval
+
+An author may edit their activity until it is rejected; admins always. While it is `pending` the edit simply goes through. Once it is `approved`:
+
+```
+PATCH /api/activities/[id] (author, activity approved)
+│
+├─ 1. Authenticate, load the row, strip server-owned fields (pickActivityFields)
+├─ 2. UPDATE through the RLS client
+│     └─ BEFORE UPDATE trigger settle_member_edit():
+│        time, place or type changed → status='pending', review columns cleared
+│        anything else               → status and review columns left as they were
+├─ 3. Compare the row before and after; if anything changed, notify every
+│     admin (type='edited') — old and new value for time, place and type
+└─ 4. Return the row; its status tells the form which of the two it was
+```
+
+The rule is a trigger rather than route code because a member's token works against PostgREST directly; the same trigger keeps a member from sending their own `pending` row up as `approved`. Admins' edits, and the service role's, are saved as written. An activity that went back to `pending` is off the public calendar (the SELECT policies) and re-enters the approve/deny flow above.
+
+Materials (`POST` / `DELETE /api/activities/[id]/materials…`) are the author's to change while the activity is `pending` or `approved`. On an approved activity that never changes the status; the admins are notified instead. Everything said about one activity collects on a single unread notification per admin, so a save that is several requests reads as one note.
 
 ---
 
@@ -395,7 +417,7 @@ Supabase owns `auth.users` and its schema is locked. The `profiles` table is our
 ### Why two Supabase clients (server + admin)?
 
 - `createServerClient()` uses the `anon` key + user's session cookie. Subject to RLS. Used in Server Components and most API routes.
-- `createAdminClient()` uses the `service_role` key. Bypasses RLS. Used ONLY server-side to insert notifications for other users (the approve/deny routes).
+- `createAdminClient()` uses the `service_role` key. Bypasses RLS. Used ONLY server-side to insert notifications for other users (the approve/deny routes for the proposer, `lib/activity-edits.ts` for the admins).
 
 ### Why not Zustand / Redux for state management?
 

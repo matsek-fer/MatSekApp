@@ -9,6 +9,13 @@ export type ActivityType =
 
 export type ActivityStatus = "pending" | "approved" | "rejected";
 
+/**
+ * Whether the room in `location` is booked: the request has not gone out,
+ * it is out and unanswered, or it came back confirmed. A CHECKed TEXT column
+ * in the database, not an enum.
+ */
+export type ReservationStatus = "not_sent" | "pending" | "confirmed";
+
 export type UserRole = "user" | "admin";
 
 // ── Database row types ────────────────────────────────────────────────────
@@ -33,6 +40,7 @@ export interface Activity {
   start_time: string; // ISO 8601
   end_time: string; // ISO 8601
   location: string;
+  reservation_status: ReservationStatus;
   description: string;
   prerequisites: string;
   target_audience: string;
@@ -88,7 +96,8 @@ export interface Notification {
   id: string;
   user_id: string;
   activity_id: string | null;
-  type: "approved" | "rejected" | "info";
+  /** `edited` goes to admins when a member changes an approved activity. */
+  type: "approved" | "rejected" | "edited" | "info";
   message: string;
   is_read: boolean;
   created_at: string;
@@ -105,6 +114,7 @@ export interface CreateActivityPayload {
   start_time: string;
   end_time: string;
   location: string;
+  reservation_status?: ReservationStatus;
   description: string;
   prerequisites: string;
   target_audience: string;
@@ -202,5 +212,11 @@ export const ACTIVITY_STATUS_LABELS: Record<ActivityStatus, string> = {
   rejected: "Odbijeno",
 };
 
-// Status colours live with the component that renders them:
-// see `StatusBadge` in src/components/ui/Badge.tsx.
+export const RESERVATION_STATUS_LABELS: Record<ReservationStatus, string> = {
+  not_sent: "Rezervacija nije poslana",
+  pending: "Rezervacija na čekanju",
+  confirmed: "Rezervacija potvrđena",
+};
+
+// Status colours live with the components that render them: `StatusBadge` in
+// src/components/ui/Badge.tsx, and `ReservationIndicator` beside a location.

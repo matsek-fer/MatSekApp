@@ -20,6 +20,7 @@ interface NotificationItem {
 const TYPE_ICON: Record<string, string> = {
   approved: "✅",
   rejected: "❌",
+  edited: "✏️",
 };
 
 export default function NotificationBell() {

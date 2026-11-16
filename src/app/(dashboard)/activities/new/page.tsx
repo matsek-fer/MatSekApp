@@ -1,6 +1,6 @@
 import { getLibraryIndex } from "@/lib/materials";
 import { getLibrarySiteIndex } from "@/lib/library";
-import NewActivityForm from "@/components/activities/NewActivityForm";
+import ActivityForm from "@/components/activities/ActivityForm";
 
 // The library site's index is fetched per request (and cached for an hour
 // by fetch), so the form never serves a list prerendered at build time
@@ -25,7 +25,7 @@ export default async function NewActivityPage() {
         </p>
       </div>
 
-      <NewActivityForm library={library} libraryAvailable={site.available} />
+      <ActivityForm library={library} libraryAvailable={site.available} />
     </div>
   );
 }

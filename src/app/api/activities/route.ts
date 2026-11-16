@@ -2,6 +2,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
 import {
   isActivityStatus,
+  isReservationStatus,
   isUuid,
   MAX_ACTIVITY_MATERIALS,
   parseActivityMaterial,
@@ -150,6 +151,16 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+    }
+
+    if (
+      body.reservation_status !== undefined &&
+      !isReservationStatus(body.reservation_status)
+    ) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: "Nepoznat status rezervacije." },
+        { status: 400 }
+      );
     }
 
     // Materials are checked before the activity is written, so a bad entry

@@ -4,6 +4,7 @@ import { hr } from "date-fns/locale";
 import { ACTIVITY_TYPE_LABELS } from "@/types";
 import type { Activity } from "@/types";
 import Badge from "@/components/ui/Badge";
+import ReservationIndicator from "./ReservationIndicator";
 import { cn } from "@/lib/utils";
 
 /**
@@ -45,7 +46,14 @@ export default function ActivityListItem({
               {format(parseISO(activity.end_time), "HH:mm")}
             </p>
             {activity.location && (
-              <p className="text-sm text-fg-subtle">📍 {activity.location}</p>
+              <p className="flex flex-wrap items-center gap-x-3 text-sm text-fg-subtle">
+                <span>📍 {activity.location}</span>
+                {/* Whether the room was booked stops mattering once the
+                    event has been held in it. */}
+                {!past && (
+                  <ReservationIndicator status={activity.reservation_status} />
+                )}
+              </p>
             )}
           </div>
           <Badge tone={past ? "neutral" : "brand"}>

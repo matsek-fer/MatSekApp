@@ -79,8 +79,9 @@ Two things live outside the repository and are easy to forget:
   the production address, and configure custom SMTP there as well — the
   built-in sender is rate-limited to a handful of messages an hour.
 - **The schema.** Run `supabase/schema.sql` on a fresh project. On a project
-  that ran an earlier version, apply the statements listed in the
-  "Applying the hardening above" comment near the end of the file instead.
+  that ran an earlier version, apply the "Applying …" comment blocks in that
+  file instead, in the order they appear — each says which older database it
+  brings up to date (the hardening, the materials, editing after approval).
 
 ## Scripts
 
