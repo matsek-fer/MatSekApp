@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createClient as createBrowserClient } from "@/lib/supabase/client";
+import { postAuth } from "@/lib/auth/client";
 import AuthShell from "@/components/auth/AuthShell";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/Field";
 
 export default function VerifyPage() {
   const router = useRouter();
-  const supabase = createBrowserClient();
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
   const [error, setError] = useState("");
@@ -23,14 +22,10 @@ export default function VerifyPage() {
     setLoading(true);
     setError("");
 
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      email,
-      token,
-      type: "signup",
-    });
+    const { error: verifyError } = await postAuth("verify", { email, token });
 
     if (verifyError) {
-      setError(verifyError.message);
+      setError(verifyError);
       setLoading(false);
       return;
     }

@@ -1,13 +1,115 @@
 -- ============================================================================
--- Math Club App — Complete Database Schema (Supabase / PostgreSQL)
+-- Math Club App — Complete Database Schema (PostgreSQL 15+)
 -- ============================================================================
--- Run this in the Supabase SQL Editor (or as a migration).
+-- Applied once, to an empty database, by db/init.sh when the Postgres
+-- container first starts. By hand, as the role that will own the schema:
+--
+--   -- as a superuser, once:
+--   CREATE ROLE matsek LOGIN PASSWORD '…';
+--   CREATE ROLE anon NOLOGIN;
+--   CREATE ROLE authenticated NOLOGIN;
+--   GRANT anon, authenticated TO matsek;
+--   ALTER DATABASE matsek OWNER TO matsek;
+--   CREATE EXTENSION "uuid-ossp";
+--   -- then:
+--   psql "postgres://matsek:…@host/matsek" -f db/schema.sql
+--
+-- The access model is the one the app was built on under Supabase, kept on
+-- purpose: every policy below tests auth.uid(), and the column grants below
+-- name Supabase's two request roles, `anon` and `authenticated`, which exist
+-- here under the same names. src/lib/db switches to one of them at the start
+-- of every withUser() transaction and sets app.user_id for that transaction
+-- only. The owner role bypasses RLS (the tables are not FORCEd), which is
+-- what asService() uses for the few reads and writes that must cross users.
 -- ============================================================================
 
 -- ---------------------------------------------------------------------------
 -- 1. EXTENSIONS
 -- ---------------------------------------------------------------------------
+-- Created by a superuser in db/init.sh; here so a by-hand install fails
+-- loudly at the top if that step was skipped.
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ---------------------------------------------------------------------------
+-- 1a. REQUEST ROLES — the grants Supabase gives anon and authenticated
+-- ---------------------------------------------------------------------------
+-- Supabase grants both roles everything on public tables by default and
+-- lets RLS and the column grants in section 6 narrow it. The same defaults
+-- are set here, before any table exists, so every REVOKE/GRANT below means
+-- exactly what it meant on Supabase.
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 1b. AUTH — what Supabase's auth schema used to provide
+-- ---------------------------------------------------------------------------
+-- Named and shaped after Supabase's own auth.users so the profile trigger and
+-- the domain lock below apply unchanged. The request roles get USAGE on the
+-- schema (policies call auth.uid()) and no grant on any table in it: users,
+-- sessions and codes are touched only by src/lib/auth through the owner role.
+CREATE SCHEMA IF NOT EXISTS auth;
+GRANT USAGE ON SCHEMA auth TO anon, authenticated;
+
+CREATE TABLE auth.users (
+  id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email              TEXT NOT NULL,
+  encrypted_password TEXT NOT NULL,
+  email_confirmed_at TIMESTAMPTZ,            -- NULL until the signup code is entered
+  raw_user_meta_data JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Addresses are compared case-insensitively everywhere; the index is what
+-- makes "already registered" a constraint rather than a race.
+CREATE UNIQUE INDEX users_email_key ON auth.users (lower(email));
+
+-- The cookie holds a random token; only its SHA-256 is stored, so a read of
+-- this table does not hand out live sessions.
+CREATE TABLE auth.sessions (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id      UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  token_hash   TEXT NOT NULL UNIQUE,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at   TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX idx_sessions_user ON auth.sessions(user_id);
+
+-- Six-digit codes for signup confirmation and password recovery. One live
+-- code per user and purpose: asking again replaces it, so an old email stops
+-- working the moment a new one is sent. `attempts` caps guessing at a handful
+-- per code, which is what makes a 10^6 space safe to send by email.
+CREATE TABLE auth.one_time_codes (
+  user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  purpose    TEXT NOT NULL CHECK (purpose IN ('signup', 'recovery')),
+  code_hash  TEXT NOT NULL,
+  attempts   INTEGER NOT NULL DEFAULT 0,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, purpose)
+);
+
+-- Login and code-sending throttles, keyed by text ("login:<email>") because
+-- they have to work before anyone is signed in. Supabase Auth applied its
+-- own; these replace them.
+CREATE TABLE auth.rate_limits (
+  key          TEXT NOT NULL,
+  window_start TIMESTAMPTZ NOT NULL,
+  hits         INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (key, window_start)
+);
+
+-- The member the current transaction acts for, or NULL for a visitor.
+-- src/lib/db sets app.user_id with set_config(…, true), which scopes it to
+-- the transaction, so a pooled connection cannot carry one request's identity
+-- into the next.
+CREATE OR REPLACE FUNCTION auth.uid()
+RETURNS UUID AS $$
+  SELECT nullif(current_setting('app.user_id', true), '')::uuid
+$$ LANGUAGE sql STABLE;
 
 -- ---------------------------------------------------------------------------
 -- 2. ENUMS
@@ -33,7 +135,7 @@ CREATE TYPE user_role AS ENUM (
 
 -- ---------------------------------------------------------------------------
 -- 3. PROFILES TABLE
---    Mirrors Supabase auth.users; one-to-one.
+--    One per auth.users row, created by the trigger in 3a.
 -- ---------------------------------------------------------------------------
 CREATE TABLE public.profiles (
   id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -55,6 +157,10 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE TRIGGER profiles_updated_at
   BEFORE UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+CREATE TRIGGER users_updated_at
+  BEFORE UPDATE ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 -- ---------------------------------------------------------------------------
@@ -132,6 +238,26 @@ CREATE TABLE public.notifications (
 
 CREATE INDEX idx_notifications_user ON public.notifications(user_id, is_read);
 
+-- ---------------------------------------------------------------------------
+-- 5a. ACTIVITIES WITH THEIR PROPOSER'S NAME
+-- ---------------------------------------------------------------------------
+-- The shape every activity read returns: the row plus `creator` as
+-- {id, full_name}, which is what Supabase's
+-- `select("*, creator:profiles!created_by(id, full_name)")` embed produced.
+-- Only those two columns: they are all `anon` may read of a profile (section
+-- 6), and security_invoker makes the view run with the caller's rights, so
+-- naming any other column would fail the whole query for a visitor — and
+-- the activities policies still decide which rows come back.
+CREATE VIEW public.activities_with_creator
+WITH (security_invoker = true) AS
+SELECT
+  a.*,
+  CASE WHEN c.id IS NULL THEN NULL ELSE
+    json_build_object('id', c.id, 'full_name', c.full_name)
+  END AS creator
+FROM public.activities a
+LEFT JOIN public.profiles c ON c.id = a.created_by;
+
 -- ============================================================================
 -- 6. ROW LEVEL SECURITY (RLS)
 -- ============================================================================
@@ -151,8 +277,8 @@ ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 -- outright: anonymous visitors get `id` and `full_name`, signed-in members
 -- `role` as well, because every page reads its own row's role and a column
 -- grant cannot depend on the row. Nobody reads another member's e-mail
--- through this client; the two routes that mail a proposer fetch it with the
--- service-role client after their own admin check. Queries therefore embed
+-- through withUser(); the two routes that mail a proposer fetch it through
+-- asService() after their own admin check. Queries therefore join
 -- `profiles(id, full_name)` and nothing more.
 CREATE POLICY "Profiles are viewable by everyone"
   ON public.profiles FOR SELECT
@@ -164,8 +290,8 @@ GRANT SELECT (id, full_name, role) ON public.profiles TO authenticated;
 
 -- Users can update only their own profile, and only their name. Without the
 -- column grant a member could set their own `role` to admin with one
--- PostgREST call, since the policy only checks whose row it is. Promotion to
--- admin stays what section 8 documents: an UPDATE in the SQL editor.
+-- UPDATE, since the policy only checks whose row it is. Promotion to admin
+-- stays what section 8 documents: an UPDATE run in psql.
 CREATE POLICY "Users can update own profile"
   ON public.profiles FOR UPDATE
   USING (auth.uid() = id)
@@ -228,9 +354,9 @@ CREATE POLICY "Users can create activities"
   );
 
 -- Users can update their OWN activities only if still 'pending' — and the
--- review columns stay empty, as on insert: the API strips them, but a
--- member's token works against PostgREST directly, and a forged
--- admin_comment would be shown as the admin's words.
+-- review columns stay empty, as on insert: the API strips them, and the
+-- policy holds even for a route that forgets to — a forged admin_comment
+-- would be shown as the admin's words.
 CREATE POLICY "Users can update own pending activities"
   ON public.activities FOR UPDATE
   USING (auth.uid() = created_by AND status = 'pending')
@@ -270,8 +396,8 @@ CREATE POLICY "Users can update own approved activities"
 -- and the review columns exactly as they were.  It has to be a trigger: a
 -- policy sees only the new row and cannot tell what changed, and with the
 -- two UPDATE policies ORed together a member could otherwise send their own
--- pending row up as approved.  Admins, and anything without a member's
--- token (the service role, the SQL editor), write what they mean.
+-- pending row up as approved.  Admins, and anything not acting for a
+-- member (asService(), psql), write what they mean.
 CREATE OR REPLACE FUNCTION public.settle_member_edit()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -336,8 +462,8 @@ CREATE POLICY "Admins can view all notifications"
   ON public.notifications FOR SELECT
   USING (public.is_admin());
 
--- Insert is allowed for the recipient (system/service_role inserts, but RLS
--- is bypassed by service_role key.  This policy is for completeness.)
+-- Insert is allowed for the recipient (system inserts go through
+-- asService(), which bypasses RLS.  This policy is for completeness.)
 CREATE POLICY "Notifications insert for recipient"
   ON public.notifications FOR INSERT
   WITH CHECK (auth.uid() = user_id);
@@ -347,43 +473,6 @@ CREATE POLICY "Users can update own notifications"
   ON public.notifications FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
-
--- ---------------------------------------------------------------------------
--- Applying the hardening above to a database that ran an earlier version of
--- this file (the statements are safe to repeat):
---
---   REVOKE SELECT ON public.profiles FROM anon, authenticated;
---   GRANT SELECT (id, full_name) ON public.profiles TO anon;
---   GRANT SELECT (id, full_name, role) ON public.profiles TO authenticated;
---   REVOKE UPDATE ON public.profiles FROM anon, authenticated;
---   GRANT UPDATE (full_name) ON public.profiles TO authenticated;
---   DROP POLICY IF EXISTS "Admins can update any profile" ON public.profiles;
---   DROP POLICY IF EXISTS "Users can create activities" ON public.activities;
---   CREATE POLICY "Users can create activities" ON public.activities FOR INSERT
---     WITH CHECK (auth.uid() = created_by AND status = 'pending'
---       AND reviewed_by IS NULL AND reviewed_at IS NULL AND admin_comment IS NULL);
---   DROP POLICY IF EXISTS "Users can update own pending activities" ON public.activities;
---   CREATE POLICY "Users can update own pending activities" ON public.activities FOR UPDATE
---     USING (auth.uid() = created_by AND status = 'pending')
---     WITH CHECK (auth.uid() = created_by AND status = 'pending'
---       AND reviewed_by IS NULL AND reviewed_at IS NULL AND admin_comment IS NULL);
---   CREATE OR REPLACE FUNCTION public.is_admin()
---   RETURNS boolean
---   LANGUAGE sql STABLE SECURITY DEFINER
---   SET search_path = public
---   AS $$
---     SELECT EXISTS (
---       SELECT 1 FROM public.profiles
---       WHERE id = auth.uid() AND role = 'admin'
---     )
---   $$;
---   REVOKE ALL ON FUNCTION public.is_admin() FROM PUBLIC;
---   GRANT EXECUTE ON FUNCTION public.is_admin() TO anon, authenticated;
---   ALTER POLICY "Admins can view all activities" ON public.activities USING (public.is_admin());
---   ALTER POLICY "Admins can update any activity" ON public.activities USING (public.is_admin());
---   ALTER POLICY "Admins can delete any activity" ON public.activities USING (public.is_admin());
---   ALTER POLICY "Admins can view all notifications" ON public.notifications USING (public.is_admin());
--- ---------------------------------------------------------------------------
 
 -- ============================================================================
 -- 7. DOMAIN LOCK — restrict registration to @fer.hr / @student.fer.hr
@@ -486,98 +575,11 @@ CREATE POLICY "Authors remove materials from own activities"
     OR public.is_admin()
   );
 
--- The bucket is private: the browser PUTs the bytes straight to Storage on
--- a signed upload URL, so the bucket is the only thing positioned to refuse
--- a size or a type, and readers get short-lived signed URLs minted by the
--- activity page under their own permissions.
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-  'activity-materials',
-  'activity-materials',
-  false,
-  26214400,                                 -- 25 MiB
-  ARRAY['application/pdf', 'text/markdown', 'text/plain']
-)
-ON CONFLICT (id) DO UPDATE SET
-  public             = EXCLUDED.public,
-  file_size_limit    = EXCLUDED.file_size_limit,
-  allowed_mime_types = EXCLUDED.allowed_mime_types;
-
--- Objects are keyed {activity_id}/{material_id}/{file name}, so the first
--- path segment is the activity and the tests below are the table's tests
--- again.  The id is compared as text so a malformed segment is a miss, not
--- a cast error.
-CREATE POLICY "Activity files follow their activity"
-  ON storage.objects FOR SELECT
-  USING (
-    bucket_id = 'activity-materials'
-    AND EXISTS (
-      SELECT 1 FROM public.activities a
-      WHERE a.id::text = (storage.foldername(name))[1]
-    )
-  );
-
-CREATE POLICY "Authors upload files to own activities"
-  ON storage.objects FOR INSERT
-  WITH CHECK (
-    bucket_id = 'activity-materials'
-    AND (
-      EXISTS (
-        SELECT 1 FROM public.activities a
-        WHERE a.id::text = (storage.foldername(name))[1]
-          AND a.created_by = auth.uid()
-          AND a.status IN ('pending', 'approved')
-      )
-      OR public.is_admin()
-    )
-  );
-
-CREATE POLICY "Authors remove files from own activities"
-  ON storage.objects FOR DELETE
-  USING (
-    bucket_id = 'activity-materials'
-    AND (
-      EXISTS (
-        SELECT 1 FROM public.activities a
-        WHERE a.id::text = (storage.foldername(name))[1]
-          AND a.created_by = auth.uid()
-          AND a.status IN ('pending', 'approved')
-      )
-      OR public.is_admin()
-    )
-  );
-
--- ---------------------------------------------------------------------------
--- Applying section 9 to a database that ran an earlier version of this file:
--- add the two enum values first, on their own — a value added by ALTER TYPE
--- cannot be used in the same transaction — then run section 9 as it stands.
---
---   ALTER TYPE activity_type ADD VALUE IF NOT EXISTS 'social';
---   ALTER TYPE activity_type ADD VALUE IF NOT EXISTS 'seminar';
--- ---------------------------------------------------------------------------
-
--- ---------------------------------------------------------------------------
--- Applying the edit-after-approval rules and the reservation status to a
--- database that ran an earlier version of this file (one that has section 9).
--- First these, which are safe to repeat:
---
---   ALTER TABLE public.activities
---     ADD COLUMN IF NOT EXISTS reservation_status TEXT NOT NULL DEFAULT 'not_sent';
---   ALTER TABLE public.activities DROP CONSTRAINT IF EXISTS chk_reservation_status;
---   ALTER TABLE public.activities ADD CONSTRAINT chk_reservation_status
---     CHECK (reservation_status IN ('not_sent', 'pending', 'confirmed'));
---   DROP POLICY IF EXISTS "Users can update own approved activities" ON public.activities;
---   DROP TRIGGER IF EXISTS activities_settle_member_edit ON public.activities;
---   DROP POLICY IF EXISTS "Authors add materials to own pending activities" ON public.activity_materials;
---   DROP POLICY IF EXISTS "Authors add materials to own activities" ON public.activity_materials;
---   DROP POLICY IF EXISTS "Authors remove materials from own pending activities" ON public.activity_materials;
---   DROP POLICY IF EXISTS "Authors remove materials from own activities" ON public.activity_materials;
---   DROP POLICY IF EXISTS "Authors upload files to own pending activities" ON storage.objects;
---   DROP POLICY IF EXISTS "Authors upload files to own activities" ON storage.objects;
---   DROP POLICY IF EXISTS "Authors remove files from own pending activities" ON storage.objects;
---   DROP POLICY IF EXISTS "Authors remove files from own activities" ON storage.objects;
---
--- then, as they stand above: the policy "Users can update own approved
--- activities" and the function settle_member_edit() with its trigger from
--- section 6, and the four "Authors …" policies from section 9.
--- ---------------------------------------------------------------------------
+-- The files themselves live in an S3 bucket, keyed
+-- {activity_id}/{material_id}/{file name} (storage_path). The bucket is
+-- private and the browser never talks to it: uploads and downloads pass
+-- through /api/activities/[id]/materials/[materialId]/file, which looks the
+-- material up through RLS first, so the policies above decide who may read
+-- or write a file exactly as they decide for its row. That route also
+-- enforces the 25 MiB and file-type limits Supabase's bucket settings used
+-- to.

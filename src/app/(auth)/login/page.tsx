@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createClient as createBrowserClient } from "@/lib/supabase/client";
+import { postAuth } from "@/lib/auth/client";
 import AuthShell from "@/components/auth/AuthShell";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/Field";
 
 export default function LoginPage() {
   const router = useRouter();
-  const supabase = createBrowserClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -22,13 +21,10 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const { error: loginError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error: loginError } = await postAuth("login", { email, password });
 
     if (loginError) {
-      setError(loginError.message);
+      setError(loginError);
       setLoading(false);
       return;
     }

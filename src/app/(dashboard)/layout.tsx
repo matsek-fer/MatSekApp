@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient as createServerClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth/session";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import VoronoiNavbarLink from "@/components/layout/VoronoiNavbarLink";
 import LogoutButton from "@/components/auth/LogoutButton";
@@ -15,23 +15,11 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // The session lookup already joins the profile, so the navbar's name and
+  // role cost no query of their own.
+  const user = await getCurrentUser();
 
-  let profile: { role: string; full_name: string } | null = null;
-
-  if (user) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("role, full_name")
-      .eq("id", user.id)
-      .single();
-    profile = data;
-  }
-
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = user?.role === "admin";
   const lang = await getLang();
   const t = CHROME[lang];
 
@@ -83,7 +71,7 @@ export default async function DashboardLayout({
                     href="/profile"
                     className="hidden max-w-[16ch] self-stretch truncate sm:inline-flex"
                   >
-                    {profile?.full_name || user.email}
+                    {user.full_name || user.email}
                   </VoronoiNavbarLink>
                   <LogoutButton label={t.logout} pendingLabel={t.loggingOut} />
                 </>

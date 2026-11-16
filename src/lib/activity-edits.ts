@@ -1,6 +1,6 @@
 import { format, parseISO } from "date-fns";
 import { hr } from "date-fns/locale";
-import { createAdminClient } from "@/lib/supabase/server";
+import { asService } from "@/lib/db";
 import {
   ACTIVITY_TYPE_LABELS,
   RESERVATION_STATUS_LABELS,
@@ -12,8 +12,8 @@ import {
  * approved.
  *
  * Whether such an edit stays public or goes back for review is not decided
- * here — the `settle_member_edit` trigger in schema.sql does that, for the
- * API and for a token used against PostgREST directly alike. This module
+ * here — the `settle_member_edit` trigger in db/schema.sql does that, for
+ * every write made as a member. This module
  * only words what happened and leaves it in the admins' notifications.
  */
 
@@ -131,8 +131,8 @@ const MAX_NOTE_LENGTH = 1500;
  * teach the admins to stop reading them, so a line joins the note that is
  * still unread and only starts a new one once that has been read.
  *
- * The service-role client is used for the reason it exists: a member cannot
- * insert a notification for someone else. The caller has already let the
+ * asService() is used for the reason it exists: a member cannot insert a
+ * notification for someone else. The caller has already let the
  * edit through RLS as that member; nothing here reads or returns data on
  * their behalf. A failure is logged and swallowed — the edit is saved
  * either way, and an activity sent back for review shows in the admin
@@ -143,59 +143,45 @@ export async function notifyAdminsOfEdit(
   line: string
 ): Promise<void> {
   try {
-    const admin = createAdminClient();
+    await asService(async (tx) => {
+      const admins = await tx<{ id: string }[]>`
+        SELECT id FROM profiles WHERE role = 'admin'
+      `;
+      const adminIds = admins.map((a) => a.id);
+      if (adminIds.length === 0) return;
 
-    const { data: admins, error: adminsError } = await admin
-      .from("profiles")
-      .select("id")
-      .eq("role", "admin");
-    if (adminsError) throw adminsError;
-    const adminIds = (admins ?? []).map((a) => a.id as string);
-    if (adminIds.length === 0) return;
+      const unread = await tx<{ id: string; user_id: string; message: string }[]>`
+        SELECT id, user_id, message FROM notifications
+        WHERE activity_id = ${activityId} AND type = 'edited'
+          AND is_read = false AND user_id IN ${tx(adminIds)}
+      `;
+      const open = new Map(unread.map((n) => [n.user_id, n] as const));
 
-    const { data: unread, error: unreadError } = await admin
-      .from("notifications")
-      .select("id, user_id, message")
-      .eq("activity_id", activityId)
-      .eq("type", "edited")
-      .eq("is_read", false)
-      .in("user_id", adminIds);
-    if (unreadError) throw unreadError;
+      const fresh = adminIds
+        .filter((id) => !open.has(id))
+        .map((user_id) => ({
+          user_id,
+          activity_id: activityId,
+          type: "edited",
+          message: line,
+        }));
+      if (fresh.length > 0) {
+        await tx`INSERT INTO notifications ${tx(fresh)}`;
+      }
 
-    const open = new Map(
-      (unread ?? []).map((n) => [n.user_id as string, n] as const)
-    );
-
-    const fresh = adminIds
-      .filter((id) => !open.has(id))
-      .map((user_id) => ({
-        user_id,
-        activity_id: activityId,
-        type: "edited",
-        message: line,
-      }));
-    if (fresh.length > 0) {
-      const { error } = await admin.from("notifications").insert(fresh);
-      if (error) throw error;
-    }
-
-    // Stamped now, so the note rises back to the top of the bell.
-    const now = new Date().toISOString();
-    await Promise.all(
-      [...open.values()].map((n) => {
+      // Stamped now, so the note rises back to the top of the bell.
+      for (const n of open.values()) {
         const merged = `${n.message}\n${line}`;
-        return admin
-          .from("notifications")
-          .update({
-            message:
-              merged.length > MAX_NOTE_LENGTH
-                ? `…${merged.slice(-MAX_NOTE_LENGTH)}`
-                : merged,
-            created_at: now,
-          })
-          .eq("id", n.id);
-      })
-    );
+        const message =
+          merged.length > MAX_NOTE_LENGTH
+            ? `…${merged.slice(-MAX_NOTE_LENGTH)}`
+            : merged;
+        await tx`
+          UPDATE notifications SET message = ${message}, created_at = now()
+          WHERE id = ${n.id}
+        `;
+      }
+    });
   } catch (err) {
     console.error("notifyAdminsOfEdit failed:", err);
   }

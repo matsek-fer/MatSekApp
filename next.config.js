@@ -3,6 +3,10 @@ const nextConfig = {
   // The site runs from `node server.js` in a container (see Dockerfile);
   // Vercel ignores this and traces on its own.
   output: "standalone",
+  // postgres.js v4 is an ES module that webpack emits as a static asset and
+  // then fails to minify; required from node_modules at runtime instead,
+  // which the standalone trace follows.
+  serverExternalPackages: ["postgres"],
   poweredByHeader: false,
   async headers() {
     return [

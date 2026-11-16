@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { createClient as createBrowserClient } from "@/lib/supabase/client";
+import { postAuth } from "@/lib/auth/client";
 import AuthShell from "@/components/auth/AuthShell";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { Input } from "@/components/ui/Field";
 
 export default function ForgotPasswordPage() {
-  const supabase = createBrowserClient();
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -21,17 +20,17 @@ export default function ForgotPasswordPage() {
     setError("");
     setSuccess("");
 
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-      email.trim()
-    );
+    const { error: resetError } = await postAuth("forgot-password", {
+      email: email.trim(),
+    });
 
     setLoading(false);
 
-    // Supabase does not distinguish a missing account here, and neither do we:
+    // The route does not distinguish a missing account, and neither do we:
     // a form that answers differently for a registered address hands out a
     // membership list to anyone willing to type.
     if (resetError) {
-      setError(resetError.message);
+      setError(resetError);
       return;
     }
 

@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
  * A Link click is dispatched inside a React transition, and a transition only
  * commits once the new tree has something to show. Without this file there is
  * no Suspense boundary below the navbar, so the click sits on the old page
- * with the old URL until the destination's server render — every Supabase
+ * with the old URL until the destination's server render — every database
  * round-trip in it — has finished. On a good connection that is a quarter of
  * a second; on a stalled one it is tens of seconds of what looks like a dead
  * link. With it, the URL changes and this skeleton paints on the click, and

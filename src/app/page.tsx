@@ -1,4 +1,4 @@
-import { createClient as createServerClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth/session";
 import LogoutButton from "@/components/auth/LogoutButton";
 import ContentPanel from "@/components/landing/ContentPanel";
 import ThemeToggle from "@/components/ui/ThemeToggle";
@@ -16,10 +16,7 @@ export default async function HomePage({
 }: {
   searchParams: Promise<{ seed?: string }>;
 }) {
-  const supabase = await createServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const user = await getCurrentUser();
   const lang = await getLang();
   const t = CHROME[lang];
 
@@ -50,7 +47,7 @@ export default async function HomePage({
         <Logo size="lg" width={380} className="w-full max-w-[300px] sm:max-w-[380px]" />
 
         <div className="mt-4 flex flex-wrap justify-center gap-3">
-          {session ? (
+          {user ? (
             <>
               <ButtonLink href="/calendar" size="lg">
                 {t.calendar}

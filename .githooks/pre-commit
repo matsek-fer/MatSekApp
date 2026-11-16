@@ -72,6 +72,19 @@ for file in $staged; do
   should still come from the environment rather than be committed."
   fi
 
+  # A database URL with a real password in it — the owning role's, which
+  # bypasses Row Level Security the way the service role key did.
+  # Placeholders ("your-…", a bare "…") and compose's ${VAR} interpolation
+  # are what the tracked files legitimately contain, so those pass.
+  if git show ":$file" 2>/dev/null \
+      | grep -aoE 'postgres(ql)?://[^:/@[:space:]]+:[^@[:space:]]+@' \
+      | grep -qvE '://[^:]+:(your-|\$\{|…@|\.\.\.@)'; then
+    fail "Database URL with a password found in: $file
+
+  Whoever has it can log in as the app's role, which owns the schema and
+  bypasses Row Level Security. Change it with ALTER ROLE … PASSWORD."
+  fi
+
   if scan "$file" 'BEGIN \(RSA \|OPENSSH \|EC \)\?PRIVATE KEY'; then
     fail "Private key material found in: $file"
   fi

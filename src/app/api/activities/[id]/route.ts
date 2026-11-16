@@ -1,11 +1,14 @@
-import { createClient as createServerClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
+import { withUser } from "@/lib/db";
+import { loadActivity } from "@/lib/db/activities";
+import { userFacingDbError } from "@/lib/db/errors";
+import { getCurrentUser } from "@/lib/auth/session";
 import {
   isActivityType,
   isReservationStatus,
+  isUuid,
   pickActivityFields,
 } from "@/lib/validation";
-import { withDownloadUrls } from "@/lib/activity-materials";
 import {
   describeEdit,
   editNotice,
@@ -18,7 +21,7 @@ import type { ApiResponse, Activity } from "@/types";
  * GET /api/activities/[id]
  *
  * Returns a single activity by ID, with its materials. File materials carry
- * a short-lived download URL minted under the caller's own permissions.
+ * the URL of their download route, which checks the caller again.
  * Respects RLS: anonymous sees only approved; users see own + approved; admins see all.
  */
 export async function GET(
@@ -26,28 +29,22 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createServerClient();
     const { id } = await params;
 
-    const { data: activity, error } = await supabase
-      .from("activities")
-      .select(
-        "*, creator:profiles!created_by(id, full_name), materials:activity_materials(*)"
-      )
-      .eq("id", id)
-      .single();
+    const user = isUuid(id) ? await getCurrentUser() : null;
+    const activity = isUuid(id)
+      ? await withUser(user?.id ?? null, (tx) => loadActivity(tx, id))
+      : null;
 
-    if (error) {
+    if (!activity) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Aktivnost nije pronađena." },
         { status: 404 }
       );
     }
 
-    const materials = await withDownloadUrls(supabase, activity.materials ?? []);
-
     return NextResponse.json<ApiResponse<Activity>>(
-      { success: true, data: { ...activity, materials } },
+      { success: true, data: activity },
       { status: 200 }
     );
   } catch (err) {
@@ -77,12 +74,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createServerClient();
     const { id } = await params;
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
 
     if (!user) {
       return NextResponse.json<ApiResponse>(
@@ -95,29 +89,21 @@ export async function PATCH(
 
     // The whole row, not just the owner: what it held before the edit is
     // what the admins are told it was changed from.
-    const { data: existingRow } = await supabase
-      .from("activities")
-      .select("*")
-      .eq("id", id)
-      .single();
+    const [existing] = isUuid(id)
+      ? await withUser(user.id, (tx) =>
+          tx<Activity[]>`SELECT * FROM activities WHERE id = ${id}`
+        )
+      : [];
 
-    if (!existingRow) {
+    if (!existing) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Aktivnost nije pronađena." },
         { status: 404 }
       );
     }
-    const existing = existingRow as Activity;
 
-    // Check permissions via RLS (the update policy handles this, but we do
-    // an early check for better error messages)
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role, full_name")
-      .eq("id", user.id)
-      .single();
-
-    const isAdmin = profile?.role === "admin";
+    // The update policies decide this; checking first is for the message.
+    const isAdmin = user.role === "admin";
     const isOwner = user.id === existing.created_by;
 
     if (!isAdmin && !isOwner) {
@@ -173,24 +159,22 @@ export async function PATCH(
       );
     }
 
-    // maybeSingle, not single: an UPDATE that RLS refuses is not an error to
-    // PostgREST, it is an update of no rows, and `single()` reports that as
-    // "Cannot coerce the result to a single JSON object" — true, and no use
-    // to the member reading it.
-    const { data: updatedRow, error } = await supabase
-      .from("activities")
-      .update(patch)
-      .eq("id", id)
-      .select()
-      .maybeSingle();
-
-    if (error) {
+    // An UPDATE that RLS refuses is not an error, it is an update of no
+    // rows, so the empty result is checked below rather than caught here.
+    let updated: Activity | undefined;
+    try {
+      [updated] = await withUser(user.id, (tx) =>
+        tx<Activity[]>`UPDATE activities SET ${tx(patch)} WHERE id = ${id} RETURNING *`
+      );
+    } catch (err) {
+      const message = userFacingDbError(err);
+      if (!message) throw err;
       return NextResponse.json<ApiResponse>(
-        { success: false, error: error.message },
+        { success: false, error: message },
         { status: 400 }
       );
     }
-    if (!updatedRow) {
+    if (!updated) {
       // The row was readable a moment ago and passed the checks above, so the
       // UPDATE policies turned it down. Either it was reviewed in between, or
       // the database predates the policy that lets an author edit an approved
@@ -202,12 +186,11 @@ export async function PATCH(
         {
           success: false,
           error:
-            "Izmjena nije spremljena jer je baza nije dopustila. Aktivnost je možda u međuvremenu pregledana; ako nije, bazi nedostaju pravila za uređivanje odobrenih aktivnosti (supabase/schema.sql).",
+            "Izmjena nije spremljena jer je baza nije dopustila. Aktivnost je možda u međuvremenu pregledana; ako nije, bazi nedostaju pravila za uređivanje odobrenih aktivnosti (db/schema.sql).",
         },
         { status: 403 }
       );
     }
-    const updated = updatedRow as Activity;
 
     // Only an author's edit of an approved activity is news to the admins:
     // a pending one is theirs to read in full when they review it, and an
@@ -219,7 +202,7 @@ export async function PATCH(
         await notifyAdminsOfEdit(
           id,
           editNotice(
-            profile?.full_name ?? "",
+            user.full_name,
             updated.title,
             summary,
             updated.status === "pending"
@@ -252,12 +235,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createServerClient();
     const { id } = await params;
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
 
     if (!user) {
       return NextResponse.json<ApiResponse>(
@@ -267,11 +247,13 @@ export async function DELETE(
     }
 
     // Check ownership / admin
-    const { data: existing } = await supabase
-      .from("activities")
-      .select("created_by, status")
-      .eq("id", id)
-      .single();
+    const [existing] = isUuid(id)
+      ? await withUser(user.id, (tx) =>
+          tx<Pick<Activity, "created_by" | "status">[]>`
+            SELECT created_by, status FROM activities WHERE id = ${id}
+          `
+        )
+      : [];
 
     if (!existing) {
       return NextResponse.json<ApiResponse>(
@@ -280,13 +262,7 @@ export async function DELETE(
       );
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    const isAdmin = profile?.role === "admin";
+    const isAdmin = user.role === "admin";
 
     if (!isAdmin && user.id !== existing.created_by) {
       return NextResponse.json<ApiResponse>(
@@ -295,15 +271,17 @@ export async function DELETE(
       );
     }
 
-    const { error } = await supabase
-      .from("activities")
-      .delete()
-      .eq("id", id);
+    // The delete policy only lets an author remove a pending proposal.
+    // Under Supabase a refused delete looked like success; counting rows
+    // makes it an answer.
+    const deleted = await withUser(user.id, (tx) =>
+      tx`DELETE FROM activities WHERE id = ${id}`
+    );
 
-    if (error) {
+    if (deleted.count === 0) {
       return NextResponse.json<ApiResponse>(
-        { success: false, error: error.message },
-        { status: 400 }
+        { success: false, error: "Možeš obrisati samo aktivnosti na čekanju." },
+        { status: 403 }
       );
     }
 

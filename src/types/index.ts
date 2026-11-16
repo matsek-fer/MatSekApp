@@ -137,13 +137,13 @@ export interface ActivityMaterialInput {
 }
 
 /**
- * What `POST /api/activities/[id]/materials` hands back for a file. The
- * browser PUTs the bytes to Storage itself on the signed URL.
+ * What `POST /api/activities/[id]/materials` hands back. For a file,
+ * `upload_url` is the material's file route, which the browser PUTs the
+ * bytes to; for the other kinds it is null.
  */
 export interface CreateActivityMaterialResult {
   material: ActivityMaterial;
   upload_url: string | null;
-  upload_token: string | null;
 }
 
 export interface UpdateActivityPayload extends Partial<CreateActivityPayload> {}

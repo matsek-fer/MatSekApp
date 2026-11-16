@@ -1,8 +1,10 @@
 import { notFound, redirect } from "next/navigation";
-import { createClient as createServerClient } from "@/lib/supabase/server";
+import { withUser } from "@/lib/db";
+import { loadActivity } from "@/lib/db/activities";
+import { requireUser } from "@/lib/auth/session";
+import { isUuid } from "@/lib/validation";
 import { getLibraryIndex } from "@/lib/materials";
 import { getLibrarySiteIndex } from "@/lib/library";
-import type { Activity } from "@/types";
 import ActivityForm from "@/components/activities/ActivityForm";
 
 export const dynamic = "force-dynamic";
@@ -19,27 +21,17 @@ export default async function EditActivityPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createServerClient();
+  const user = await requireUser(`/activities/${id}/edit`);
+  if (!isUuid(id)) notFound();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const [{ data }, { data: profile }, site] = await Promise.all([
-    supabase
-      .from("activities")
-      .select("*, materials:activity_materials(*)")
-      .eq("id", id)
-      .single(),
-    supabase.from("profiles").select("role").eq("id", user.id).single(),
+  const [activity, site] = await Promise.all([
+    withUser(user.id, (tx) => loadActivity(tx, id)),
     getLibrarySiteIndex(),
   ]);
 
-  if (!data) notFound();
-  const activity = data as Activity;
+  if (!activity) notFound();
 
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = user.role === "admin";
   const isOwner = activity.created_by === user.id;
   if (!isAdmin && !(isOwner && activity.status !== "rejected")) {
     redirect(`/activities/${id}`);

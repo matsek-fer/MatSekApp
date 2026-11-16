@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { hr } from "date-fns/locale";
-import { createClient as createServerClient } from "@/lib/supabase/server";
+import { withUser } from "@/lib/db";
+import { NOTIFICATION_COLUMNS } from "@/lib/db/notifications";
+import { requireUser } from "@/lib/auth/session";
 import type { Notification } from "@/types";
 import Card from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
@@ -10,22 +11,20 @@ import { cn } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage() {
-  const supabase = await createServerClient();
+  const user = await requireUser("/notifications");
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  const { data } = await supabase
-    .from("notifications")
-    .select("*, activity:activities(id, title, status)")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(50);
-
-  const notifications = (data ?? []) as Notification[];
+  const notifications: Notification[] = [
+    ...(await withUser(user.id, (tx) =>
+      tx<Notification[]>`
+        SELECT ${NOTIFICATION_COLUMNS(tx)}
+        FROM notifications n
+        LEFT JOIN activities a ON a.id = n.activity_id
+        WHERE n.user_id = ${user.id}
+        ORDER BY n.created_at DESC
+        LIMIT 50
+      `
+    )),
+  ];
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">

@@ -2,19 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient as createBrowserClient } from "@/lib/supabase/client";
+import { postAuth } from "@/lib/auth/client";
 
 /**
  * Hook: logout functionality.
  */
 export function useLogout() {
   const router = useRouter();
-  const supabase = createBrowserClient();
   const [loading, setLoading] = useState(false);
 
   async function logout() {
     setLoading(true);
-    await supabase.auth.signOut();
+    await postAuth("logout", {});
     router.push("/");
     router.refresh();
   }

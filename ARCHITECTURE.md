@@ -3,6 +3,14 @@
 > **Lead Architect's complete plan.**  
 > Tech stack: Next.js 14 (App Router), Tailwind CSS, Supabase (PostgreSQL), Nodemailer/SMTP.  
 > Generated: 2026-06-23
+>
+> **Since November 2026 the app no longer uses Supabase.** It runs on plain
+> PostgreSQL with the same tables and RLS policies (`db/schema.sql`, with an
+> `auth` schema, `auth.uid()` and the `anon`/`authenticated` roles of its
+> own), in-house auth in `src/lib/auth` (scrypt passwords, database sessions,
+> e-mailed six-digit codes), and an S3 bucket for activity files
+> (`src/lib/storage.ts`). Read "Supabase client" below as `withUser()` and
+> "service_role" as `asService()` from `src/lib/db`.
 
 ---
 
@@ -112,7 +120,7 @@ Added with the proposal form's reading lists (schema section 9).
 
 A `BEFORE INSERT` trigger on `auth.users` enforces: email must match `@fer.hr` or `@student.fer.hr`. This runs at the database level so it cannot be bypassed by the client.
 
-The full SQL is in `supabase/schema.sql`.
+The full SQL is in `db/schema.sql`.
 
 ---
 

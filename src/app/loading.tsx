@@ -3,7 +3,7 @@
  * page's buttons, and the push to /calendar after signing in.
  *
  * The dashboard's own skeleton lives inside the dashboard layout, and that
- * layout is itself async: it asks Supabase who is signed in before it can
+ * layout is itself async: it asks the database who is signed in before it can
  * render the navbar. Coming from outside the group, nothing of the dashboard
  * exists yet to hold a skeleton, so the boundary that lets the click commit
  * has to sit here, above every group.

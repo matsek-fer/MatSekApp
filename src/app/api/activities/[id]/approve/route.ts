@@ -1,6 +1,8 @@
-import { createClient as createServerClient, createAdminClient } from "@/lib/supabase/server";
-import { activityStatusEmailTemplate, appUrl, sendEmail } from "@/lib/email";
 import { NextResponse, type NextRequest } from "next/server";
+import { asService, withUser } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth/session";
+import { activityStatusEmailTemplate, appUrl, sendEmail } from "@/lib/email";
+import { isUuid } from "@/lib/validation";
 import type { ApiResponse, Activity, ReviewResult } from "@/types";
 
 /**
@@ -14,13 +16,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createServerClient();
     const { id } = await params;
 
     // Authenticate
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Nisi prijavljen/a." },
@@ -29,13 +28,7 @@ export async function POST(
     }
 
     // Authorize: admin only
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.role !== "admin") {
+    if (user.role !== "admin") {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Samo admin može odobriti aktivnosti." },
         { status: 403 }
@@ -43,13 +36,13 @@ export async function POST(
     }
 
     // Fetch activity
-    const { data: activity, error: fetchErr } = await supabase
-      .from("activities")
-      .select("*, creator:profiles!created_by(id, full_name)")
-      .eq("id", id)
-      .single();
+    const [activity] = isUuid(id)
+      ? await withUser(user.id, (tx) =>
+          tx<Activity[]>`SELECT * FROM activities WHERE id = ${id}`
+        )
+      : [];
 
-    if (fetchErr || !activity) {
+    if (!activity) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Aktivnost nije pronađena." },
         { status: 404 }
@@ -63,46 +56,49 @@ export async function POST(
       );
     }
 
-    // Update status
-    const { data: updated, error: updateErr } = await supabase
-      .from("activities")
-      .update({
-        status: "approved",
-        reviewed_by: user.id,
-        reviewed_at: new Date().toISOString(),
-        // Shown on the public page as the admin's words, so nothing a
-        // member managed to leave in it survives approval.
-        admin_comment: null,
-      })
-      .eq("id", id)
-      .select("*, creator:profiles!created_by(id, full_name)")
-      .single();
+    // Update status. `status = 'pending'` again in the WHERE, so two admins
+    // acting at once cannot both review the same proposal.
+    const updated = await withUser(user.id, async (tx) => {
+      const changed = await tx`
+        UPDATE activities
+        SET status = 'approved',
+            reviewed_by = ${user.id},
+            reviewed_at = now(),
+            -- Shown on the public page as the admin's words, so nothing a
+            -- member managed to leave in it survives approval.
+            admin_comment = NULL
+        WHERE id = ${id} AND status = 'pending'
+      `;
+      if (changed.count === 0) return null;
+      const [row] = await tx<Activity[]>`
+        SELECT * FROM activities_with_creator WHERE id = ${id}
+      `;
+      return row;
+    });
 
-    if (updateErr) {
+    if (!updated) {
       return NextResponse.json<ApiResponse>(
-        { success: false, error: updateErr.message },
-        { status: 500 }
+        { success: false, error: "Samo aktivnosti na čekanju se mogu odobriti." },
+        { status: 409 }
       );
     }
 
-    // Create notification (using admin client to bypass RLS)
-    const adminClient = createAdminClient();
-    await adminClient.from("notifications").insert({
-      user_id: activity.created_by,
-      activity_id: id,
-      type: "approved",
-      message: `Tvoja aktivnost "${activity.title}" je odobrena.`,
+    // The notification belongs to another member, which no policy lets an
+    // admin insert, and the proposer's address is a column members cannot
+    // read (profiles grants them the name and role only) — so both go
+    // through asService(), after the admin check above and for nothing else.
+    const creator = await asService(async (tx) => {
+      await tx`
+        INSERT INTO notifications (user_id, activity_id, type, message)
+        VALUES (${activity.created_by}, ${id}, 'approved',
+                ${`Tvoja aktivnost "${activity.title}" je odobrena.`})
+      `;
+      const [row] = await tx<{ email: string; full_name: string }[]>`
+        SELECT email, full_name FROM profiles WHERE id = ${activity.created_by}
+      `;
+      return row;
     });
 
-    // The proposer's address. Members cannot read each other's e-mail
-    // through the RLS client (profiles grants them the name and role only),
-    // so this one read goes through the service-role client — after the
-    // admin check above, and for nothing else.
-    const { data: creator } = await adminClient
-      .from("profiles")
-      .select("email, full_name")
-      .eq("id", activity.created_by)
-      .single();
     const creatorEmail = creator?.email;
     // Reported back rather than swallowed: the admin should know when the
     // proposer did not hear about the decision and tell them another way.

@@ -1,17 +1,18 @@
-import { createClient as createMiddlewareClient, redirectWith } from "@/lib/supabase/middleware";
 import { NextResponse, type NextRequest } from "next/server";
+import { SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth/cookie";
 
 /**
- * Refreshes the session on every page and guards the pages that need one.
+ * Renews the session cookie on every page and turns visitors without one
+ * away from the pages that need it.
  *
- * It runs on every non-static request because a Server Component cannot
- * write cookies: when the access token has expired, the server client
- * refreshes it in memory and the rotated refresh token would be thrown away,
- * and the browser would keep presenting the old one — which Supabase
- * tolerates only for a few seconds before it revokes the whole token family
- * and signs the member out everywhere. Here the refreshed cookies go onto
- * the response. With no session cookie at all this costs nothing: no
- * network call is made.
+ * It runs on the Edge runtime, which cannot open a Postgres connection, so
+ * it only asks whether a session cookie is present. Whether the session is
+ * real, unexpired and whose it is gets decided on the server by
+ * getCurrentUser(): requireUser() on the guarded pages, requireAdmin() in the
+ * admin layout, and RLS under every query either way. The renewal is the
+ * cookie half of the sliding expiry whose database half lives in
+ * getCurrentUser(); Server Components cannot write cookies, so it is done
+ * here.
  *
  * The guarded pages are listed, not the public ones: everything else — the
  * calendar, the materials, the auth pages, and any URL that does not exist —
@@ -33,41 +34,24 @@ function isProtected(pathname: string) {
   );
 }
 
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const token = request.cookies.get(SESSION_COOKIE)?.value;
 
-  const { supabase, response } = createMiddlewareClient(request);
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!isProtected(pathname)) return response();
-
-  // Redirect unauthenticated users, remembering where they were headed.
-  if (!session) {
+  // Redirect visitors without a session, remembering where they were headed.
+  if (isProtected(pathname) && !token) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("next", pathname);
-    return redirectWith(response(), loginUrl);
+    return NextResponse.redirect(loginUrl);
   }
 
-  // Admin route protection. getUser() rather than the session's user: the
-  // session is parsed from the cookie, not verified, and reading its user on
-  // the server logs a warning per request — getUser() checks the token with
-  // Supabase Auth and is only paid for on the admin pages.
-  if (pathname.startsWith("/admin")) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    const { data: profile } = user
-      ? await supabase.from("profiles").select("role").eq("id", user.id).single()
-      : { data: null };
-
-    if (profile?.role !== "admin") {
-      return redirectWith(response(), new URL("/calendar", request.url));
-    }
+  const response = NextResponse.next();
+  // Pages only: an /api route may itself be setting or clearing this cookie
+  // (login, logout, reset), and a renewal here would race its Set-Cookie.
+  if (token && !pathname.startsWith("/api")) {
+    response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
   }
-
-  return response();
+  return response;
 }
 
 export const config = {
