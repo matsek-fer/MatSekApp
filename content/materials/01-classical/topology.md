@@ -5,7 +5,7 @@ category: classical
 tagline: Geometry with the distances removed — what stays true when you can stretch and bend but not cut or glue.
 prerequisites: [real-analysis, logic-sets]
 status: draft
-ai_generated: [pitch, pitch_problems, matsek_materials]
+ai_generated: [pitch, pitch_problems]
 ---
 
 ## Pitch
@@ -128,14 +128,20 @@ and topology is where it was born and where it is easiest to see.
 - **Weaknesses:** Long; the first half repeats what Morris/Sutherland
   covered; exercises without solutions.
 
-### MatSek topology script
-- **Link:** *(to be hosted — PDF pending)*
+### Topology script (hosted by MatSek)
+- **Link:** /materials/topology/predavanje-1.pdf (lecture 1; all five lectures are listed under MatSek materials below)
 - **Type:** notes
 - **Difficulty:** 2-3
 - **Free:** yes
-- **Strengths:** The club's own lecture script for the topic; will be the
-  primary reference for MatSek sessions.
-- **Weaknesses:** —
+- **Strengths:** A rigorous course script in Croatian, five lectures so far
+  (37 pages): topological and metric spaces, the separation axioms, bases,
+  continuity, subspaces, Urysohn's lemma, the Tietze extension theorem,
+  complete metric spaces and the Baire category theorem, with full proofs
+  and worked counterexamples (the Sierpiński space, the cofinite topology,
+  the Niemytzki plane). The reference for MatSek sessions on the topic.
+- **Weaknesses:** Assumes the metric-spaces course (open balls and
+  completeness are quoted from it); no exercise sets beyond "prove this
+  yourself" remarks; point-set only, and in Croatian.
 
 ## Problems
 
@@ -167,7 +173,31 @@ part.
 
 ## Matsek materials
 
-> _AI-generated TODO recommendations — none of these exist yet. Replace with real MatSek materials as they are produced._
+**Topology script** — the lecture script MatSek hosts for this topic, in
+Croatian, one PDF per lecture. Five lectures so far:
+
+1. [1. predavanje](/materials/topology/predavanje-1.pdf) — topological
+   spaces and the topology of a metric; the separation axioms T₀ to T₄ with
+   the small spaces that tell them apart (indiscrete, Sierpiński, cofinite);
+   bases of a topology; normal spaces.
+2. [2. predavanje](/materials/topology/predavanje-2.pdf) — every metrizable
+   space is normal; second countability and separable metrizable spaces;
+   characterisations of T₄; continuity in metric and topological spaces,
+   checked on a base or a subbase.
+3. [3. predavanje](/materials/topology/predavanje-3.pdf) — subspaces and the
+   relative topology; the Euclidean topology on subsets of ℝⁿ; Urysohn's
+   lemma; sums, products and compositions of continuous functions; the
+   lemmas behind Tietze.
+4. [4. predavanje](/materials/topology/predavanje-4.pdf) — the Tietze
+   extension theorem in both forms and an example where extension fails;
+   complete metric spaces: Cauchy sequences, Cantor's intersection theorem,
+   and Baire's theorem for countably many open dense sets.
+5. [5. predavanje](/materials/topology/predavanje-5.pdf) — nowhere dense
+   sets, first and second category and the Baire category theorem; closure,
+   interior and boundary; the Niemytzki plane, a regular space that is not
+   normal.
+
+> _The session ideas below are an AI-generated draft — none of them exist yet. Replace them with real MatSek materials as they are produced._
 
 - **Königsberg to graphs** — Euler's argument, then what "topological"
   means. Resolves pitch problem 1; joint with `combinatorics`.
@@ -183,4 +213,5 @@ part.
 - **Compactness across topics** — the same concept in `real-analysis`,
   here, and in `advanced-analysis`; five equivalent forms and when each is
   used.
-- **Topology script** — the PDF to be hosted, with session plan.
+- **Script sessions** — a session plan over the five lectures above, with
+  the pitch problems as warm-ups and the Niemytzki plane as the finale.

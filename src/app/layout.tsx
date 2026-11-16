@@ -11,19 +11,25 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-export function generateMetadata(): Metadata {
-  const t = CHROME[getLang()];
-  return { title: t.siteTitle, description: t.siteDescription };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = CHROME[await getLang()];
+  return {
+    // Absolute URLs for Open Graph and canonical links come from here; the
+    // production value is enforced at boot by src/instrumentation.ts.
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+    title: { default: t.siteTitle, template: "%s — MATSEK" },
+    description: t.siteDescription,
+  };
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   // Read here, once, so <html lang> is right on the first paint; the
   // language toggle updates the attribute on the client between refreshes.
-  const lang = getLang();
+  const lang = await getLang();
 
   return (
     <html lang={lang} className={inter.variable} suppressHydrationWarning>

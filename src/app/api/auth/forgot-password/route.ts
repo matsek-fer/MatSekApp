@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const { error } = await supabase.auth.resetPasswordForEmail(
       String(email).trim()

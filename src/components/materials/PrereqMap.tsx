@@ -1,217 +1,384 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 import {
-  CATEGORY_META,
   CATEGORY_ORDER,
   type Category,
   type TopicSummary,
 } from "@/lib/materials-meta";
+import { MATERIALS } from "@/lib/i18n/materials";
+import type { Lang } from "@/lib/i18n";
+import { textWidth } from "./text-width";
 
-const COL_W = 316;
-const NODE_W = 236;
-const NODE_H = 40;
+const NODE_W = 204;
+const NODE_H = 46;
+const LAYER_W = 270;
 const ROW_H = 58;
-const PAD_X = 28;
-const PAD_Y = 56;
+/** Label budget in px: the label starts 14px in and keeps 10px off the right edge. */
+const LABEL_PX = 180;
+const PAD_X = 20;
+const PAD_Y = 24;
 
-/**
- * Prerequisite map: one column per category, an arrow from each topic to
- * the topics that build on it. Hovering a topic highlights what it needs
- * and what needs it; clicking opens the topic.
+/*
+ * The map is laid out by dependency depth, not by category: a topic sits one
+ * layer to the right of its deepest prerequisite, so every arrow points
+ * right and no arrow has to loop back into its own column. Category is shown
+ * as a coloured bar on the node instead. Within a layer, nodes are ordered
+ * by the average position of what they connect to (three barycentre sweeps),
+ * which removes most crossings for a graph this size. Edges are faint until a
+ * topic is hovered or selected, when its own edges and neighbours light up —
+ * the full graph is a hint of shape, the selection is the readable part.
  */
+
+const CATEGORY_FILL: Record<Category, string> = {
+  classical: "fill-brand",
+  language: "fill-success",
+  advanced: "fill-warning",
+  general: "fill-fg-subtle",
+};
+
+const CATEGORY_DOT: Record<Category, string> = {
+  classical: "bg-brand",
+  language: "bg-success",
+  advanced: "bg-warning",
+  general: "bg-fg-subtle",
+};
+
+interface Pos {
+  x: number;
+  y: number;
+  layer: number;
+}
+
+export function layout(topics: TopicSummary[]) {
+  const byId = new Map(topics.map((t) => [t.id, t]));
+  const depth = new Map<string, number>();
+  const visiting = new Set<string>();
+  const depthOf = (id: string): number => {
+    const known = depth.get(id);
+    if (known !== undefined) return known;
+    if (visiting.has(id)) return 0; // a cycle in the content: break it
+    visiting.add(id);
+    const t = byId.get(id);
+    const d = t
+      ? t.prerequisites
+          .filter((p) => byId.has(p))
+          .reduce((m, p) => Math.max(m, depthOf(p) + 1), 0)
+      : 0;
+    visiting.delete(id);
+    depth.set(id, d);
+    return d;
+  };
+  topics.forEach((t) => depthOf(t.id));
+
+  const layerCount = Math.max(...Array.from(depth.values()), 0) + 1;
+  const layers: string[][] = Array.from({ length: layerCount }, () => []);
+  const stableIndex = new Map(topics.map((t, i) => [t.id, i]));
+  topics
+    .slice()
+    .sort((a, b) => {
+      const ca = CATEGORY_ORDER.indexOf(a.category);
+      const cb = CATEGORY_ORDER.indexOf(b.category);
+      return ca !== cb ? ca - cb : a.order - b.order;
+    })
+    .forEach((t) => layers[depth.get(t.id)!].push(t.id));
+
+  const edges: { from: string; to: string }[] = [];
+  for (const t of topics)
+    for (const p of t.prerequisites)
+      if (byId.has(p)) edges.push({ from: p, to: t.id });
+
+  const row = new Map<string, number>();
+  const assign = () =>
+    layers.forEach((l) => l.forEach((id, i) => row.set(id, i)));
+  assign();
+
+  // Barycentre sweeps: order each layer by the mean row of its neighbours
+  // in the layer already placed, forwards (by prerequisites) then backwards
+  // (by dependents), then forwards once more to settle. Half the edges span
+  // more than one layer and are invisible to this, but counting neighbours
+  // in every placed layer, weighted by distance or not, and sweeping seven
+  // times instead of three all measured worse on the real graph (181–184
+  // straight-segment crossings against 178), so the simple rule stays.
+  const sweep = (forward: boolean) => {
+    const range = forward
+      ? layers.map((_, i) => i).slice(1)
+      : layers.map((_, i) => i).slice(0, -1).reverse();
+    for (const li of range) {
+      const score = new Map<string, number>();
+      for (const id of layers[li]) {
+        const nbrs = edges
+          .filter((e) => (forward ? e.to === id : e.from === id))
+          .map((e) => (forward ? e.from : e.to))
+          .filter((n) => depth.get(n) === (forward ? li - 1 : li + 1));
+        const mean = nbrs.length
+          ? nbrs.reduce((s, n) => s + (row.get(n) ?? 0), 0) / nbrs.length
+          : row.get(id) ?? 0;
+        score.set(id, mean);
+      }
+      layers[li].sort(
+        (a, b) =>
+          score.get(a)! - score.get(b)! ||
+          stableIndex.get(a)! - stableIndex.get(b)!
+      );
+      assign();
+    }
+  };
+  sweep(true);
+  sweep(false);
+  sweep(true);
+
+  const tallest = Math.max(...layers.map((l) => l.length), 1);
+  const height = PAD_Y * 2 + tallest * ROW_H - (ROW_H - NODE_H);
+  const pos = new Map<string, Pos>();
+  layers.forEach((l, li) => {
+    const offset = ((tallest - l.length) * ROW_H) / 2;
+    l.forEach((id, ri) => {
+      pos.set(id, {
+        x: PAD_X + li * LAYER_W,
+        y: PAD_Y + offset + ri * ROW_H,
+        layer: li,
+      });
+    });
+  });
+  const width = PAD_X * 2 + (layerCount - 1) * LAYER_W + NODE_W;
+  return { pos, edges, width, height };
+}
+
+/** Prerequisite map: see the comment at the top of the file. */
 export default function PrereqMap({
   topics,
   titles,
   matching,
+  lang,
 }: {
   topics: TopicSummary[];
   titles: Record<string, string>;
   /** Ids that pass the current filters; others are faded. */
   matching: Set<string>;
+  lang: Lang;
 }) {
+  const t = MATERIALS[lang];
   const router = useRouter();
   const [hover, setHover] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  const focus = hover ?? selected;
 
-  const layout = useMemo(() => {
-    const cols = CATEGORY_ORDER.map((c) =>
-      topics.filter((t) => t.category === c)
-    );
-    const pos = new Map<string, { x: number; y: number; col: number }>();
-    cols.forEach((col, ci) => {
-      col.forEach((t, ri) => {
-        pos.set(t.id, {
-          x: PAD_X + ci * COL_W,
-          y: PAD_Y + ri * ROW_H,
-          col: ci,
-        });
-      });
-    });
-    const rows = Math.max(...cols.map((c) => c.length), 1);
-    const width = PAD_X * 2 + (CATEGORY_ORDER.length - 1) * COL_W + NODE_W;
-    const height = PAD_Y + rows * ROW_H + 10;
-    const edges: { from: string; to: string }[] = [];
-    for (const t of topics)
-      for (const p of t.prerequisites)
-        if (pos.has(p)) edges.push({ from: p, to: t.id });
-    return { pos, width, height, edges };
-  }, [topics]);
+  const g = useMemo(() => layout(topics), [topics]);
+  const byId = useMemo(() => new Map(topics.map((topic) => [topic.id, topic])), [topics]);
 
   const related = useMemo(() => {
-    if (!hover) return null;
-    const s = new Set<string>([hover]);
-    for (const e of layout.edges) {
-      if (e.from === hover) s.add(e.to);
-      if (e.to === hover) s.add(e.from);
+    if (!focus) return null;
+    const s = new Set<string>([focus]);
+    for (const e of g.edges) {
+      if (e.from === focus) s.add(e.to);
+      if (e.to === focus) s.add(e.from);
     }
     return s;
-  }, [hover, layout.edges]);
+  }, [focus, g.edges]);
 
-  const edgePath = (from: string, to: string) => {
-    const a = layout.pos.get(from)!;
-    const b = layout.pos.get(to)!;
-    if (a.col === b.col) {
-      // Same column: loop out to the right and back.
-      const x = a.x + NODE_W;
-      const y1 = a.y + NODE_H / 2;
-      const y2 = b.y + NODE_H / 2;
-      const bulge = 46;
-      return `M ${x} ${y1} C ${x + bulge} ${y1}, ${x + bulge} ${y2}, ${x} ${y2}`;
-    }
+  const path = (from: string, to: string) => {
+    const a = g.pos.get(from)!;
+    const b = g.pos.get(to)!;
     const x1 = a.x + NODE_W;
     const y1 = a.y + NODE_H / 2;
     const x2 = b.x;
     const y2 = b.y + NODE_H / 2;
-    const dx = (x2 - x1) / 2;
+    const dx = Math.max((x2 - x1) * 0.5, 40);
     return `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
   };
 
-  const edgeActive = (e: { from: string; to: string }) =>
-    hover ? e.from === hover || e.to === hover : true;
+  const open = (id: string) => router.push(`/materials/${id}`);
+  const sel = selected ? byId.get(selected) : null;
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-surface p-2">
-      <svg
-        viewBox={`0 0 ${layout.width} ${layout.height}`}
-        width="100%"
-        style={{ minWidth: 760 }}
-        role="img"
-        aria-label="Karta preduvjeta među temama"
-      >
-        <defs>
-          <marker
-            id="arrow"
-            viewBox="0 0 10 10"
-            refX="9"
-            refY="5"
-            markerWidth="7"
-            markerHeight="7"
-            orient="auto-start-reverse"
-          >
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
-          </marker>
-        </defs>
-
-        {CATEGORY_ORDER.map((c, ci) => (
-          <text
-            key={c}
-            x={PAD_X + ci * COL_W}
-            y={28}
-            className="fill-fg-muted text-[13px] font-semibold uppercase tracking-wide"
-          >
-            {CATEGORY_META[c as Category].label}
-          </text>
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-fg-muted">
+        {CATEGORY_ORDER.map((c) => (
+          <span key={c} className="inline-flex items-center gap-1.5">
+            <span className={cn("h-2.5 w-2.5 rounded-sm", CATEGORY_DOT[c])} />
+            {t.categories[c].label}
+          </span>
         ))}
+        <span className="ml-auto">{t.mapHint}</span>
+      </div>
 
-        <g fill="none" strokeWidth={1.5}>
-          {layout.edges.map((e) => {
-            const active = edgeActive(e);
+      <div
+        className="overflow-x-auto rounded-xl border border-border bg-surface p-2"
+        onClick={() => setSelected(null)}
+      >
+        <svg
+          viewBox={`0 0 ${g.width} ${g.height}`}
+          width="100%"
+          style={{ minWidth: Math.min(g.width, 1100) }}
+          // `group`, not `img`: an image role hides its children from
+          // assistive tech, and the nodes below are focusable buttons.
+          role="group"
+          aria-label={t.mapAria}
+        >
+          <defs>
+            <marker
+              id="arrow-active"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="6"
+              markerHeight="6"
+              orient="auto"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" className="fill-brand" />
+            </marker>
+          </defs>
+
+          <g fill="none">
+            {g.edges.map((e) => {
+              const active = focus
+                ? e.from === focus || e.to === focus
+                : false;
+              const dimmed = focus ? !active : false;
+              return (
+                <path
+                  key={`${e.from}->${e.to}`}
+                  d={path(e.from, e.to)}
+                  className={active ? "stroke-brand" : "stroke-border-strong"}
+                  strokeWidth={active ? 2 : 1.2}
+                  opacity={dimmed ? 0.18 : active ? 1 : 0.7}
+                  markerEnd={active ? "url(#arrow-active)" : undefined}
+                />
+              );
+            })}
+          </g>
+
+          {topics.map((topic) => {
+            const p = g.pos.get(topic.id);
+            if (!p) return null;
+            const faded =
+              !matching.has(topic.id) || (related ? !related.has(topic.id) : false);
+            const isFocus = focus === topic.id;
             return (
-              <path
-                key={`${e.from}->${e.to}`}
-                d={edgePath(e.from, e.to)}
-                className={
-                  active
-                    ? hover
-                      ? "stroke-brand text-brand"
-                      : "stroke-border-strong text-border-strong"
-                    : "stroke-border text-border"
-                }
-                markerEnd="url(#arrow)"
-                opacity={active ? 1 : 0.35}
-              />
+              <g
+                key={topic.id}
+                transform={`translate(${p.x} ${p.y})`}
+                className="cursor-pointer"
+                opacity={faded ? 0.3 : 1}
+                onMouseEnter={() => setHover(topic.id)}
+                onMouseLeave={() => setHover(null)}
+                onFocus={() => setHover(topic.id)}
+                onBlur={() => setHover(null)}
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  if (selected === topic.id) open(topic.id);
+                  else setSelected(topic.id);
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label={titles[topic.id] ?? topic.id}
+                onKeyDown={(ev) => {
+                  if (ev.key === "Enter") open(topic.id);
+                  if (ev.key === " ") {
+                    ev.preventDefault();
+                    setSelected(selected === topic.id ? null : topic.id);
+                  }
+                }}
+              >
+                <rect
+                  width={NODE_W}
+                  height={NODE_H}
+                  rx={8}
+                  className={cn(
+                    "fill-surface",
+                    isFocus ? "stroke-brand" : "stroke-border-strong"
+                  )}
+                  strokeWidth={isFocus ? 1.8 : 1.2}
+                />
+                <rect
+                  x={0}
+                  y={6}
+                  width={4}
+                  height={NODE_H - 12}
+                  rx={2}
+                  className={CATEGORY_FILL[topic.category]}
+                />
+                {(() => {
+                  const lines = wrap(titles[topic.id] ?? topic.id);
+                  const y0 = lines.length === 1 ? NODE_H / 2 + 4 : NODE_H / 2 - 3;
+                  return (
+                    <text
+                      x={14}
+                      y={y0}
+                      className="fill-fg text-[12.5px] font-medium"
+                    >
+                      {lines.map((line, i) => (
+                        <tspan key={i} x={14} dy={i === 0 ? 0 : 14}>
+                          {line}
+                        </tspan>
+                      ))}
+                    </text>
+                  );
+                })()}
+              </g>
             );
           })}
-        </g>
+        </svg>
+      </div>
 
-        {topics.map((t) => {
-          const p = layout.pos.get(t.id);
-          if (!p) return null;
-          const faded =
-            (!matching.has(t.id)) || (related ? !related.has(t.id) : false);
-          const isHover = hover === t.id;
-          return (
-            <g
-              key={t.id}
-              transform={`translate(${p.x} ${p.y})`}
-              className="cursor-pointer"
-              opacity={faded ? 0.3 : 1}
-              onMouseEnter={() => setHover(t.id)}
-              onMouseLeave={() => setHover(null)}
-              onClick={() => router.push(`/materials/${t.id}`)}
-              role="link"
-              tabIndex={0}
-              onKeyDown={(ev) => {
-                if (ev.key === "Enter") router.push(`/materials/${t.id}`);
-              }}
-            >
-              <rect
-                width={NODE_W}
-                height={NODE_H}
-                rx={8}
-                className={
-                  isHover
-                    ? "fill-brand/10 stroke-brand"
-                    : "fill-surface stroke-border-strong"
-                }
-                strokeWidth={1.2}
-              />
-              <text
-                x={12}
-                y={NODE_H / 2 + 4}
-                className="fill-fg text-[12.5px] font-medium"
-              >
-                {shorten(titles[t.id] ?? t.id)}
-              </text>
-              {t.difficulty && (
-                <g transform={`translate(${NODE_W - 12 - 5 * 9} ${NODE_H / 2 - 3})`}>
-                  {[1, 2, 3, 4, 5].map((l) => (
-                    <rect
-                      key={l}
-                      x={(l - 1) * 9}
-                      width={7}
-                      height={6}
-                      rx={1}
-                      className={
-                        l >= t.difficulty!.min && l <= t.difficulty!.max
-                          ? "fill-brand"
-                          : "fill-border"
-                      }
-                    />
-                  ))}
-                </g>
+      {sel && (
+        <div className="flex flex-col gap-2 rounded-xl border border-border bg-surface px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <div className="font-medium text-fg">{sel.title}</div>
+            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-muted">
+              {sel.prerequisites.length > 0 && (
+                <span>
+                  {t.prerequisites}{" "}
+                  {sel.prerequisites.map((p) => titles[p] ?? p).join(", ")}
+                </span>
               )}
-            </g>
-          );
-        })}
-      </svg>
+              {sel.requiredBy.length > 0 && (
+                <span>
+                  {t.leadsTo}{" "}
+                  {sel.requiredBy.map((p) => titles[p] ?? p).join(", ")}
+                </span>
+              )}
+            </div>
+          </div>
+          <Link
+            href={`/materials/${sel.id}`}
+            className="shrink-0 text-brand hover:underline"
+          >
+            {t.openTopic}
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
 
-/** Keep node labels to one line; the full title is on the topic page. */
-function shorten(title: string) {
-  const t = title.split(/ — | – |: /)[0];
-  return t.length > 23 ? t.slice(0, 22).trimEnd() + "…" : t;
+/**
+ * Node labels get at most two lines of LABEL_PX; the full title is on the
+ * topic page. Words are packed greedily, and a line that still does not fit
+ * is cut with an ellipsis.
+ */
+function wrap(title: string): string[] {
+  const words = title.split(/ — | – |: /)[0].split(" ");
+  const lines: string[] = [];
+  let cur = "";
+  for (const w of words) {
+    if (!cur) cur = w;
+    else if (textWidth(cur + " " + w) <= LABEL_PX) cur += " " + w;
+    else {
+      lines.push(cur);
+      cur = w;
+    }
+  }
+  if (cur) lines.push(cur);
+  if (lines.length > 2) lines.splice(1, lines.length - 1, lines.slice(1).join(" "));
+  return lines.map((line) => {
+    if (textWidth(line) <= LABEL_PX) return line;
+    let cut = line;
+    while (cut.length > 1 && textWidth(cut + "…") > LABEL_PX) cut = cut.slice(0, -1);
+    return cut.trimEnd() + "…";
+  });
 }

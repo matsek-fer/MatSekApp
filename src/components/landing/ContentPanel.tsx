@@ -154,6 +154,7 @@ export default function ContentPanel({
         {/* Left-aligned on purpose: centring would centre each row separately
             and shear the art. The block as a whole is centred by the flex. */}
         <pre
+          role="img"
           aria-label={`ASCII stablo, seed ${seed}`}
           style={artStyle}
           className="select-none whitespace-pre text-left font-mono

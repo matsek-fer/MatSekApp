@@ -1,6 +1,6 @@
 ---
 id: categorical-classical
-title: Classical fields seen categorically
+title: Categorification of classical fields
 category: language
 tagline: Algebra, topology, sets, logic, analysis and probability, redone from the categorical vantage point — shorter, and with the reasons visible.
 prerequisites: [category-theory-intro, algebra-intro, topology, logic-sets]

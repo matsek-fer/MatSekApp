@@ -216,7 +216,7 @@ groups, and geometry as the study of rings and the sheaves on them.
   language for geometers, then Spec, schemes, morphisms, and on to
   cohomology. Problem 3 is its opening motivation. Exercises are the text.
 - **Weaknesses:** 800 pages and growing; demands commutative algebra
-  (`advanced-algebra`) from the start.
+  (`commutative-homological-algebra`) from the start.
 
 ## Problems
 
@@ -241,7 +241,7 @@ groups, and geometry as the study of rings and the sheaves on them.
   with `complex-analysis`.
 - **Points are ideals** — C(X), affine varieties, Spec ℤ, and the
   dictionary rings ↔ spaces. Resolves pitch problem 3; joint with
-  `advanced-algebra` and `categorical-classical`.
+  `commutative-homological-algebra` and `categorical-classical`.
 - **From Klein to Cartan** — homogeneous spaces, then what it means to be
   locally one; general relativity as a Cartan geometry, stated.
 - **Reading path** — Stillwell → Hitchin and Needham → Lee → Sharpe or

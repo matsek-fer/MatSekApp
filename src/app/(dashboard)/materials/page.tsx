@@ -1,35 +1,47 @@
 import type { Metadata } from "next";
-import { getAllTopics, getTopicShortTitles, toSummary } from "@/lib/materials";
+import {
+  VIEWS,
+  getAllTopics,
+  getConnections,
+  getTopicShortTitles,
+  toConnectionSummary,
+  toSummary,
+  type View,
+} from "@/lib/materials";
+import { getLang } from "@/lib/i18n/server";
+import { MATERIALS } from "@/lib/i18n/materials";
 import MaterialsExplorer from "@/components/materials/MaterialsExplorer";
 
-export const metadata: Metadata = {
-  title: "Materijali — MATSEK",
-  description:
-    "Pregled tema i materijala za učenje matematike: od klasičnih područja preko teorije kategorija do naprednih tema.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { meta } = MATERIALS[await getLang()];
+  return { title: meta.title, description: meta.description };
+}
 
-export default function MaterialsPage() {
+export default async function MaterialsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ view?: string }>;
+}) {
+  const lang = await getLang();
+  const t = MATERIALS[lang];
   const all = getAllTopics();
   const titles = getTopicShortTitles();
-  const general = all.find((t) => t.category === "general");
-  const topics = all.filter((t) => t.category !== "general").map(toSummary);
+  const general = all.find((topic) => topic.category === "general");
+  const topics = all.filter((topic) => topic.category !== "general").map(toSummary);
+  const connections = getConnections().map(toConnectionSummary);
+  const view = (await searchParams)?.view;
+  const initialView = VIEWS.includes(view as View) ? (view as View) : "grid";
 
   return (
     <div className="space-y-6">
-      <header className="max-w-3xl">
-        <h1 className="text-2xl font-bold text-fg">Materijali</h1>
-        <p className="mt-2 text-fg-muted leading-relaxed">
-          Karta tema kojima se sekcija bavi. Svaka tema ima kratki uvod,
-          tri problema za početak, popis preduvjeta i odabrane materijale
-          (knjige, skripte, videe, zadatke) s ocjenom težine i kratkim
-          komentarom. Klikni na temu za detalje; u „karti preduvjeta” vidiš
-          što se na što oslanja.
-        </p>
-      </header>
+      <h1 className="text-2xl font-bold text-fg">{t.heading}</h1>
       <MaterialsExplorer
         topics={topics}
-        general={general ? toSummary(general) : null}
+        hasGeneral={Boolean(general)}
         titles={titles}
+        connections={connections}
+        lang={lang}
+        initialView={initialView}
       />
     </div>
   );

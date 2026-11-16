@@ -1,6 +1,6 @@
 ---
 id: type-theory
-title: Type theory & the Curry–Howard–Lambek correspondence
+title: Type theory
 category: language
 tagline: Propositions are types, proofs are programs, and both are arrows in a category — one structure seen three ways.
 prerequisites: [logic-sets, category-theory-intro]

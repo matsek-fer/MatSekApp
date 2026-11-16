@@ -1,0 +1,12 @@
+node_modules
+.next
+.git
+.githooks
+.env
+.env.*
+!.env.local.example
+deploy/.env
+*.md
+!README.md
+docs
+public/materials/README.md

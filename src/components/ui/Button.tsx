@@ -14,8 +14,11 @@ const VARIANTS: Record<ButtonVariant, string> = {
   secondary:
     "border border-border-strong text-fg hover:bg-surface-hover bg-surface",
   ghost: "text-fg-muted hover:text-fg hover:bg-surface-hover",
-  danger: "bg-danger text-white hover:brightness-110",
-  success: "bg-success text-white hover:brightness-110",
+  // The status colours brighten in dark mode (so they lift off the surface),
+  // which drops white text below 3.4:1 — the dark page colour reads at 5.7:1
+  // and 7.5:1 there, the same trick `brand-fg` plays for the primary button.
+  danger: "bg-danger text-white dark:text-bg hover:brightness-110",
+  success: "bg-success text-white dark:text-bg hover:brightness-110",
 };
 
 const SIZES: Record<ButtonSize, string> = {

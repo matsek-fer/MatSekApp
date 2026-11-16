@@ -1,4 +1,6 @@
 import { cn } from "@/lib/utils";
+import { MATERIALS } from "@/lib/i18n/materials";
+import type { Lang } from "@/lib/i18n";
 
 /**
  * Translucent band behind sections that are still AI-drafted
@@ -7,14 +9,17 @@ import { cn } from "@/lib/utils";
  */
 export default function AiBand({
   active,
+  lang,
   children,
   className,
 }: {
   active: boolean;
+  lang: Lang;
   children: React.ReactNode;
   className?: string;
 }) {
   if (!active) return <div className={className}>{children}</div>;
+  const t = MATERIALS[lang];
   return (
     <div
       className={cn(
@@ -25,9 +30,9 @@ export default function AiBand({
       <span
         className="absolute right-3 top-3 rounded-full bg-warning-bg px-2 py-0.5
                    text-[11px] font-medium uppercase tracking-wide text-warning-fg"
-        title="Ovaj odjeljak je generiran uz pomoć AI-ja i još ga nije pregledao član sekcije."
+        title={t.aiBandTitle}
       >
-        AI nacrt
+        {t.aiBand}
       </span>
       {children}
     </div>

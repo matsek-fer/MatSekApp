@@ -1,0 +1,47 @@
+# One VPS, two containers: the site and Caddy in front of it, which gets
+# and renews the TLS certificate on its own. Fill deploy/.env from
+# .env.local.example and set DOMAIN; then `docker compose up -d --build`.
+services:
+  app:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+    env_file: deploy/.env
+    restart: unless-stopped
+    expose: ["3000"]
+    healthcheck:
+      # /library renders without touching Supabase, so the check measures
+      # the container and not the database.
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/library').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      # Checked every few seconds at first, so Caddy (below) is not held
+      # back for a whole interval on every deploy.
+      start_period: 30s
+      start_interval: 3s
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    # UDP 443 as well: Caddy advertises HTTP/3, and a browser that takes the
+    # offer on an unpublished port waits out a timeout before falling back.
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    # Nothing acts on an unhealthy container by itself; tying Caddy to the
+    # app's health is what turns a refused boot into a failed `up`.
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  caddy_data:
+  caddy_config:

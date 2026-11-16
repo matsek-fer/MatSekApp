@@ -39,7 +39,7 @@ question.
 
 The subject is also a bridge: to `advanced-logic`, of which it is the
 other face; to `probability` via randomised algorithms; and to
-`game-theory-compositional`, where agents are programs and their reasoning
+`open-source-game-theory`, where agents are programs and their reasoning
 is bounded.
 
 ## Pitch problems

@@ -1,74 +1,74 @@
-import { createClient as createServerClient } from "@/lib/supabase/server";
+import { createClient as createMiddlewareClient, redirectWith } from "@/lib/supabase/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Middleware: refreshes the Supabase session on every request.
- * Protects /dashboard/* routes (redirect to /login if unauthenticated).
- * Protects /admin/* routes (redirect to / if not admin).
+ * Refreshes the session on every page and guards the pages that need one.
+ *
+ * It runs on every non-static request because a Server Component cannot
+ * write cookies: when the access token has expired, the server client
+ * refreshes it in memory and the rotated refresh token would be thrown away,
+ * and the browser would keep presenting the old one — which Supabase
+ * tolerates only for a few seconds before it revokes the whole token family
+ * and signs the member out everywhere. Here the refreshed cookies go onto
+ * the response. With no session cookie at all this costs nothing: no
+ * network call is made.
+ *
+ * The guarded pages are listed, not the public ones: everything else — the
+ * calendar, the materials, the auth pages, and any URL that does not exist —
+ * passes through, so a mistyped address gets the 404 page rather than a
+ * redirect to the login form. The data behind every page is guarded by RLS
+ * in any case; this only decides who sees the forms.
+ *
+ * The API routes check the session themselves and answer 401, which a fetch
+ * can act on; a redirect to an HTML page would not be.
  */
+const PROTECTED = ["/activities/new", "/admin", "/notifications", "/profile"];
+
+function isProtected(pathname: string) {
+  return PROTECTED.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Routes that need a session even though they sit under a public prefix.
-  const isProtectedException = pathname === "/activities/new";
-
-  // Allow public routes and static assets
-  if (
-    !isProtectedException &&
-    (pathname.startsWith("/api") ||
-      pathname === "/" ||
-      pathname === "/calendar" ||
-      // The tools guide is documentation — readable before anyone registers.
-      pathname === "/tools" ||
-      // The materials are a public reading list, the same as the guide.
-      pathname.startsWith("/materials") ||
-      pathname.startsWith("/activities") ||
-      pathname.startsWith("/login") ||
-      pathname.startsWith("/register") ||
-      pathname.startsWith("/verify") ||
-      // Both halves of the password reset have to be reachable signed out —
-      // that is the whole situation the user is in.
-      pathname.startsWith("/forgot-password") ||
-      pathname.startsWith("/reset-password") ||
-      pathname.startsWith("/_next") ||
-      pathname.startsWith("/favicon") ||
-      // pdf.js fetches its worker from the page. It is a library file with
-      // nothing of anyone's in it, and redirecting it to /login breaks the
-      // reader for a member who is in fact signed in.
-      pathname === "/pdf.worker.min.mjs" ||
-      /\.(png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|eot|mp4|webm)$/.test(pathname))
-  ) {
-    return NextResponse.next();
-  }
-
-  const supabase = createServerClient();
+  const { supabase, response } = createMiddlewareClient(request);
   const {
     data: { session },
   } = await supabase.auth.getSession();
+
+  if (!isProtected(pathname)) return response();
 
   // Redirect unauthenticated users, remembering where they were headed.
   if (!session) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("next", pathname);
-    return NextResponse.redirect(loginUrl);
+    return redirectWith(response(), loginUrl);
   }
 
-  // Admin route protection
+  // Admin route protection. getUser() rather than the session's user: the
+  // session is parsed from the cookie, not verified, and reading its user on
+  // the server logs a warning per request — getUser() checks the token with
+  // Supabase Auth and is only paid for on the admin pages.
   if (pathname.startsWith("/admin")) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", session.user.id)
-      .single();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const { data: profile } = user
+      ? await supabase.from("profiles").select("role").eq("id", user.id).single()
+      : { data: null };
 
     if (profile?.role !== "admin") {
-      return NextResponse.redirect(new URL("/calendar", request.url));
+      return redirectWith(response(), new URL("/calendar", request.url));
     }
   }
 
-  return NextResponse.next();
+  return response();
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // Every page, so the session refresh above reaches public ones too; only
+  // the static files are left out.
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|pdf|mjs)$).*)",
+  ],
 };

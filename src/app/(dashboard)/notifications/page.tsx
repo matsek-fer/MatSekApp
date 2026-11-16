@@ -10,18 +10,18 @@ import { cn } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!session) redirect("/login");
+  if (!user) redirect("/login");
 
   const { data } = await supabase
     .from("notifications")
     .select("*, activity:activities(id, title, status)")
-    .eq("user_id", session.user.id)
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(50);
 

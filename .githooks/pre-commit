@@ -78,8 +78,9 @@ for file in $staged; do
 
   # Members' AI provider keys. These bill to someone's personal account and we
   # cannot revoke them for them, so a leak is their problem to clean up — which
-  # is exactly why it must not happen here. Developers handle real keys while
-  # working on the reading assistant, so the prefixes are worth catching.
+  # is exactly why it must not happen here. The local document reader takes a
+  # key, and a member may paste one into a scratch file; the prefixes are
+  # worth catching.
   #   sk-ant-  Anthropic   sk-proj- / sk-  OpenAI   AIza  Google   sk-  DeepSeek
   if scan "$file" 'sk-ant-[A-Za-z0-9_-]\{16,\}'; then
     fail "Anthropic API key found in: $file
@@ -108,15 +109,6 @@ for file in $staged; do
     fail "Google API key found in: $file
 
   Remove it, then revoke the key at aistudio.google.com."
-  fi
-
-  # The master secret itself. A real one is 44 base64 characters; the
-  # placeholder in .env.local.example is shorter and passes.
-  if scan "$file" 'AI_KEY_ENCRYPTION_SECRET=[A-Za-z0-9+/]\{40,\}'; then
-    fail "AI_KEY_ENCRYPTION_SECRET found in: $file
-
-  This decrypts every member's provider API key. Remove it, generate a
-  replacement with \`openssl rand -base64 32\`, and redeploy."
   fi
 done
 

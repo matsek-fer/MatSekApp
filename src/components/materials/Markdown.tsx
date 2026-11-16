@@ -25,10 +25,12 @@ export default function Markdown({
   const components: Components = {
     a: ({ href, children }) => {
       const external = href && /^https?:\/\//.test(href);
+      // A hosted PDF is read, not navigated to; keep the topic page open.
+      const newTab = external || (href && /\.pdf$/i.test(href));
       return (
         <a
           href={href}
-          target={external ? "_blank" : undefined}
+          target={newTab ? "_blank" : undefined}
           rel={external ? "noopener noreferrer" : undefined}
           className="text-brand hover:underline break-words"
         >

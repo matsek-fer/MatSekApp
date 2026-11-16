@@ -11,24 +11,24 @@ import { ButtonLink } from "@/components/ui/Button";
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) redirect("/login");
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
-    .eq("id", session.user.id)
+    .eq("id", user.id)
     .single();
 
   if (profile?.role !== "admin") redirect("/calendar");
 
   const { data } = await supabase
     .from("activities")
-    .select("*, creator:profiles!created_by(id, email, full_name)")
+    .select("*, creator:profiles!created_by(id, full_name)")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
@@ -70,7 +70,7 @@ export default async function AdminDashboardPage() {
                     {a.location && ` · ${a.location}`}
                   </p>
                   <p className="text-xs text-fg-subtle">
-                    Predložio/la: {a.creator?.full_name || a.creator?.email}
+                    Predložio/la: {a.creator?.full_name || "—"}
                   </p>
                 </div>
                 <ButtonLink href={`/admin/review/${a.id}`} size="sm">

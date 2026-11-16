@@ -1,6 +1,7 @@
 /**
  * Types and constants for the Materials page that are safe to import from
- * client components (no Node APIs). The loader lives in materials.ts.
+ * client components (no Node APIs). The loader lives in materials.ts; the
+ * user-facing labels live in i18n/materials.ts.
  */
 
 export type Category = "general" | "classical" | "language" | "advanced";
@@ -57,67 +58,75 @@ export interface Topic {
   aiGenerated: string[];
   sections: TopicSections;
   materialGroups: MaterialGroup[];
-  difficulty: Difficulty | null;
-  counts: { materials: number; free: number; problems: number };
   order: number;
 }
 
-/** Everything the overview needs, and nothing that is heavy. */
+/**
+ * Everything the overview and the maps need, and nothing that is heavy.
+ * The overview is a list of names to explore one by one: no tagline, no
+ * difficulty, no counts — difficulty belongs to a book, not to a field.
+ */
 export type TopicSummary = Pick<
   Topic,
-  | "id"
-  | "title"
-  | "category"
-  | "tagline"
-  | "prerequisites"
-  | "requiredBy"
-  | "aiGenerated"
-  | "difficulty"
-  | "counts"
-  | "order"
-> & { levels: number[]; shortTitle: string };
+  "id" | "title" | "category" | "prerequisites" | "requiredBy" | "order"
+> & { shortTitle: string };
 
-/** Title before the first " — " or ": " — for chips and map labels. */
+/**
+ * One row of the index the activity form searches. From the Materials
+ * pages: a topic, or one named material (book, notes, video) inside a
+ * topic, whose `url` is the material's own link when it has one and its
+ * topic page otherwise. From the MatSek library site (lib/library.ts): a
+ * problem, a proof, a blog, or one tree of the concept forest, whose `url`
+ * is its page on the site.
+ */
+export interface LibraryEntry {
+  kind: "topic" | "material" | "problem" | "proof" | "blog" | "tree";
+  title: string;
+  url: string;
+  /** Short topic title, shown under a material so a reader knows the field. */
+  topic: string;
+  /** Material type (book, notes, video, …); empty otherwise. */
+  type: string;
+}
+
+/** Title before the first " — ", ": " or " (" — for chips and map labels. */
 export function shortTitle(title: string): string {
-  return title.split(/ — | – |: /)[0].trim();
+  return title.split(/ — | – |: | \(/)[0].trim();
 }
 
 export const CATEGORY_ORDER: Category[] = ["classical", "language", "advanced"];
 
-export const CATEGORY_META: Record<
-  Category,
-  { label: string; short: string; description: string }
-> = {
-  general: {
-    label: "Opći materijali",
-    short: "Opće",
-    description:
-      "Atlasi, indeksi i kanali koji pokrivaju cijelu matematiku — za orijentaciju prije odabira teme.",
-  },
-  classical: {
-    label: "Uvod u klasična područja",
-    short: "Klasično",
-    description:
-      "Analiza, algebra, kombinatorika, vjerojatnost, topologija, logika i računarstvo — temelji na koje se sve ostalo oslanja.",
-  },
-  language: {
-    label: "Motivacija za bolji jezik",
-    short: "Jezik",
-    description:
-      "Teorija kategorija i teorija tipova: što ih čini moćnima, kompozicionalnost, i klasična područja gledana s više razine.",
-  },
-  advanced: {
-    label: "Napredno i specijalizirano",
-    short: "Napredno",
-    description:
-      "Nastavak klasičnih područja, primjene u fizici, napredna logika, geometrija, računarstvo i teorija igara.",
-  },
-};
+/** The overview's views; `?view=` on /materials opens one of the maps. */
+export type View = "grid" | "map" | "connections";
+export const VIEWS: readonly View[] = ["grid", "map", "connections"];
 
-export const DIFFICULTY_LABELS: Record<number, string> = {
-  1: "Znatiželjnik / srednja škola",
-  2: "Prva godina",
-  3: "Viši preddiplomski",
-  4: "Diplomski / blizu istraživanja",
-  5: "Istraživačka razina",
-};
+/** How much two topics trade: 1 touching, 2 regular traffic, 3 inseparable. */
+export type Strength = 1 | 2 | 3;
+
+/** One edge of the connections map, as the client components see it. */
+export interface ConnectionSummary {
+  /** The two topic ids, alphabetical. */
+  a: string;
+  b: string;
+  /** `${a}--${b}`: the file name and the route segment. */
+  pair: string;
+  tagline: string;
+  strength: Strength;
+  aiGenerated: boolean;
+}
+
+export interface Connection extends ConnectionSummary {
+  status: string;
+  /** Markdown */
+  body: string;
+}
+
+/** The pair key of two topic ids, whichever order they come in. */
+export function pairId(a: string, b: string): string {
+  return [a, b].sort().join("--");
+}
+
+/** "2" or "2–4": the language-neutral part of every difficulty badge. */
+export function difficultyRange(d: Difficulty): string {
+  return d.min === d.max ? `${d.min}` : `${d.min}–${d.max}`;
+}

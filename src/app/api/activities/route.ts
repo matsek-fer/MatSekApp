@@ -1,7 +1,13 @@
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
-import { isActivityStatus, pickActivityFields } from "@/lib/validation";
-import type { ApiResponse, Activity } from "@/types";
+import {
+  isActivityStatus,
+  isUuid,
+  MAX_ACTIVITY_MATERIALS,
+  parseActivityMaterial,
+  pickActivityFields,
+} from "@/lib/validation";
+import type { ActivityMaterialInput, ApiResponse, Activity } from "@/types";
 
 /**
  * GET /api/activities
@@ -16,7 +22,7 @@ import type { ApiResponse, Activity } from "@/types";
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const { searchParams } = new URL(request.url);
     const limit = Math.min(Number(searchParams.get("limit")) || 50, 200);
 
@@ -32,21 +38,28 @@ export async function GET(request: NextRequest) {
     const status = rawStatus ?? undefined;
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
     let query = supabase
       .from("activities")
-      .select("*, creator:profiles!created_by(id, email, full_name)")
+      .select("*, creator:profiles!created_by(id, full_name)")
       .order("start_time", { ascending: true })
       .limit(limit);
 
-    if (session) {
+    if (user) {
+      // The id is about to be interpolated into a filter; see isUuid().
+      if (!isUuid(user.id)) {
+        return NextResponse.json<ApiResponse>(
+          { success: false, error: "Neispravna sesija." },
+          { status: 401 }
+        );
+      }
       // Check if admin
       const { data: profile } = await supabase
         .from("profiles")
         .select("role")
-        .eq("id", session.user.id)
+        .eq("id", user.id)
         .single();
 
       if (profile?.role === "admin") {
@@ -58,11 +71,11 @@ export async function GET(request: NextRequest) {
         // Regular user: approved + own
         if (status) {
           query = query.or(
-            `status.eq.${status},and(created_by.eq.${session.user.id},status.eq.${status})`
+            `status.eq.${status},and(created_by.eq.${user.id},status.eq.${status})`
           );
         } else {
           query = query.or(
-            `status.eq.approved,created_by.eq.${session.user.id}`
+            `status.eq.approved,created_by.eq.${user.id}`
           );
         }
       }
@@ -98,18 +111,21 @@ export async function GET(request: NextRequest) {
  *
  * Body: CreateActivityPayload
  *
- * Creates a new activity with status = 'pending'.
+ * Creates a new activity with status = 'pending', plus its link and library
+ * materials. File materials are not accepted here: a file needs the
+ * activity's id for its storage path, so the form attaches them afterwards
+ * through /api/activities/[id]/materials.
  * Requires authentication.
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Nisi prijavljen/a." },
         { status: 401 }
@@ -136,6 +152,46 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Materials are checked before the activity is written, so a bad entry
+    // refuses the whole proposal instead of leaving a half-attached one.
+    const materials: ActivityMaterialInput[] = [];
+    if (body.materials !== undefined) {
+      if (!Array.isArray(body.materials)) {
+        return NextResponse.json<ApiResponse>(
+          { success: false, error: "Materijali nisu ispravno zadani." },
+          { status: 400 }
+        );
+      }
+      if (body.materials.length > MAX_ACTIVITY_MATERIALS) {
+        return NextResponse.json<ApiResponse>(
+          {
+            success: false,
+            error: `Najviše ${MAX_ACTIVITY_MATERIALS} materijala po aktivnosti.`,
+          },
+          { status: 400 }
+        );
+      }
+      for (let i = 0; i < body.materials.length; i++) {
+        const parsed = parseActivityMaterial(body.materials[i], i);
+        if (!parsed.ok) {
+          return NextResponse.json<ApiResponse>(
+            { success: false, error: parsed.error },
+            { status: 400 }
+          );
+        }
+        if (parsed.material.kind === "file") {
+          return NextResponse.json<ApiResponse>(
+            {
+              success: false,
+              error: "Datoteke se prilažu nakon što je aktivnost stvorena.",
+            },
+            { status: 400 }
+          );
+        }
+        materials.push(parsed.material);
+      }
+    }
+
     const { data: activity, error } = await supabase
       .from("activities")
       .insert({
@@ -143,7 +199,7 @@ export async function POST(request: NextRequest) {
         prerequisites: body.prerequisites || "",
         target_audience: body.target_audience || "",
         // Server-owned: a proposal always starts unreviewed.
-        created_by: session.user.id,
+        created_by: user.id,
         status: "pending",
       })
       .select()
@@ -154,6 +210,39 @@ export async function POST(request: NextRequest) {
         { success: false, error: error.message },
         { status: 400 }
       );
+    }
+
+    if (materials.length > 0) {
+      const { error: materialsError } = await supabase
+        .from("activity_materials")
+        .insert(
+          materials.map((m) => ({
+            activity_id: activity.id,
+            phase: m.phase,
+            kind: m.kind,
+            title: m.title,
+            url: m.url ?? "",
+            note: m.note ?? "",
+            position: m.position ?? 0,
+          }))
+        );
+
+      if (materialsError) {
+        // The proposal is withdrawn rather than left standing without the
+        // reading list its author wrote; they can resubmit in one go. The
+        // database's reason rides along, as it does for the activity insert
+        // above: a missing table (schema section 9 not applied) or a policy
+        // refusal reads very differently from a bad value.
+        await supabase.from("activities").delete().eq("id", activity.id);
+        console.error("POST /api/activities materials error:", materialsError);
+        return NextResponse.json<ApiResponse>(
+          {
+            success: false,
+            error: `Materijale nije moguće spremiti (${materialsError.message}).`,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     return NextResponse.json<ApiResponse<Activity>>(

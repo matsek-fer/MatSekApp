@@ -1,25 +1,29 @@
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
 import { pickActivityFields } from "@/lib/validation";
+import { withDownloadUrls } from "@/lib/activity-materials";
 import type { ApiResponse, Activity } from "@/types";
 
 /**
  * GET /api/activities/[id]
  *
- * Returns a single activity by ID.
+ * Returns a single activity by ID, with its materials. File materials carry
+ * a short-lived download URL minted under the caller's own permissions.
  * Respects RLS: anonymous sees only approved; users see own + approved; admins see all.
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createServerClient();
-    const { id } = params;
+    const supabase = await createServerClient();
+    const { id } = await params;
 
     const { data: activity, error } = await supabase
       .from("activities")
-      .select("*, creator:profiles!created_by(id, email, full_name)")
+      .select(
+        "*, creator:profiles!created_by(id, full_name), materials:activity_materials(*)"
+      )
       .eq("id", id)
       .single();
 
@@ -30,8 +34,10 @@ export async function GET(
       );
     }
 
+    const materials = await withDownloadUrls(supabase, activity.materials ?? []);
+
     return NextResponse.json<ApiResponse<Activity>>(
-      { success: true, data: activity },
+      { success: true, data: { ...activity, materials } },
       { status: 200 }
     );
   } catch (err) {
@@ -51,17 +57,17 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createServerClient();
-    const { id } = params;
+    const supabase = await createServerClient();
+    const { id } = await params;
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Nisi prijavljen/a." },
         { status: 401 }
@@ -89,11 +95,11 @@ export async function PATCH(
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
-      .eq("id", session.user.id)
+      .eq("id", user.id)
       .single();
 
     const isAdmin = profile?.role === "admin";
-    const isOwner = session.user.id === existing.created_by;
+    const isOwner = user.id === existing.created_by;
 
     if (!isAdmin && !isOwner) {
       return NextResponse.json<ApiResponse>(
@@ -158,17 +164,17 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createServerClient();
-    const { id } = params;
+    const supabase = await createServerClient();
+    const { id } = await params;
 
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Nisi prijavljen/a." },
         { status: 401 }
@@ -192,12 +198,12 @@ export async function DELETE(
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
-      .eq("id", session.user.id)
+      .eq("id", user.id)
       .single();
 
     const isAdmin = profile?.role === "admin";
 
-    if (!isAdmin && session.user.id !== existing.created_by) {
+    if (!isAdmin && user.id !== existing.created_by) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Nemaš dozvolu." },
         { status: 403 }

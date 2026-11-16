@@ -14,20 +14,21 @@ export const dynamic = "force-dynamic";
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: { seed?: string };
+  searchParams: Promise<{ seed?: string }>;
 }) {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  const lang = getLang();
+  const lang = await getLang();
   const t = CHROME[lang];
 
   // ?seed=123 pins the first tree, so a particular one can be looked at again
   // — otherwise checking a change to one species means reloading until it comes
   // up. Anything that is not a number falls through to a random tree.
-  const pinned = Number(searchParams.seed);
-  const firstSeed = Number.isFinite(pinned) && searchParams.seed
+  const { seed } = await searchParams;
+  const pinned = Number(seed);
+  const firstSeed = Number.isFinite(pinned) && seed
     ? Math.abs(Math.trunc(pinned))
     : randomSeed();
 
@@ -57,6 +58,9 @@ export default async function HomePage({
               <ButtonLink href="/materials" size="lg" variant="secondary">
                 {t.materials}
               </ButtonLink>
+              <ButtonLink href="/library" size="lg" variant="secondary">
+                {t.library}
+              </ButtonLink>
               <ButtonLink href="/tools" size="lg" variant="secondary">
                 {t.tools}
               </ButtonLink>
@@ -72,6 +76,9 @@ export default async function HomePage({
               </ButtonLink>
               <ButtonLink href="/materials" size="lg" variant="ghost">
                 {t.materials}
+              </ButtonLink>
+              <ButtonLink href="/library" size="lg" variant="ghost">
+                {t.library}
               </ButtonLink>
               <ButtonLink href="/tools" size="lg" variant="ghost">
                 {t.tools}

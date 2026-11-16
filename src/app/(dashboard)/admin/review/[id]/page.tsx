@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { hr } from "date-fns/locale";
 import { ACTIVITY_TYPE_LABELS } from "@/types";
@@ -11,20 +11,19 @@ import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Field";
 import { StatusBadge } from "@/components/ui/Badge";
+import ActivityMaterialsList from "@/components/activities/ActivityMaterialsList";
 
 type Action = "approve" | "deny" | null;
 
-export default function AdminReviewPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function AdminReviewPage() {
+  const params = useParams<{ id: string }>();
   const router = useRouter();
   const [activity, setActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(true);
   const [comment, setComment] = useState("");
   const [pendingAction, setPendingAction] = useState<Action>(null);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -59,6 +58,19 @@ export default function AdminReviewPage({
         if (!json.success) {
           setError(json.error || "Greška.");
           setPendingAction(null);
+          return;
+        }
+
+        if (json.data?.email_sent === false) {
+          // The decision is saved; only the email failed. Keep the admin here
+          // so they see it and can reach the proposer some other way.
+          setActivity(json.data);
+          setPendingAction(null);
+          setNotice(
+            action === "approve"
+              ? "Aktivnost je odobrena, ali e-mail predlagaču nije poslan."
+              : "Aktivnost je odbijena, ali e-mail predlagaču nije poslan."
+          );
           return;
         }
 
@@ -97,6 +109,7 @@ export default function AdminReviewPage({
       <h1 className="text-2xl font-bold text-fg">Pregled aktivnosti</h1>
 
       <Alert tone="error">{error}</Alert>
+      <Alert tone="info">{notice}</Alert>
 
       <Card className="space-y-5 p-6">
         <div className="flex items-start justify-between gap-4">
@@ -146,8 +159,17 @@ export default function AdminReviewPage({
           </div>
         )}
 
+        {activity.materials && activity.materials.length > 0 && (
+          <div>
+            <h3 className="font-medium text-fg">Materijali</h3>
+            <div className="mt-2">
+              <ActivityMaterialsList materials={activity.materials} />
+            </div>
+          </div>
+        )}
+
         <p className="border-t border-border pt-4 text-xs text-fg-subtle">
-          Predložio/la: {activity.creator?.full_name || activity.creator?.email}
+          Predložio/la: {activity.creator?.full_name || "—"}
         </p>
       </Card>
 

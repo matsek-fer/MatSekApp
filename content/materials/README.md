@@ -14,8 +14,9 @@ content/materials/
   README.md                       # this file: schema + master topic list
   general.md                      # atlases & channels referenced from many topics
   01-classical/<topic>.md         # introductions to classical fields
-  02-language/<topic>.md          # category theory, type theory, "better language"
+  02-language/<topic>.md          # categories and the like: category theory, type theory
   03-advanced/<topic>.md          # advanced / specialized / cross-field
+  connections/<a>--<b>.md         # how two topics interconnect (the connections map)
 ```
 
 ## Topic file schema
@@ -66,7 +67,7 @@ free alternative. Optional subsections (`## Problem books`, `## Lectures`)
 may follow; every entry uses the same fields.
 
 ### <Material name>
-- **Link:** <url>
+- **Link:** <url, or /path to a file under public/materials/<topic>/>
 - **Type:** book | notes | video | course | paper | blog | repo | site | problems
 - **Difficulty:** 1 | 2 | 3 | 4 | 5 | or a range like 2-3 / 1-5
 - **Free:** yes | no | partial
@@ -76,7 +77,40 @@ may follow; every entry uses the same fields.
 ## Matsek materials
 Materials produced by MatSek members (scripts, problem sheets, session plans),
 with links once they exist. Until then the section holds AI-generated TODO
-recommendations, marked by the blockquote note.
+recommendations, marked by the blockquote note. Once real items arrive,
+drop `matsek_materials` from the flag and keep a visible note over the
+remaining suggestions only (see `topology`); word it so it does not start
+with `_AI-generated`, which is the note the loader hides.
+```
+
+## Connection file schema
+
+One file per edge of the connections map, named `<a>--<b>.md` with the two
+topic ids in alphabetical order. Unlike prerequisites, a connection is
+undirected: it describes what the two fields trade with each other.
+
+```markdown
+---
+between: [linear-algebra, probability]   # two topic ids, alphabetical
+tagline: one sentence (≤ 25 words) saying what the two fields trade
+strength: 3                              # 1 touching · 2 regular traffic · 3 inseparable
+status: draft                            # draft | reviewed
+ai_generated: true                       # drop once a member has signed it off
+---
+
+About 400 words (360–440 of prose). Open with the one idea that binds the
+two fields, then what each gives the other, then one concrete bridge — a
+named theorem or construction with an example a strong first-year student
+can follow — and where to see it, naming materials already listed on the
+two topic pages. Topic ids in backticks become links. Mathematics in
+Unicode, as in the topic files (no LaTeX).
+
+A diagram is optional and only where prose would be worse: a GFM table as
+a dictionary between the two fields, or an inline SVG — `viewBox` set,
+`width="100%"`, `style="max-width:560px"`, `role="img"` with an
+`aria-label`, shapes `fill="none" stroke="currentColor"`, text
+`fill="currentColor"` at 12px or larger, no other colours, well-formed
+(every tag closed), at most ~40 lines, a blank line before and after.
 ```
 
 ## Difficulty scale
@@ -99,7 +133,7 @@ Dynamical systems & differential equations · Introduction to algebra (groups,
 rings, fields) · Formal systems, set theory, logic · Metric spaces & topology ·
 Computer science (DSA, distributed systems, applied math, complexity theory)
 
-### 02 · Motivation for better language
+### 02 · Categories and the like
 Category theory & type theory: what makes them powerful; compositionality;
 categorification of classical subjects; applied category theory; category
 theory applied to every field in 01 from a higher vantage point; higher
@@ -129,7 +163,7 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - ◐ `dynamical-systems` — Dynamical systems & differential equations
 - ◐ `algebra-intro` — Introduction to algebra (groups, rings, fields)
 - ◐ `logic-sets` — Formal systems, set theory, logic
-- ◐ `topology` — Metric spaces & topology (club script PDF pending)
+- ◐ `topology` — Metric spaces & topology (script hosted: lectures 1–5)
 - ◐ `cs-foundations` — CS: DSA, distributed systems, applied math, complexity
 
 ### 02-language
@@ -137,17 +171,20 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - ◐ `type-theory` — Type theory & the Curry–Howard–Lambek correspondence
 - ◐ `compositionality` — Compositionality & what makes the language powerful
 - ◐ `applied-category-theory` — Applied category theory
-- ◐ `categorical-classical` — Classical fields seen categorically
+- ◐ `categorical-classical` — Categorification of classical fields
 - ◐ `higher-category-theory` — Higher category theory
 
 ### 03-advanced
 - ◐ `advanced-analysis` — Advanced analysis & functional analysis
-- ◐ `advanced-algebra` — Advanced algebra & representation theory
+- ◐ `galois-theory` — Galois theory
+- ◐ `representation-theory` — Representation theory
+- ◐ `commutative-homological-algebra` — Commutative & homological algebra
 - ◐ `physics-symmetry` — Noether, topological groups, Lie algebras, gauge theory
 - ◐ `advanced-logic` — Gödel, Löb, provability, reverse mathematics
 - ◐ `geometry` — Erlangen program, categorification of geometry
 - ◐ `computability` — Computability & complexity, advanced
-- ◐ `game-theory-compositional` — Open-source & compositional game theory
+- ◐ `open-source-game-theory` — Open-source game theory
+- ◐ `compositional-game-theory` — Compositional game theory
 
 ### Potential lecture topics (no materials page)
 - Geometric & categorical deep learning
@@ -167,15 +204,28 @@ Status: ☐ not started · ◐ draft · ● reviewed
 - Lists are deliberately short. Breadth lives in `general.md` (Real Not
   Complex, the Napkin, the Princeton Companion), not in topic files.
 - Strengths/weaknesses are opinions — sign heavy edits in the git log.
+- Hosted files live under `public/materials/<topic>/` and are linked
+  root-relative (`/materials/topology/predavanje-1.pdf`); the loader treats
+  such a Link as a real link, and the middleware already serves everything
+  under `/materials` without a session.
 
 ## TODO
 
 - UI (done): `/materials` renders this directory; sections listed in
   `ai_generated` get a translucent band, `<details>` hints collapse, and
   `topic-id` code spans link to topics. Loader: `src/lib/materials.ts`.
+  The page chrome is bilingual (`src/lib/i18n/materials.ts`); the topic
+  files themselves are English and shown as they are in both languages.
 - `compositionality`: pitch problems still not final (several attempts);
   revisit with a member who knows the field. Its Braess problem now also
-  appears in `game-theory-compositional` (its natural home) — replace one.
-- Review pass still owed on: `advanced-algebra`, `physics-symmetry`,
-  `advanced-logic`, `geometry`, `computability`,
-  `game-theory-compositional` (written without review).
+  appears in `compositional-game-theory` (its natural home) — replace one.
+- `topology`: lectures 6 onwards of the script, when they arrive — one
+  PDF each under `public/materials/topology/`, one list item each.
+- `connections/`: all 48 pages were AI-drafted and AI-reviewed, none read
+  by a member yet. Review pass owed; drop `ai_generated` as each is signed
+  off. Adding an edge is one new file; the map and the topic pages pick
+  it up on the next load.
+- Review pass still owed on: `galois-theory`, `representation-theory`,
+  `commutative-homological-algebra`, `physics-symmetry`, `advanced-logic`,
+  `geometry`, `computability`, `open-source-game-theory`,
+  `compositional-game-theory` (written without review).

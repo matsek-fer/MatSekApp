@@ -1,7 +1,7 @@
 import { createClient as createServerClient, createAdminClient } from "@/lib/supabase/server";
-import { activityStatusEmailTemplate, sendEmail } from "@/lib/email";
+import { activityStatusEmailTemplate, appUrl, sendEmail } from "@/lib/email";
 import { NextResponse, type NextRequest } from "next/server";
-import type { ApiResponse, Activity, DenyActivityPayload } from "@/types";
+import type { ApiResponse, Activity, DenyActivityPayload, ReviewResult } from "@/types";
 
 /**
  * POST /api/activities/[id]/deny
@@ -11,17 +11,17 @@ import type { ApiResponse, Activity, DenyActivityPayload } from "@/types";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createServerClient();
-    const { id } = params;
+    const supabase = await createServerClient();
+    const { id } = await params;
 
     // Authenticate
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session) {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "Nisi prijavljen/a." },
         { status: 401 }
@@ -32,7 +32,7 @@ export async function POST(
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
-      .eq("id", session.user.id)
+      .eq("id", user.id)
       .single();
 
     if (profile?.role !== "admin") {
@@ -54,7 +54,7 @@ export async function POST(
     // Fetch activity
     const { data: activity, error: fetchErr } = await supabase
       .from("activities")
-      .select("*, creator:profiles!created_by(id, email, full_name)")
+      .select("*, creator:profiles!created_by(id, full_name)")
       .eq("id", id)
       .single();
 
@@ -78,11 +78,11 @@ export async function POST(
       .update({
         status: "rejected",
         admin_comment: admin_comment.trim(),
-        reviewed_by: session.user.id,
+        reviewed_by: user.id,
         reviewed_at: new Date().toISOString(),
       })
       .eq("id", id)
-      .select("*, creator:profiles!created_by(id, email, full_name)")
+      .select("*, creator:profiles!created_by(id, full_name)")
       .single();
 
     if (updateErr) {
@@ -101,15 +101,26 @@ export async function POST(
       message: `Tvoja aktivnost "${activity.title}" je odbijena. Komentar: ${admin_comment}`,
     });
 
-    // Send email
-    const creatorEmail = (activity.creator as any)?.email;
+    // The proposer's address. Members cannot read each other's e-mail
+    // through the RLS client (profiles grants them the name and role only),
+    // so this one read goes through the service-role client — after the
+    // admin check above, and for nothing else.
+    const { data: creator } = await adminClient
+      .from("profiles")
+      .select("email, full_name")
+      .eq("id", activity.created_by)
+      .single();
+    const creatorEmail = creator?.email;
+    // Reported back rather than swallowed: the admin should know when the
+    // proposer did not hear about the decision and tell them another way.
+    let emailSent = false;
     if (creatorEmail) {
-      const activityUrl = `${process.env.NEXT_PUBLIC_APP_URL}/activities/${id}`;
-      await sendEmail({
+      const activityUrl = `${appUrl()}/activities/${id}`;
+      emailSent = await sendEmail({
         to: creatorEmail,
         subject: `[Math Club FER] Aktivnost odbijena: ${activity.title}`,
         html: activityStatusEmailTemplate(
-          (activity.creator as any)?.full_name || "",
+          creator?.full_name || "",
           activity.title,
           "rejected",
           admin_comment,
@@ -118,8 +129,8 @@ export async function POST(
       });
     }
 
-    return NextResponse.json<ApiResponse<Activity>>(
-      { success: true, data: updated },
+    return NextResponse.json<ApiResponse<ReviewResult>>(
+      { success: true, data: { ...updated, email_sent: emailSent } },
       { status: 200 }
     );
   } catch (err) {

@@ -12,25 +12,25 @@ import { ButtonLink } from "@/components/ui/Button";
 export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!session) redirect("/login");
+  if (!user) redirect("/login");
 
   const [{ data: profile }, { data: activities }] = await Promise.all([
-    supabase.from("profiles").select("*").eq("id", session.user.id).single(),
+    supabase.from("profiles").select("id, full_name, role, created_at, updated_at").eq("id", user.id).single(),
     supabase
       .from("activities")
       .select("id, title, status, start_time, activity_type")
-      .eq("created_by", session.user.id)
+      .eq("created_by", user.id)
       .order("created_at", { ascending: false })
       .limit(20),
   ]);
 
-  const me = profile as Profile | null;
+  const me = profile as Omit<Profile, "email"> | null;
   const myActivities = (activities ?? []) as Activity[];
 
   return (
@@ -45,7 +45,7 @@ export default async function ProfilePage() {
           <div className="min-w-0">
             <dt className="text-fg-subtle">Email</dt>
             <dd className="truncate text-fg">
-              {me?.email || session.user.email}
+              {user.email}
             </dd>
           </div>
           <div>
@@ -55,12 +55,6 @@ export default async function ProfilePage() {
             </dd>
           </div>
         </dl>
-        <Link
-          href="/profile/ai"
-          className="inline-block text-sm text-fg-muted hover:text-brand"
-        >
-          AI ključevi →
-        </Link>
       </Card>
 
       <Card>
