@@ -4,8 +4,8 @@ Termin organisation for the Mathematics Section (Matematička sekcija) at FER.
 Members propose activities, an admin approves or denies them, and approved ones
 appear on a public calendar. Everything users see is in Croatian.
 
-Next.js 15 (App Router) · TypeScript · Tailwind · Supabase (Postgres + Auth +
-RLS) · Nodemailer.
+Next.js 15 (App Router) · TypeScript · Tailwind · PostgreSQL (RLS, via
+postgres.js) · S3 for attached files · Nodemailer.
 
 ## Commands
 
@@ -40,7 +40,9 @@ src/
 │   └── notifications/         NotificationBell
 ├── lib/
 │   ├── ascii-tree.ts          Procedural tree generator (the largest file here)
-│   ├── supabase/              server.ts (RLS + admin) · middleware.ts · client.ts
+│   ├── db/                    withUser() (RLS) · asService() (owner) · loadActivity
+│   ├── auth/                  Sessions, scrypt passwords, e-mailed codes
+│   ├── storage.ts             S3 bucket for activity files
 │   ├── validation.ts          Domain lock, enum guards, writable-field whitelist
 │   ├── activity-materials.ts  Signed download URLs for uploaded activity materials
 │   ├── activity-edits.ts      What an edit of an approved activity changed, and the note it leaves the admins
@@ -81,27 +83,40 @@ Croatian. Enum labels live in `ACTIVITY_TYPE_LABELS` /
 conventional status codes (400 validation, 401 unauthenticated, 403 wrong role,
 404, 500). The `error` string is shown to the user, so write it in Croatian.
 
-**Three Supabase clients, deliberately.** `createClient()` from
-`lib/supabase/server` uses the anon key plus the session cookie and is subject
-to RLS — that is the default everywhere. `lib/supabase/middleware` builds the
-same client bound to a request, because middleware cannot write through
-`cookies()`: a refreshed session goes onto the request and onto the response
-it returns (`redirectWith()` carries it onto a redirect). `createAdminClient()`
-uses the service-role key and bypasses RLS entirely; it exists only to leave
-a notification with somebody else, which no member's token may do: the
-approve and deny routes, after their own admin check, notify the proposer
-(and read their e-mail for the decision mail — members cannot read each
-other's through the RLS client), and `lib/activity-edits` notifies the admins
-once a member's edit of an approved activity has gone through RLS. Don't
-reach for it to make a query easier. On the server, read the user with
-`getUser()`, never from `getSession()`: the session is parsed from the cookie
-without verification, and touching its user logs a warning per request.
+**Two ways into the database, deliberately.** `withUser(userId, tx => …)`
+from `lib/db` runs one transaction as `authenticated` (or `anon` for a
+visitor) with `app.user_id` set, so every RLS policy and column grant in
+`db/schema.sql` applies — the same two roles Supabase had, under the same
+names, and `auth.uid()` reads that setting. That is the default everywhere.
+`asService(tx => …)` runs as the owning role and bypasses RLS entirely; it
+exists for the auth internals (the `auth.*` tables, which neither request
+role may touch) and to leave a notification with somebody else, which no
+member may do: the approve and deny routes, after their own admin check,
+notify the proposer (and read their e-mail for the decision mail — members
+cannot read each other's), and `lib/activity-edits` notifies the admins once
+a member's edit of an approved activity has gone through RLS. Don't reach
+for it to make a query easier. The pool itself is not exported.
+
+The current member comes from `getCurrentUser()` in `lib/auth/session`
+(cached per request, with `role` and `full_name`); guarded pages call
+`requireUser(next)`, and `/admin` is guarded by its layout. The middleware
+runs on the Edge runtime and cannot reach Postgres, so it only checks that a
+session cookie exists. Don't re-read the member's own profile for its name or
+role: `authenticated` may select only `id`, `full_name` and `role` from
+`profiles`, and a query naming any other column is refused outright.
+
+**postgres.js v4 gotchas.** jsonb values go through `tx.json(obj)` — a
+pre-stringified one is stored as a JSON *string*. `count(*)` comes back as a
+string unless cast `::int`. Route ids go through `isUuid()` first, since a
+malformed uuid is a Postgres error (500), not a miss. An activity with its
+proposer's name and materials is `loadActivity()`; the
+`activities_with_creator` view gives the list shape.
 
 **Never trust a request body's shape.** Client input is filtered through
 `pickActivityFields()` so server-owned columns (`status`, `reviewed_by`,
-`admin_comment`, …) can't be written, and any value interpolated into a
-PostgREST filter is checked against its enum first (`isActivityStatus`), or
-its shape (`isUuid`). No schema library is installed; the hand-written guards
+`admin_comment`, …) can't be written, and enum and id parameters are
+checked first (`isActivityStatus`, `isUuid`) so a bad value is a 400 or 404,
+not a cast error. Values reach SQL only as postgres.js parameters. No schema library is installed; the hand-written guards
 in `lib/validation.ts` are the pattern.
 
 **A member never sets an activity's status; the database does.** An author
@@ -111,8 +126,8 @@ just goes through. Once it is approved, changing when, where or what kind
 `pending` — off the public calendar until an admin approves it again — and
 anything else, materials and the reservation status included, leaves it
 published. That rule is the `settle_member_edit` trigger in
-`supabase/schema.sql`, so it holds for a token used against PostgREST as
-well; the PATCH route only reads the outcome off the returned row and tells
+`db/schema.sql`, so it holds for every write made as a member; the PATCH
+route only reads the outcome off the returned row and tells
 the admins what changed. Admins' edits are saved as written.
 
 **Times are instants.** The forms turn a `datetime-local` value into an ISO
@@ -144,7 +159,8 @@ consistent and unusual.
 
 ## Secrets
 
-`SUPABASE_SERVICE_ROLE_KEY` and `SMTP_PASS` are real secrets. Anything prefixed
+`DATABASE_URL` (its password), the S3 keys and `SMTP_PASS` are real secrets.
+Anything prefixed
 `NEXT_PUBLIC_` is compiled into the browser bundle — never put a secret behind
 it. `.env.local` and `.next/` are gitignored and also blocked by
 `.githooks/pre-commit`, which exists because a build directory was once
@@ -158,5 +174,7 @@ the database schema, RLS policies and the approve/deny flow — those are still
 accurate. Its directory tree and roadmap have drifted: password reset, the
 design-token system, the ASCII tree landing page and the timeline all arrived
 after it was written, and some files it lists (`hooks/index.ts`,
-`lib/supabase/index.ts`) don't exist. Trust the code over that document where
-they disagree.
+`lib/supabase/index.ts`) don't exist. It also predates the move off Supabase
+(November 2026): read its "Supabase client" as `withUser()`, "service_role"
+as `asService()`, and its auth and storage as `lib/auth` and `lib/storage.ts`.
+Trust the code over that document where they disagree.

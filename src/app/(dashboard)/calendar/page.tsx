@@ -1,4 +1,5 @@
-import { createClient as createServerClient } from "@/lib/supabase/server";
+import { withUser } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth/session";
 import type { Activity } from "@/types";
 import Card from "@/components/ui/Card";
 import { ButtonLink } from "@/components/ui/Button";
@@ -12,46 +13,44 @@ const UPCOMING_LIMIT = 50;
 const PAST_LIMIT = 60;
 
 export default async function CalendarPage() {
-  const supabase = await createServerClient();
-
-  const now = new Date().toISOString();
+  const user = await getCurrentUser();
 
   // Anonymous visitors may read only `id` and `full_name` from profiles (a
-  // column-level grant in schema.sql), and PostgREST fails the whole query if
-  // the embed names a column the role cannot see — so no `email` here, nor on
-  // any other path an anonymous visitor can reach.
-  const [{ data: ahead }, { data: before }, { data: auth }] = await Promise.all([
-    supabase
-      .from("activities")
-      .select("*, creator:profiles!created_by(id, full_name)")
-      .eq("status", "approved")
+  // column-level grant in db/schema.sql), which is all the
+  // activities_with_creator view names — so the same query serves everyone.
+  const [ahead, before] = await withUser(user?.id ?? null, (tx) =>
+    // Both halves split on the transaction's one now(), so an event ending
+    // this instant lands in exactly one of them.
+    Promise.all([
       // The page leads with what is still ahead — a calendar headed by last
       // term's events is noise.
-      .gte("end_time", now)
-      .order("start_time", { ascending: true })
-      .limit(UPCOMING_LIMIT),
-    supabase
-      .from("activities")
-      .select("*, creator:profiles!created_by(id, full_name)")
-      .eq("status", "approved")
-      .lt("end_time", now)
+      tx<Activity[]>`
+        SELECT * FROM activities_with_creator
+        WHERE status = 'approved' AND end_time >= now()
+        ORDER BY start_time ASC
+        LIMIT ${UPCOMING_LIMIT}
+      `,
       // Newest first *for the query*, so the limit keeps the most recent slice
       // of history rather than the oldest. It is reversed below for display.
-      .order("start_time", { ascending: false })
-      .limit(PAST_LIMIT),
-    supabase.auth.getSession(),
-  ]);
+      tx<Activity[]>`
+        SELECT * FROM activities_with_creator
+        WHERE status = 'approved' AND end_time < now()
+        ORDER BY start_time DESC
+        LIMIT ${PAST_LIMIT}
+      `,
+    ])
+  );
 
-  const upcoming = (ahead ?? []) as Activity[];
+  const upcoming: Activity[] = [...ahead];
   // Displayed oldest to newest, so the page reads as one timeline: history
   // runs down into the most recent past event, and the next event follows it.
-  const past = [...((before ?? []) as Activity[])].reverse();
+  const past: Activity[] = [...before].reverse();
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-fg">Kalendar aktivnosti</h1>
-        {auth?.session && (
+        {user && (
           <ButtonLink href="/activities/new">+ Predloži aktivnost</ButtonLink>
         )}
       </div>
@@ -59,7 +58,7 @@ export default async function CalendarPage() {
       {upcoming.length === 0 && past.length === 0 ? (
         <Card className="p-12 text-center">
           <p className="text-fg-muted">Još nema nadolazećih aktivnosti.</p>
-          {auth?.session && (
+          {user && (
             <ButtonLink href="/activities/new" variant="secondary" className="mt-4">
               Predloži prvu
             </ButtonLink>

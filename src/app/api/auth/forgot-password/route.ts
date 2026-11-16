@@ -1,57 +1,53 @@
-import { createClient as createServerClient } from "@/lib/supabase/server";
-import { NextResponse, type NextRequest } from "next/server";
-import type { ApiResponse } from "@/types";
+import type { NextRequest } from "next/server";
+import { asService } from "@/lib/db";
+import { issueCode, normalizeEmail, underLimit } from "@/lib/auth/codes";
+import { fail, ok, readBody, SERVER_ERROR, TOO_MANY } from "@/lib/auth/http";
+import { recoveryCodeEmailTemplate, sendEmail } from "@/lib/email";
 
 /**
  * POST /api/auth/forgot-password
  *
- * Body: { email: string }
+ * Body: { email }
  *
- * Sends a password-recovery mail. The reply is the same whether or not the
- * address has an account: answering differently would turn this into a
- * membership check for anyone willing to type.
+ * Mails a recovery code for /reset-password. The reply is the same whether or
+ * not the address has an account: answering differently would turn this into
+ * a membership check for anyone willing to type. The throttle is keyed by
+ * address regardless of whether it exists, so tripping it reveals nothing
+ * either.
  */
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    const email = normalizeEmail((await readBody(request)).email);
+    if (!email) return fail(400, "Email je obavezan.");
 
-    if (!email) {
-      return NextResponse.json<ApiResponse>(
-        { success: false, error: "Email je obavezan." },
-        { status: 400 }
-      );
+    const outcome = await asService(async (tx) => {
+      if (!(await underLimit(tx, `send-code:${email}`, 5, 60 * 60))) {
+        return "throttled" as const;
+      }
+      const [user] = await tx<{ id: string; full_name: string }[]>`
+        SELECT u.id, coalesce(p.full_name, '') AS full_name
+        FROM auth.users u LEFT JOIN public.profiles p ON p.id = u.id
+        WHERE lower(u.email) = ${email}
+      `;
+      if (!user) return null;
+      return { fullName: user.full_name, code: await issueCode(tx, user.id, "recovery") };
+    });
+
+    if (outcome === "throttled") return fail(429, TOO_MANY);
+
+    if (outcome) {
+      // Not reported to the caller: a failure here would otherwise be the
+      // one reply that only an existing account can produce.
+      await sendEmail({
+        to: email,
+        subject: "Kod za promjenu lozinke — Math Club FER",
+        html: recoveryCodeEmailTemplate(outcome.fullName, outcome.code),
+      });
     }
 
-    const supabase = await createServerClient();
-
-    const { error } = await supabase.auth.resetPasswordForEmail(
-      String(email).trim()
-    );
-
-    // Supabase only errors here for a malformed address or a tripped rate
-    // limit — never for an unknown user — so surfacing it leaks nothing.
-    if (error) {
-      return NextResponse.json<ApiResponse>(
-        { success: false, error: error.message },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json<ApiResponse>(
-      {
-        success: true,
-        data: {
-          message:
-            "Ako račun s tom adresom postoji, poslali smo kod za promjenu lozinke.",
-        },
-      },
-      { status: 200 }
-    );
+    return ok("Ako račun s tom adresom postoji, poslali smo kod za promjenu lozinke.");
   } catch (err) {
     console.error("Forgot password error:", err);
-    return NextResponse.json<ApiResponse>(
-      { success: false, error: "Internal server error" },
-      { status: 500 }
-    );
+    return fail(500, SERVER_ERROR);
   }
 }

@@ -1,39 +1,27 @@
-import type { createClient } from "@/lib/supabase/server";
 import type { ActivityMaterial } from "@/types";
 
-type RlsClient = Awaited<ReturnType<typeof createClient>>;
-
-export const ACTIVITY_MATERIALS_BUCKET = "activity-materials";
-
-/** How long a download link from the activity page stays valid. */
-const DOWNLOAD_URL_TTL_SECONDS = 60 * 60;
-
 /**
- * Sorts an activity's materials into page order and signs a download URL
- * for each uploaded file. Signing goes through the RLS client, so a reader
- * only ever gets a URL for a file whose activity they may see — the same
- * test the storage policy makes, made by the same role.
+ * The route a material's file is downloaded from. It looks the material up
+ * through RLS on every request, so a link copied out of the page is still
+ * only good for someone who may see the activity — what a short-lived signed
+ * URL used to approximate with an expiry.
  */
-export async function withDownloadUrls(
-  supabase: RlsClient,
-  materials: ActivityMaterial[]
-): Promise<ActivityMaterial[]> {
-  const sorted = [...materials].sort(
-    (a, b) =>
-      a.position - b.position || a.created_at.localeCompare(b.created_at)
-  );
+export function materialFileUrl(m: Pick<ActivityMaterial, "activity_id" | "id">): string {
+  return `/api/activities/${m.activity_id}/materials/${m.id}/file`;
+}
 
-  return Promise.all(
-    sorted.map(async (m) => {
-      if (m.kind !== "file" || !m.storage_path) return m;
-      const { data } = await supabase.storage
-        .from(ACTIVITY_MATERIALS_BUCKET)
-        .createSignedUrl(m.storage_path, DOWNLOAD_URL_TTL_SECONDS, {
-          download: m.file_name || true,
-        });
-      return { ...m, download_url: data?.signedUrl ?? null };
-    })
-  );
+/** Sorts an activity's materials into page order and links each uploaded file. */
+export function withDownloadUrls(materials: ActivityMaterial[]): ActivityMaterial[] {
+  return [...materials]
+    .sort(
+      (a, b) =>
+        a.position - b.position || a.created_at.localeCompare(b.created_at)
+    )
+    .map((m) =>
+      m.kind === "file" && m.storage_path
+        ? { ...m, download_url: materialFileUrl(m) }
+        : m
+    );
 }
 
 /** "1,2 MB" style size for the activity page. */

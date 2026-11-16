@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { createClient as createBrowserClient } from "@/lib/supabase/client";
+import { postAuth } from "@/lib/auth/client";
 import AuthShell from "@/components/auth/AuthShell";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/Field";
 import { ALLOWED_EMAIL_DOMAINS, isAllowedEmail } from "@/lib/validation";
 
 export default function RegisterPage() {
-  const supabase = createBrowserClient();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,16 +31,16 @@ export default function RegisterPage() {
       return;
     }
 
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { error: signUpError } = await postAuth("register", {
       email,
       password,
-      options: { data: { full_name: fullName } },
+      full_name: fullName,
     });
 
     setLoading(false);
 
     if (signUpError) {
-      setError(signUpError.message);
+      setError(signUpError);
       return;
     }
 

@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { hr } from "date-fns/locale";
-import { createClient as createServerClient } from "@/lib/supabase/server";
+import { withUser } from "@/lib/db";
+import { requireAdmin } from "@/lib/auth/session";
 import { ACTIVITY_TYPE_LABELS } from "@/types";
 import type { Activity } from "@/types";
 import Card, { CardHeader, CardTitle } from "@/components/ui/Card";
@@ -11,28 +11,17 @@ import { ButtonLink } from "@/components/ui/Button";
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
-  const supabase = await createServerClient();
+  const admin = await requireAdmin();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "admin") redirect("/calendar");
-
-  const { data } = await supabase
-    .from("activities")
-    .select("*, creator:profiles!created_by(id, full_name)")
-    .eq("status", "pending")
-    .order("created_at", { ascending: false });
-
-  const pending = (data ?? []) as Activity[];
+  const pending: Activity[] = [
+    ...(await withUser(admin.id, (tx) =>
+      tx<Activity[]>`
+        SELECT * FROM activities_with_creator
+        WHERE status = 'pending'
+        ORDER BY created_at DESC
+      `
+    )),
+  ];
 
   return (
     <div className="space-y-6">

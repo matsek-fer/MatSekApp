@@ -1,5 +1,8 @@
-import { createClient as createServerClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
+import { withUser } from "@/lib/db";
+import { NOTIFICATION_COLUMNS } from "@/lib/db/notifications";
+import { getCurrentUser } from "@/lib/auth/session";
+import { isUuid } from "@/lib/validation";
 import type { ApiResponse, Notification } from "@/types";
 
 /**
@@ -12,11 +15,7 @@ import type { ApiResponse, Notification } from "@/types";
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerClient();
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
 
     if (!user) {
       return NextResponse.json<ApiResponse>(
@@ -29,25 +28,17 @@ export async function GET(request: NextRequest) {
     const unreadOnly = searchParams.get("unread_only") === "true";
     const limit = Math.min(Number(searchParams.get("limit")) || 50, 200);
 
-    let query = supabase
-      .from("notifications")
-      .select("*, activity:activities(id, title, status)")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(limit);
-
-    if (unreadOnly) {
-      query = query.eq("is_read", false);
-    }
-
-    const { data: notifications, error } = await query;
-
-    if (error) {
-      return NextResponse.json<ApiResponse>(
-        { success: false, error: error.message },
-        { status: 500 }
-      );
-    }
+    const notifications = await withUser(user.id, (tx) =>
+      tx<Notification[]>`
+        SELECT ${NOTIFICATION_COLUMNS(tx)}
+        FROM notifications n
+        LEFT JOIN activities a ON a.id = n.activity_id
+        WHERE n.user_id = ${user.id}
+          ${unreadOnly ? tx`AND n.is_read = false` : tx``}
+        ORDER BY n.created_at DESC
+        LIMIT ${limit}
+      `
+    );
 
     return NextResponse.json<ApiResponse<Notification[]>>(
       { success: true, data: notifications },
@@ -70,11 +61,7 @@ export async function GET(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createServerClient();
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
 
     if (!user) {
       return NextResponse.json<ApiResponse>(
@@ -86,29 +73,20 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
 
     if (body.mark_all_read) {
-      const { error } = await supabase
-        .from("notifications")
-        .update({ is_read: true })
-        .eq("user_id", user.id)
-        .eq("is_read", false);
-
-      if (error) {
-        return NextResponse.json<ApiResponse>(
-          { success: false, error: error.message },
-          { status: 500 }
-        );
-      }
+      await withUser(user.id, (tx) =>
+        tx`
+          UPDATE notifications SET is_read = true
+          WHERE user_id = ${user.id} AND is_read = false
+        `
+      );
     } else if (Array.isArray(body.notification_ids)) {
-      const { error } = await supabase
-        .from("notifications")
-        .update({ is_read: true })
-        .in("id", body.notification_ids)
-        .eq("user_id", user.id);
-
-      if (error) {
-        return NextResponse.json<ApiResponse>(
-          { success: false, error: error.message },
-          { status: 500 }
+      const ids = body.notification_ids.filter(isUuid);
+      if (ids.length > 0) {
+        await withUser(user.id, (tx) =>
+          tx`
+            UPDATE notifications SET is_read = true
+            WHERE id IN ${tx(ids)} AND user_id = ${user.id}
+          `
         );
       }
     } else {

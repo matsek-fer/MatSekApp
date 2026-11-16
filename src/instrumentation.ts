@@ -18,9 +18,10 @@ export async function register() {
   const read = (name: string) => process.env[name] ?? "";
 
   for (const name of [
-    "NEXT_PUBLIC_SUPABASE_URL",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-    "SUPABASE_SERVICE_ROLE_KEY",
+    "DATABASE_URL",
+    "S3_BUCKET",
+    "S3_ACCESS_KEY_ID",
+    "S3_SECRET_ACCESS_KEY",
     "SMTP_HOST",
     "SMTP_USER",
     "SMTP_PASS",
@@ -38,8 +39,8 @@ export async function register() {
   }
 
   if (
-    /your-project|your-anon-key|your-service-role-key|your-smtp-password/.test(
-      ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "SMTP_PASS"]
+    /your-app-db-password|your-access-key|your-secret-key|your-smtp-password/.test(
+      ["DATABASE_URL", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY", "SMTP_PASS"]
         .map(read)
         .join(" ")
     )

@@ -6,10 +6,11 @@
  *   node scripts/seed-activities.mjs --clean   # remove exactly what it inserted
  *
  * Every seeded row carries MARKER in its description, which is what --clean
- * matches on, so it can never take a real activity with it. Uses the service
- * role key: seeded rows are approved, and approving is an admin's to do.
+ * matches on, so it can never take a real activity with it. Connects as the
+ * owning role from DATABASE_URL, which bypasses RLS: seeded rows are
+ * approved, and approving is an admin's to do.
  */
-import { createClient } from "@supabase/supabase-js";
+import postgres from "postgres";
 import { readFileSync } from "node:fs";
 
 const MARKER = "[seed:calendar-demo]";
@@ -30,24 +31,22 @@ function env(name) {
   throw new Error(`${name} is not set (env or .env.local)`);
 }
 
-// The service role key bypasses RLS on whatever project .env.local points
-// at, and nothing distinguishes a development project from the real one
-// except its ref. So the ref must be named explicitly, every run.
-const url = env("NEXT_PUBLIC_SUPABASE_URL");
-const ref = new URL(url).hostname.split(".")[0];
-const allowed = process.env.SEED_PROJECT_REF;
-if (!allowed || allowed !== ref) {
+// The owning role bypasses RLS on whatever database .env.local points at,
+// and nothing distinguishes a development database from the real one except
+// where it is. So it must be named explicitly, every run.
+const url = new URL(env("DATABASE_URL"));
+const target = `${url.host}${url.pathname}`;
+const allowed = process.env.SEED_DATABASE;
+if (!allowed || allowed !== target) {
   console.error(
-    `Refusing to seed ${url}.\n` +
-      `Set SEED_PROJECT_REF=${ref} to confirm this is the development project.`
+    `Refusing to seed ${target}.\n` +
+      `Set SEED_DATABASE=${target} to confirm this is the development database.`
   );
   process.exit(1);
 }
-console.log(`Seeding project ${ref}`);
+console.log(`Seeding ${target}`);
 
-const db = createClient(url, env("SUPABASE_SERVICE_ROLE_KEY"), {
-  auth: { persistSession: false },
-});
+const sql = postgres(url.href, { max: 1, onnotice: false });
 
 const TITLES = [
   ["Uvod u teoriju grafova", "lecture", "A211"],
@@ -96,32 +95,32 @@ function rows(count, direction, createdBy) {
 }
 
 if (process.argv.includes("--clean")) {
-  const { data, error } = await db
-    .from("activities")
-    .delete()
-    .like("description", `%${MARKER}%`)
-    .select("id");
-  if (error) throw error;
-  console.log(`removed ${data.length} seeded activities`);
+  const removed = await sql`
+    DELETE FROM activities
+    WHERE description LIKE ${`%${MARKER}%`}
+    RETURNING id
+  `;
+  console.log(`removed ${removed.length} seeded activities`);
+  await sql.end();
   process.exit(0);
 }
 
-const { data: profile, error: profileError } = await db
-  .from("profiles")
-  .select("id,email")
-  .order("created_at", { ascending: true })
-  .limit(1)
-  .single();
-if (profileError) throw profileError;
+const [profile] = await sql`
+  SELECT id, email FROM profiles ORDER BY created_at ASC LIMIT 1
+`;
+if (!profile) {
+  await sql.end();
+  throw new Error("No profiles yet — register an account first.");
+}
 
-const { data, error } = await db
-  .from("activities")
-  .insert([
+const data = await sql`
+  INSERT INTO activities ${sql([
     ...rows(PAST, -1, profile.id),
     ...rows(UPCOMING, 1, profile.id),
-  ])
-  .select("id");
-if (error) throw error;
+  ])}
+  RETURNING id
+`;
+await sql.end();
 
 console.log(
   `inserted ${data.length} approved activities (${PAST} past, ${UPCOMING} upcoming) as ${profile.email}`

@@ -1,12 +1,15 @@
-import { createClient as createServerClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
 import { randomUUID } from "node:crypto";
+import { withUser } from "@/lib/db";
+import { userFacingDbError } from "@/lib/db/errors";
+import { getCurrentUser } from "@/lib/auth/session";
 import {
+  isUuid,
   MAX_ACTIVITY_MATERIALS,
   parseActivityMaterial,
   safeFileName,
 } from "@/lib/validation";
-import { ACTIVITY_MATERIALS_BUCKET } from "@/lib/activity-materials";
+import { materialFileUrl } from "@/lib/activity-materials";
 import { materialNotice, notifyAdminsOfEdit } from "@/lib/activity-edits";
 import type {
   ActivityMaterial,
@@ -20,16 +23,13 @@ import type {
  * On a new proposal, link and library materials ride along with the activity
  * itself and this route is for files, which need the activity's id in their
  * storage path. The edit form uses it for every kind. For a file it reserves
- * the row and mints a signed upload URL, and the browser PUTs the bytes
- * straight to Storage, so they never pass through Next. Reading them here
- * with `request.formData()` would cap at Next's body limit, hold the whole
- * file in memory, and need its own size and MIME checks; the bucket already
- * enforces both, and it is the only thing positioned to.
+ * the row and answers with the material's file route, which the browser
+ * PUTs the bytes to as a second request; that route enforces the size and
+ * type limits and writes to the bucket.
  *
- * Who may attach is decided by RLS on `activity_materials` and on the
- * bucket (the author while the activity is pending or approved, admins
- * always); the checks here only turn a policy refusal into a readable
- * message. A material added to an approved activity does not send it back
+ * Who may attach is decided by RLS on `activity_materials` (the author while
+ * the activity is pending or approved, admins always); the checks here only
+ * turn a policy refusal into a readable message. A material added to an approved activity does not send it back
  * for review — the admins are notified instead.
  */
 export async function POST(
@@ -37,11 +37,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createServerClient();
     const { id: activityId } = await params;
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
 
     if (!user) {
       return NextResponse.json<ApiResponse>(
@@ -50,11 +47,13 @@ export async function POST(
       );
     }
 
-    const { data: activity } = await supabase
-      .from("activities")
-      .select("id, title, created_by, status")
-      .eq("id", activityId)
-      .single();
+    const [activity] = isUuid(activityId)
+      ? await withUser(user.id, (tx) =>
+          tx<{ id: string; title: string; created_by: string; status: string }[]>`
+            SELECT id, title, created_by, status FROM activities WHERE id = ${activityId}
+          `
+        )
+      : [];
 
     if (!activity) {
       return NextResponse.json<ApiResponse>(
@@ -63,12 +62,7 @@ export async function POST(
       );
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role, full_name")
-      .eq("id", user.id)
-      .single();
-    const isAdmin = profile?.role === "admin";
+    const isAdmin = user.role === "admin";
     const isOwner = activity.created_by === user.id;
 
     if (!isAdmin && !(isOwner && activity.status !== "rejected")) {
@@ -82,12 +76,14 @@ export async function POST(
       );
     }
 
-    const { count } = await supabase
-      .from("activity_materials")
-      .select("id", { count: "exact", head: true })
-      .eq("activity_id", activityId);
+    const [{ count }] = await withUser(user.id, (tx) =>
+      tx<{ count: number }[]>`
+        SELECT count(*)::int AS count FROM activity_materials
+        WHERE activity_id = ${activityId}
+      `
+    );
 
-    if ((count ?? 0) >= MAX_ACTIVITY_MATERIALS) {
+    if (count >= MAX_ACTIVITY_MATERIALS) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -98,7 +94,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const parsed = parseActivityMaterial(body, count ?? 0);
+    const parsed = parseActivityMaterial(body, count);
     if (!parsed.ok) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: parsed.error },
@@ -114,83 +110,56 @@ export async function POST(
     const storagePath =
       m.kind === "file" ? `${activityId}/${id}/${fileName}` : "";
 
-    const { data: material, error: insertError } = await supabase
-      .from("activity_materials")
-      .insert({
-        id,
-        activity_id: activityId,
-        phase: m.phase,
-        kind: m.kind,
-        title: m.title,
-        url: m.url ?? "",
-        note: m.note ?? "",
-        position: m.position ?? 0,
-        storage_path: storagePath,
-        file_name: m.kind === "file" ? m.file_name ?? "" : "",
-        content_type: m.kind === "file" ? m.content_type ?? "" : "",
-        byte_size: m.kind === "file" ? m.byte_size ?? 0 : 0,
-      })
-      .select()
-      .single();
-
-    if (insertError || !material) {
+    let material: ActivityMaterial;
+    try {
+      [material] = await withUser(user.id, (tx) =>
+        tx<ActivityMaterial[]>`
+          INSERT INTO activity_materials ${tx({
+            id,
+            activity_id: activityId,
+            phase: m.phase,
+            kind: m.kind,
+            title: m.title,
+            url: m.url ?? "",
+            note: m.note ?? "",
+            position: m.position ?? 0,
+            storage_path: storagePath,
+            file_name: m.kind === "file" ? m.file_name ?? "" : "",
+            content_type: m.kind === "file" ? m.content_type ?? "" : "",
+            byte_size: m.kind === "file" ? m.byte_size ?? 0 : 0,
+          })}
+          RETURNING *
+        `
+      );
+    } catch (insertError) {
       console.error("POST /api/activities/[id]/materials insert error:", insertError);
+      const reason = userFacingDbError(insertError);
       return NextResponse.json<ApiResponse>(
         {
           success: false,
-          error: `Materijal nije moguće spremiti${
-            insertError ? ` (${insertError.message})` : ""
-          }.`,
+          error: `Materijal nije moguće spremiti${reason ? ` (${reason})` : ""}.`,
         },
         { status: 400 }
       );
     }
 
-    // Said once the material is certain to stand: for a file, after the
-    // upload URL is in hand. A pending activity's materials are read at
-    // review, and an admin's own additions need no announcing.
+    // A pending activity's materials are read at review, and an admin's own
+    // additions need no announcing.
     const announce = async () => {
       if (isAdmin || activity.status !== "approved") return;
       await notifyAdminsOfEdit(
         activityId,
-        materialNotice(profile?.full_name ?? "", activity.title, m.title, "added")
+        materialNotice(user.full_name, activity.title, m.title, "added")
       );
     };
-
-    if (m.kind !== "file") {
-      await announce();
-      return NextResponse.json<ApiResponse<CreateActivityMaterialResult>>(
-        {
-          success: true,
-          data: { material, upload_url: null, upload_token: null },
-        },
-        { status: 201 }
-      );
-    }
-
-    const { data: signed, error: signError } = await supabase.storage
-      .from(ACTIVITY_MATERIALS_BUCKET)
-      .createSignedUploadUrl(storagePath);
-
-    if (signError || !signed) {
-      // A file row with nowhere to put the bytes is a broken link on the
-      // activity page, so it is withdrawn rather than left behind.
-      await supabase.from("activity_materials").delete().eq("id", id);
-      console.error("POST /api/activities/[id]/materials sign error:", signError);
-      return NextResponse.json<ApiResponse>(
-        { success: false, error: "Učitavanje nije moguće pokrenuti." },
-        { status: 500 }
-      );
-    }
 
     await announce();
     return NextResponse.json<ApiResponse<CreateActivityMaterialResult>>(
       {
         success: true,
         data: {
-          material: material as ActivityMaterial,
-          upload_url: signed.signedUrl,
-          upload_token: signed.token,
+          material,
+          upload_url: m.kind === "file" ? materialFileUrl(material) : null,
         },
       },
       { status: 201 }

@@ -126,7 +126,7 @@ export const MAX_ACTIVITY_MATERIALS = 20;
 
 export const MAX_ACTIVITY_MATERIAL_TITLE_LENGTH = 200;
 
-/** Mirrors `file_size_limit` on the `activity-materials` bucket. */
+/** Enforced by the material file route as the bytes arrive. */
 export const MAX_ACTIVITY_MATERIAL_BYTES = 26_214_400; // 25 MiB
 
 const ACTIVITY_MATERIAL_MIMES = new Set(

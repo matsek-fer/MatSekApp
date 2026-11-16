@@ -2,8 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { hr } from "date-fns/locale";
-import { createClient as createServerClient } from "@/lib/supabase/server";
-import { withDownloadUrls } from "@/lib/activity-materials";
+import { withUser } from "@/lib/db";
+import { loadActivity } from "@/lib/db/activities";
+import { getCurrentUser } from "@/lib/auth/session";
+import { isUuid } from "@/lib/validation";
 import { ACTIVITY_TYPE_LABELS } from "@/types";
 import type { Activity } from "@/types";
 import Card from "@/components/ui/Card";
@@ -39,31 +41,24 @@ export default async function ActivityDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createServerClient();
+  if (!isUuid(id)) notFound();
 
-  const { data } = await supabase
-    .from("activities")
-    .select(
-      "*, creator:profiles!created_by(id, full_name), materials:activity_materials(*)"
-    )
-    .eq("id", id)
-    .single();
+  // Public page: a visitor sees approved activities, a member also their own,
+  // an admin everything — RLS decides, as it does for the API. The file
+  // links it carries are checked again under the viewer's role on download,
+  // so a file of an approved activity opens for everyone and a pending one
+  // only for its author.
+  const user = await getCurrentUser();
+  const activity: Activity | null = await withUser(user?.id ?? null, (tx) =>
+    loadActivity(tx, id)
+  );
 
-  if (!data) notFound();
-  const activity = data as Activity;
-  // Signed under the viewer's own permissions, so a file of an approved
-  // activity opens for everyone and a pending one only for its author.
-  const materials = await withDownloadUrls(supabase, activity.materials ?? []);
+  if (!activity) notFound();
+  const materials = activity.materials ?? [];
 
   // Who is looking decides only which buttons are drawn; the edit page, the
   // PATCH route and the UPDATE policies each apply the rule themselves.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const { data: profile } = user
-    ? await supabase.from("profiles").select("role").eq("id", user.id).single()
-    : { data: null };
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = user?.role === "admin";
   const canEdit =
     isAdmin ||
     (user?.id === activity.created_by && activity.status !== "rejected");

@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
-import { createClient } from "@/lib/supabase/client";
 import type { LibraryEntry } from "@/lib/materials-meta";
 import { ACTIVITY_TYPE_LABELS, RESERVATION_STATUS_LABELS } from "@/types";
 import type {
@@ -15,7 +14,7 @@ import type {
   CreateActivityPayload,
   ReservationStatus,
 } from "@/types";
-import { ACTIVITY_MATERIALS_BUCKET, formatBytes } from "@/lib/activity-materials";
+import { formatBytes } from "@/lib/activity-materials";
 import { ACTIVITY_REVIEWED_FIELDS } from "@/lib/validation";
 import Card from "@/components/ui/Card";
 import Alert from "@/components/ui/Alert";
@@ -272,8 +271,6 @@ export default function ActivityForm({
         }
       }
 
-      const supabase = createClient();
-
       for (let i = 0; i < files.length; i++) {
         const d = files[i];
         const file = d.file!;
@@ -307,16 +304,14 @@ export default function ActivityForm({
         }
 
         const reserved = reserveJson.data as CreateActivityMaterialResult;
-        const { error: uploadError } = await supabase.storage
-          .from(ACTIVITY_MATERIALS_BUCKET)
-          .uploadToSignedUrl(
-            reserved.material.storage_path,
-            reserved.upload_token ?? "",
-            file,
-            { contentType }
-          );
+        const uploadRes = await fetch(reserved.upload_url ?? "", {
+          method: "PUT",
+          headers: { "Content-Type": contentType },
+          body: file,
+        }).catch(() => null);
+        const uploadJson = await uploadRes?.json().catch(() => null);
 
-        if (uploadError) {
+        if (!uploadJson?.success) {
           await fetch(
             `/api/activities/${activityId}/materials/${reserved.material.id}`,
             { method: "DELETE" }

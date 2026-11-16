@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { hr } from "date-fns/locale";
-import { createClient as createServerClient } from "@/lib/supabase/server";
+import { withUser } from "@/lib/db";
+import { requireUser } from "@/lib/auth/session";
 import { ACTIVITY_TYPE_LABELS } from "@/types";
-import type { Activity, Profile } from "@/types";
+import type { Activity } from "@/types";
 import Card, { CardHeader, CardTitle } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
@@ -12,26 +12,23 @@ import { ButtonLink } from "@/components/ui/Button";
 export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {
-  const supabase = await createServerClient();
+  const user = await requireUser("/profile");
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // The name and role come with the session. They are not re-read from
+  // profiles: a member's role may read only id, full_name and role there,
+  // and a select naming any other column is refused outright.
+  const activities = await withUser(user.id, (tx) =>
+    tx<Activity[]>`
+      SELECT id, title, status, start_time, activity_type
+      FROM activities
+      WHERE created_by = ${user.id}
+      ORDER BY created_at DESC
+      LIMIT 20
+    `
+  );
 
-  if (!user) redirect("/login");
-
-  const [{ data: profile }, { data: activities }] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, role, created_at, updated_at").eq("id", user.id).single(),
-    supabase
-      .from("activities")
-      .select("id, title, status, start_time, activity_type")
-      .eq("created_by", user.id)
-      .order("created_at", { ascending: false })
-      .limit(20),
-  ]);
-
-  const me = profile as Omit<Profile, "email"> | null;
-  const myActivities = (activities ?? []) as Activity[];
+  const me = user;
+  const myActivities: Activity[] = [...activities];
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">

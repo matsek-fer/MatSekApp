@@ -1,9 +1,10 @@
-import { createClient as createServerClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
+import { withUser } from "@/lib/db";
+import { userFacingDbError } from "@/lib/db/errors";
+import { getCurrentUser } from "@/lib/auth/session";
 import {
   isActivityStatus,
   isReservationStatus,
-  isUuid,
   MAX_ACTIVITY_MATERIALS,
   parseActivityMaterial,
   pickActivityFields,
@@ -23,12 +24,11 @@ import type { ActivityMaterialInput, ApiResponse, Activity } from "@/types";
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerClient();
     const { searchParams } = new URL(request.url);
     const limit = Math.min(Number(searchParams.get("limit")) || 50, 200);
 
-    // `status` is interpolated into a PostgREST filter expression below, so it
-    // has to be one of the known enum values — never raw user input.
+    // Checked against the enum so an unknown value is a 400 rather than a
+    // Postgres cast error.
     const rawStatus = searchParams.get("status");
     if (rawStatus !== null && !isActivityStatus(rawStatus)) {
       return NextResponse.json<ApiResponse>(
@@ -36,66 +36,32 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
-    const status = rawStatus ?? undefined;
+    const status = rawStatus ?? null;
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
 
-    let query = supabase
-      .from("activities")
-      .select("*, creator:profiles!created_by(id, full_name)")
-      .order("start_time", { ascending: true })
-      .limit(limit);
+    const activities = await withUser(user?.id ?? null, (tx) => {
+      // RLS already limits a member to approved rows plus their own; the
+      // visibility filter is spelled out anyway so the query reads as what it
+      // returns.
+      const visible =
+        user?.role === "admin"
+          ? tx`TRUE`
+          : user
+            ? tx`(status = 'approved' OR created_by = ${user.id})`
+            : tx`status = 'approved'`;
+      const byStatus = status ? tx`AND status = ${status}` : tx``;
 
-    if (user) {
-      // The id is about to be interpolated into a filter; see isUuid().
-      if (!isUuid(user.id)) {
-        return NextResponse.json<ApiResponse>(
-          { success: false, error: "Neispravna sesija." },
-          { status: 401 }
-        );
-      }
-      // Check if admin
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      if (profile?.role === "admin") {
-        // Admin sees everything; optional status filter
-        if (status) {
-          query = query.eq("status", status);
-        }
-      } else {
-        // Regular user: approved + own
-        if (status) {
-          query = query.or(
-            `status.eq.${status},and(created_by.eq.${user.id},status.eq.${status})`
-          );
-        } else {
-          query = query.or(
-            `status.eq.approved,created_by.eq.${user.id}`
-          );
-        }
-      }
-    } else {
-      // Anonymous: only approved
-      query = query.eq("status", "approved");
-    }
-
-    const { data: activities, error } = await query;
-
-    if (error) {
-      return NextResponse.json<ApiResponse>(
-        { success: false, error: error.message },
-        { status: 500 }
-      );
-    }
+      return tx<Activity[]>`
+        SELECT * FROM activities_with_creator
+        WHERE ${visible} ${byStatus}
+        ORDER BY start_time ASC
+        LIMIT ${limit}
+      `;
+    });
 
     return NextResponse.json<ApiResponse<Activity[]>>(
-      { success: true, data: activities },
+      { success: true, data: [...activities] },
       { status: 200 }
     );
   } catch (err) {
@@ -120,11 +86,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerClient();
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
 
     if (!user) {
       return NextResponse.json<ApiResponse>(
@@ -203,57 +165,48 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const { data: activity, error } = await supabase
-      .from("activities")
-      .insert({
-        ...pickActivityFields(body),
-        prerequisites: body.prerequisites || "",
-        target_audience: body.target_audience || "",
-        // Server-owned: a proposal always starts unreviewed.
-        created_by: user.id,
-        status: "pending",
-      })
-      .select()
-      .single();
+    const row = {
+      ...pickActivityFields(body),
+      prerequisites: body.prerequisites || "",
+      target_audience: body.target_audience || "",
+      // Server-owned: a proposal always starts unreviewed.
+      created_by: user.id,
+      status: "pending",
+    };
 
-    if (error) {
+    // The activity and its reading list in one transaction: a bad material
+    // rolls the proposal back with it, instead of leaving it standing without
+    // the list its author wrote.
+    let activity: Activity;
+    try {
+      activity = await withUser(user.id, async (tx) => {
+        const [created] = await tx<Activity[]>`
+          INSERT INTO activities ${tx(row)} RETURNING *
+        `;
+        if (materials.length > 0) {
+          await tx`
+            INSERT INTO activity_materials ${tx(
+              materials.map((m) => ({
+                activity_id: created.id,
+                phase: m.phase,
+                kind: m.kind,
+                title: m.title,
+                url: m.url ?? "",
+                note: m.note ?? "",
+                position: m.position ?? 0,
+              }))
+            )}
+          `;
+        }
+        return created;
+      });
+    } catch (err) {
+      const message = userFacingDbError(err);
+      if (!message) throw err;
       return NextResponse.json<ApiResponse>(
-        { success: false, error: error.message },
+        { success: false, error: message },
         { status: 400 }
       );
-    }
-
-    if (materials.length > 0) {
-      const { error: materialsError } = await supabase
-        .from("activity_materials")
-        .insert(
-          materials.map((m) => ({
-            activity_id: activity.id,
-            phase: m.phase,
-            kind: m.kind,
-            title: m.title,
-            url: m.url ?? "",
-            note: m.note ?? "",
-            position: m.position ?? 0,
-          }))
-        );
-
-      if (materialsError) {
-        // The proposal is withdrawn rather than left standing without the
-        // reading list its author wrote; they can resubmit in one go. The
-        // database's reason rides along, as it does for the activity insert
-        // above: a missing table (schema section 9 not applied) or a policy
-        // refusal reads very differently from a bad value.
-        await supabase.from("activities").delete().eq("id", activity.id);
-        console.error("POST /api/activities materials error:", materialsError);
-        return NextResponse.json<ApiResponse>(
-          {
-            success: false,
-            error: `Materijale nije moguće spremiti (${materialsError.message}).`,
-          },
-          { status: 400 }
-        );
-      }
     }
 
     return NextResponse.json<ApiResponse<Activity>>(

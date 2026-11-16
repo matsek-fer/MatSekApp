@@ -100,3 +100,40 @@ export function activityStatusEmailTemplate(
     </div>
   `;
 }
+
+function codeEmail(heading: string, fullName: string, lead: string, code: string, footer: string): string {
+  const greeting = fullName ? `Bok ${escapeHtml(fullName)},` : "Bok,";
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #364fc7;">${heading}</h2>
+      <p>${greeting}</p>
+      <p>${lead}</p>
+      <p style="font-size: 32px; font-weight: bold; letter-spacing: 6px;
+                font-family: 'Courier New', monospace; margin: 24px 0;">${code}</p>
+      <p style="color: #666; font-size: 14px;">Kod vrijedi 15 minuta.</p>
+      <p style="color: #666; font-size: 14px;">${footer}</p>
+    </div>
+  `;
+}
+
+/** Sent on registration; the code is typed into /verify. */
+export function signupCodeEmailTemplate(fullName: string, code: string): string {
+  return codeEmail(
+    "Dobrodošli u Math Club FER!",
+    fullName,
+    "Hvala ti na registraciji. Upiši ovaj kod na stranici za verifikaciju:",
+    code,
+    "Ako nisi ti registrirao/la ovaj račun, možeš ignorirati ovaj mail."
+  );
+}
+
+/** Sent from /forgot-password; the code is typed into /reset-password. */
+export function recoveryCodeEmailTemplate(fullName: string, code: string): string {
+  return codeEmail(
+    "Promjena lozinke",
+    fullName,
+    "Netko je zatražio promjenu lozinke za tvoj račun. Upiši ovaj kod na stranici za novu lozinku:",
+    code,
+    "Ako nisi ti zatražio/la promjenu, možeš ignorirati ovaj mail — lozinka ostaje ista."
+  );
+}

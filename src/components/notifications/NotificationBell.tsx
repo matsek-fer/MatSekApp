@@ -1,21 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { format, parseISO } from "date-fns";
 import { hr } from "date-fns/locale";
-import { createClient as createBrowserClient } from "@/lib/supabase/client";
+import type { UnreadSummary } from "@/app/api/notifications/unread/route";
 
 const POLL_MS = 30_000;
-const PREVIEW_LIMIT = 10;
 
-interface NotificationItem {
-  id: string;
-  type: string;
-  message: string;
-  created_at: string;
-  activity_id: string | null;
-}
+type NotificationItem = UnreadSummary["items"][number];
 
 const TYPE_ICON: Record<string, string> = {
   approved: "✅",
@@ -23,39 +16,34 @@ const TYPE_ICON: Record<string, string> = {
   edited: "✏️",
 };
 
+function markRead(body: { notification_ids: string[] } | { mark_all_read: true }) {
+  return fetch("/api/notifications", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).catch(() => undefined);
+}
+
 export default function NotificationBell() {
-  const supabase = useMemo(() => createBrowserClient(), []);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [total, setTotal] = useState(0);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   const refresh = useCallback(async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session) return;
-
-    // The badge needs the true unread total, not the length of the preview
-    // list — otherwise it can never show more than PREVIEW_LIMIT.
-    const [{ data }, { count }] = await Promise.all([
-      supabase
-        .from("notifications")
-        .select("id, type, message, created_at, activity_id")
-        .eq("user_id", session.user.id)
-        .eq("is_read", false)
-        .order("created_at", { ascending: false })
-        .limit(PREVIEW_LIMIT),
-      supabase
-        .from("notifications")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", session.user.id)
-        .eq("is_read", false),
-    ]);
-
-    setItems(data ?? []);
-    setTotal(count ?? 0);
-  }, [supabase]);
+    try {
+      const res = await fetch("/api/notifications/unread", { cache: "no-store" });
+      // 401 once the session lapses; the bell just stops updating.
+      if (!res.ok) return;
+      const json = await res.json();
+      if (!json.success) return;
+      const summary = json.data as UnreadSummary;
+      setItems(summary.items);
+      setTotal(summary.total);
+    } catch {
+      // Offline for a poll or two — the next one catches up.
+    }
+  }, []);
 
   useEffect(() => {
     refresh();
@@ -87,23 +75,14 @@ export default function NotificationBell() {
     // The list only holds unread items, so a read one leaves it entirely.
     setItems((prev) => prev.filter((n) => n.id !== id));
     setTotal((prev) => Math.max(0, prev - 1));
-    await supabase.from("notifications").update({ is_read: true }).eq("id", id);
+    await markRead({ notification_ids: [id] });
     refresh();
   }
 
   async function markAllRead() {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session) return;
-
     setItems([]);
     setTotal(0);
-    await supabase
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("user_id", session.user.id)
-      .eq("is_read", false);
+    await markRead({ mark_all_read: true });
   }
 
   return (
